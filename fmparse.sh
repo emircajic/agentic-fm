@@ -3,9 +3,10 @@
 # fmparse.sh - Parse FileMaker XML exports into exploded components
 #
 # Usage:
-#   ./fmparse.sh <path-to-export> [options]
+#   ./fmparse.sh -s <solution-name> <path-to-export> [options]
 #
 # Arguments:
+#   -s, --solution     Solution name (required). Used as the subfolder under xml_exports/.
 #   <path-to-export>   Path to a .xml file or directory containing XML exports
 #
 # Options (passed through to fm-xml-export-exploder):
@@ -43,19 +44,29 @@ EXPLODER_FLAGS=()
 # ---------------------------------------------------------------------------
 usage() {
     cat <<EOF
-Usage: $(basename "$0") <path-to-export> [options]
+Usage: $(basename "$0") -s <solution-name> <path-to-export> [options]
 
-Parse a FileMaker XML export and archive it with a dated version in xml_exports/.
-The export is then exploded into agent/xml_parsed/ using fm-xml-export-exploder.
+Parse a FileMaker XML export and archive it under a solution-specific, dated
+folder in xml_exports/. The export is then exploded into agent/xml_parsed/
+using fm-xml-export-exploder.
+
+Exports are archived as:  xml_exports/<solution-name>/YYYY-MM-DD/
 
 Arguments:
-  <path-to-export>   Path to a .xml file or a directory containing XML exports
+  <path-to-export>                Path to a .xml file or a directory containing XML exports
+
+Required:
+  -s, --solution SOLUTION_NAME    Solution name used as the subfolder under xml_exports/
 
 Options:
-  -a, --all-lines          Parse all lines (reduces noise filtering)
-  -l, --lossless           Retain all information from the XML
-  -t, --output-tree TYPE   Output tree format: domain (default) or db
-  -h, --help               Show this help message
+  -a, --all-lines                 Parse all lines (reduces noise filtering)
+  -l, --lossless                  Retain all information from the XML
+  -t, --output-tree TYPE          Output tree format: domain (default) or db
+  -h, --help                      Show this help message
+
+Examples:
+  $(basename "$0") -s "Invoice Solution" /path/to/export.xml
+  $(basename "$0") -s "Invoice Solution" /path/to/exports/ --all-lines
 EOF
     exit 0
 }
@@ -64,11 +75,19 @@ EOF
 # Parse arguments
 # ---------------------------------------------------------------------------
 EXPORT_PATH=""
+SOLUTION_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help)
             usage
+            ;;
+        -s|--solution)
+            if [[ -z "${2:-}" ]]; then
+                error "--solution requires a solution name"
+            fi
+            SOLUTION_NAME="$2"
+            shift 2
             ;;
         -a|--all-lines)
             EXPLODER_FLAGS+=("--all-lines")
@@ -98,6 +117,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ -z "$SOLUTION_NAME" ]]; then
+    error "No solution name provided. Use -s <solution-name>. Run '$(basename "$0") --help' for usage."
+fi
+
 if [[ -z "$EXPORT_PATH" ]]; then
     error "No export path provided. Run '$(basename "$0") --help' for usage."
 fi
@@ -117,31 +140,32 @@ if ! command -v fm-xml-export-exploder &>/dev/null; then
 fi
 
 # ---------------------------------------------------------------------------
-# Step 1: Create dated archive folder in xml_exports/
+# Step 1: Create dated archive folder in xml_exports/<solution>/
 # ---------------------------------------------------------------------------
 TODAY="$(date +%Y-%m-%d)"
-ARCHIVE_DIR="$XML_EXPORTS_DIR/$TODAY"
+SOLUTION_DIR="$XML_EXPORTS_DIR/$SOLUTION_NAME"
+ARCHIVE_DIR="$SOLUTION_DIR/$TODAY"
 
 if [[ -d "$ARCHIVE_DIR" ]]; then
     COUNTER=2
-    while [[ -d "$XML_EXPORTS_DIR/${TODAY}-${COUNTER}" ]]; do
+    while [[ -d "$SOLUTION_DIR/${TODAY}-${COUNTER}" ]]; do
         ((COUNTER++))
     done
-    ARCHIVE_DIR="$XML_EXPORTS_DIR/${TODAY}-${COUNTER}"
+    ARCHIVE_DIR="$SOLUTION_DIR/${TODAY}-${COUNTER}"
 fi
 
 mkdir -p "$ARCHIVE_DIR"
-msg "Created archive folder: $(basename "$ARCHIVE_DIR")"
+msg "Created archive folder: xml_exports/$SOLUTION_NAME/$(basename "$ARCHIVE_DIR")"
 
 # ---------------------------------------------------------------------------
 # Step 2: Copy export to archive
 # ---------------------------------------------------------------------------
 if [[ -f "$EXPORT_PATH" ]]; then
     cp "$EXPORT_PATH" "$ARCHIVE_DIR/"
-    msg "Copied file: $(basename "$EXPORT_PATH") -> xml_exports/$(basename "$ARCHIVE_DIR")/"
+    msg "Copied file: $(basename "$EXPORT_PATH") -> xml_exports/$SOLUTION_NAME/$(basename "$ARCHIVE_DIR")/"
 elif [[ -d "$EXPORT_PATH" ]]; then
     cp -R "$EXPORT_PATH"/* "$ARCHIVE_DIR"/
-    msg "Copied directory contents -> xml_exports/$(basename "$ARCHIVE_DIR")/"
+    msg "Copied directory contents -> xml_exports/$SOLUTION_NAME/$(basename "$ARCHIVE_DIR")/"
 else
     error "Path is neither a file nor a directory: $EXPORT_PATH"
 fi
@@ -161,7 +185,7 @@ fi
 # Step 4: Run fm-xml-export-exploder
 # ---------------------------------------------------------------------------
 msg "Running fm-xml-export-exploder..."
-msg "  Source: xml_exports/$(basename "$ARCHIVE_DIR")"
+msg "  Source: xml_exports/$SOLUTION_NAME/$(basename "$ARCHIVE_DIR")"
 msg "  Target: agent/xml_parsed/"
 msg "  Output tree: $OUTPUT_TREE"
 if [[ ${#EXPLODER_FLAGS[@]} -gt 0 ]]; then
@@ -182,5 +206,5 @@ DIR_COUNT="$(find "$XML_PARSED_DIR" -type d | wc -l | tr -d ' ')"
 
 echo ""
 msg "Done!"
-msg "  Archived to: xml_exports/$(basename "$ARCHIVE_DIR")/"
+msg "  Archived to: xml_exports/$SOLUTION_NAME/$(basename "$ARCHIVE_DIR")/"
 msg "  Parsed into: agent/xml_parsed/ ($FILE_COUNT files in $DIR_COUNT directories)"
