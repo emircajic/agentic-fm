@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Rename File"/>
+  <Step enable="True" id="0" name="Rename File">
+    <UniversalPathList>$path</UniversalPathList>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: UniversalPathList (source file path), Calculation (new file name as text). -->
+<!-- See https://help.claris.com/en/pro-help/content/rename-file.html -->

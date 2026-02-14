@@ -1,4 +1,13 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Get File Exists"/>
+  <Step enable="True" id="0" name="Get File Exists">
+    <UniversalPathList>$path</UniversalPathList>
+    <Text/>
+    <Field>$variable</Field>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: UniversalPathList (file path to check). -->
+<!-- Target: Field element uses <Field table="" id="0" name=""/> for a field, or <Field>$variable</Field> for a variable. -->
+<!-- Optional: Target (field or variable to store the result). If targeting a variable that does not exist, this step creates it. -->
+<!-- Returns 1 (true) if the file exists, 0 (false) if it does not. -->
+<!-- See https://help.claris.com/en/pro-help/content/get-file-exists.html -->

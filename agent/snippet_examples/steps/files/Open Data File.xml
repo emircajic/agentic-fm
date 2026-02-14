@@ -1,4 +1,17 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Open Data File"/>
+  <Step enable="True" id="0" name="Open Data File">
+    <UniversalPathList>$path</UniversalPathList>
+    <Text/>
+    <Field>$variable</Field>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: UniversalPathList (file path of the data file to open). -->
+<!-- Target: Field element uses <Field table="" id="0" name=""/> for a field, or <Field>$variable</Field> for a variable. -->
+<!-- Optional: Target (field or variable to store the returned file ID). If targeting a variable that does not exist, this step creates it. -->
+<!-- Use the returned file ID with Get Data File Position, Set Data File Position, Read from Data File, Write to Data File, and Close Data File. -->
+<!-- Read-write position starts at 0 after opening. Files stay open until Close Data File or FileMaker quits. -->
+<!-- If the file is already open, Get(LastError) returns 300. Maximum 25 data files open at a time (error 2 if exceeded). -->
+<!-- Use Get(OpenDataFileInfo) to list all currently open file IDs. -->
+<!-- Not supported on WebDirect or Data API. -->
+<!-- See https://help.claris.com/en/pro-help/content/open-data-file.html -->

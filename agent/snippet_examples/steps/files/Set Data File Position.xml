@@ -1,4 +1,14 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Set Data File Position"/>
+  <Step enable="True" id="0" name="Set Data File Position">
+    <Calculation><![CDATA[$fileID]]></Calculation>
+    <position>
+      <Calculation><![CDATA[1024]]></Calculation>
+    </position>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: Calculation (numeric file ID of an open data file), position (new read-write position in bytes from the beginning of the file). -->
+<!-- Position 0 is the beginning of the file. Position equal to file size (Get File Size) is the end. -->
+<!-- A negative value for position returns an error via Get(LastError). -->
+<!-- Not supported on WebDirect or Data API. -->
+<!-- See https://help.claris.com/en/pro-help/content/set-data-file-position.html -->

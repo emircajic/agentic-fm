@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Delete File"/>
+  <Step enable="True" id="0" name="Delete File">
+    <UniversalPathList>$path</UniversalPathList>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: UniversalPathList (file path of the file to delete). -->
+<!-- Not supported on WebDirect or Data API. -->
+<!-- See https://help.claris.com/en/pro-help/content/delete-file.html -->

@@ -2,5 +2,20 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Read from Data File">
     <DataSourceType value="3"/>
+    <Calculation><![CDATA[$fileID]]></Calculation>
+    <Text/>
+    <Field>$variable</Field>
+    <Count>
+      <Calculation><![CDATA[1024]]></Calculation>
+    </Count>
   </Step>
 </fmxmlsnippet>
+<!-- DataSourceType value: "1" (UTF-16 little endian) | "2" (UTF-8) | "3" (Bytes, no specific encoding) -->
+<!-- Required: Calculation (numeric file ID of an open data file). -->
+<!-- Target: Field element uses <Field table="" id="0" name=""/> for a field, or <Field>$variable</Field> for a variable. -->
+<!-- Optional: Count (number of bytes for UTF-8/Bytes, or code units for UTF-16; if omitted, reads entire file), Target. -->
+<!-- For Bytes: if target is a variable or container field, data is stored as container data with the source filename. -->
+<!-- Reads from the current read-write position. Use Set Data File Position to change it. -->
+<!-- Maximum 64 MB per read. For larger files, read in chunks. Best performance at 64 KB or less. -->
+<!-- When reading Unicode from a portion of a file, partial multi-code-unit characters may result; safer to read entire file unless code points per character are known. -->
+<!-- See https://help.claris.com/en/pro-help/content/read-from-data-file.html -->

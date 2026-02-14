@@ -2,5 +2,13 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Create Data File">
     <CreateDirectories state="True"/>
+    <UniversalPathList>$path</UniversalPathList>
   </Step>
 </fmxmlsnippet>
+<!-- CreateDirectories state: "True" creates folders in the path if they don't exist. "False" does not. -->
+<!-- Required: UniversalPathList (file path for the new data file). -->
+<!-- Optional: CreateDirectories. -->
+<!-- Creates an empty, closed data file. Use Open Data File to open it and Write to Data File to add data. -->
+<!-- If the specified file already exists, it is overwritten. Use Get File Exists to check first. -->
+<!-- Not supported on WebDirect or Data API. -->
+<!-- See https://help.claris.com/en/pro-help/content/create-data-file.html -->

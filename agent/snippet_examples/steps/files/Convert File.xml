@@ -3,7 +3,20 @@
   <Step enable="True" id="0" name="Convert File">
     <NoInteract state="False"/>
     <Option state="False"/>
-    <SkipIndexes state="False"/>
-    <VerifySSLCertificates state="False"/>
+    <SkipIndexes state="True"/>
+    <VerifySSLCertificates state="True"/>
+    <DataSourceType value="File"/>
+    <Profile FieldDelimiter="&#9;" IsPredefined="-1" FieldNameRow="-1" DataType="    "/>
+    <UniversalPathList>$path</UniversalPathList>
+    <ImportOptions TargetTableName="Table" CharacterSet="UTF-8" PreserveContainer="False" MatchFieldNames="False" AutoEnter="False" SplitRepetitions="False" method="Add"/>
   </Step>
 </fmxmlsnippet>
+<!-- NoInteract state: "True" suppresses conversion dialogs (uses default settings). "False" shows the dialogs. -->
+<!-- Option state: "True" opens the converted file after conversion. "False" does not. -->
+<!-- SkipIndexes state: "True" skips index creation in the converted file. "False" creates indexes. -->
+<!-- VerifySSLCertificates state: "True" verifies SSL certificate for HTTP/XML data sources. "False" skips verification. -->
+<!-- DataSourceType value: "File" | "XMLData" (HTTP source) -->
+<!-- Optional: UniversalPathList (source file path). If omitted, the Open File dialog is shown. -->
+<!-- FileMaker Pro only; not supported on Go, WebDirect, Server, Cloud, Data API, or CWP. -->
+<!-- Cannot convert the contents of a folder; each file must be converted separately. -->
+<!-- See https://help.claris.com/en/pro-help/content/convert-file.html -->

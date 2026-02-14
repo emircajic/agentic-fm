@@ -4,3 +4,6 @@
     <MultiUser value="True"/>
   </Step>
 </fmxmlsnippet>
+<!-- MultiUser value: "True" (On, allows network access) | "Hidden" (On Hidden, allows access but hides from host file list) | "False" (Off, disallows network access) -->
+<!-- FileMaker Pro only; not supported on Go, WebDirect, Server, Cloud, Data API, or CWP. -->
+<!-- See https://help.claris.com/en/pro-help/content/set-multi-user.html -->

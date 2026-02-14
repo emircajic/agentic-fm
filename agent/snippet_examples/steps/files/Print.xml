@@ -2,6 +2,21 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Print">
     <NoInteract state="True"/>
-    <Restore state="False"/>
+    <Restore state="True"/>
+    <PrintSettings PageNumberingOffset="0" PrintToFile="False" AllPages="True" collated="True" NumCopies="1" PrintType="BrowsedRecords">
+      <PlatformData PlatformType="PrNm"><![CDATA[]]></PlatformData>
+      <PlatformData PlatformType="M_PM"><![CDATA[]]></PlatformData>
+      <PlatformData PlatformType="M_PD"><![CDATA[]]></PlatformData>
+      <PlatformData PlatformType="MMod"><![CDATA[]]></PlatformData>
+    </PrintSettings>
   </Step>
 </fmxmlsnippet>
+<!-- NoInteract state: "True" suppresses the Print dialog. "False" shows the dialog. -->
+<!-- Restore state: "True" uses the print options stored with this step. "False" does not restore stored settings. -->
+<!-- PrintSettings PrintType: "BrowsedRecords" | "CurrentRecord" | "BlankRecord" -->
+<!-- PrintSettings attributes: NumCopies (number), collated ("True"|"False"), AllPages ("True"|"False"), PrintToFile ("True"|"False"), PageNumberingOffset (number). -->
+<!-- Optional: NoInteract, Restore, PrintSettings (stored print options). If no output destination is specified, the user's default printer is used. -->
+<!-- Add a Print Setup step before Print if the job needs special page setup options. -->
+<!-- Each Print step's saved printer applies only to that step. -->
+<!-- In FileMaker Go: With dialog Off still shows the iOS/iPadOS Print dialog (not FileMaker Go Print Setup). Double-sided and copies settings have no effect. -->
+<!-- See https://help.claris.com/en/pro-help/content/print.html -->

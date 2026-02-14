@@ -2,5 +2,15 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Open File">
     <Option state="False"/>
+    <FileReference id="0" name="">
+      <UniversalPathList>file:NameOfFile</UniversalPathList>
+    </FileReference>
   </Step>
 </fmxmlsnippet>
+<!-- Option state: "True" opens the file hidden. "False" opens the file visible. -->
+<!-- Optional: FileReference (FileMaker file or ODBC data source to open). If omitted, the Open File dialog is shown. -->
+<!-- Script steps after Open File execute in the file containing the script, not the opened file. -->
+<!-- For ODBC data sources, this step reestablishes the link to the data source. -->
+<!-- Cannot open a file from an unauthorized file. If a file is opened hidden, its on-open scripts still run. -->
+<!-- FileMaker Pro and Go only; not supported on WebDirect, Server, Cloud, Data API, or CWP. -->
+<!-- See https://help.claris.com/en/pro-help/content/open-file.html -->

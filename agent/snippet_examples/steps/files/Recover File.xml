@@ -2,5 +2,12 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Recover File">
     <NoInteract state="True"/>
+    <UniversalPathList>$path</UniversalPathList>
   </Step>
 </fmxmlsnippet>
+<!-- NoInteract state: "True" suppresses the recovery summary dialog (default recovery only; Advanced Recovery Options not supported). "False" shows the dialog. -->
+<!-- Optional: UniversalPathList (source file to recover). If omitted, the Open Damaged File dialog is shown. -->
+<!-- Creates a new recovered file; the original file is not deleted or replaced. -->
+<!-- Intended for data recovery, not routine file maintenance. Ensure sufficient disk space for the recovered file. -->
+<!-- FileMaker Pro only; not supported on Go, WebDirect, Server, Cloud, Data API, or CWP. -->
+<!-- See https://help.claris.com/en/pro-help/content/recover-file.html -->

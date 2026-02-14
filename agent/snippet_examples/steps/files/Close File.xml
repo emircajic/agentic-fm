@@ -1,4 +1,13 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Close File"/>
+  <Step enable="True" id="0" name="Close File">
+    <FileReference id="0" name="">
+      <UniversalPathList>file:NameOfFile</UniversalPathList>
+    </FileReference>
+  </Step>
 </fmxmlsnippet>
+<!-- Optional: FileReference (FileMaker file or ODBC data source to close). If omitted, stops the running script and closes the current file. -->
+<!-- Can also disconnect from an ODBC data source, allowing re-login with different credentials without closing the FileMaker file. -->
+<!-- Cannot close external data sources that are referenced in the relationships graph. -->
+<!-- FileMaker Pro and Go only; not supported on WebDirect, Server, Cloud, Data API, or CWP. -->
+<!-- See https://help.claris.com/en/pro-help/content/close-file.html -->

@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Save a Copy as XML">
-    <Option state="False"/>
+    <Option state="True"/>
+    <UniversalPathList>$path</UniversalPathList>
+    <Calculation><![CDATA[Get ( WindowName )]]></Calculation>
   </Step>
 </fmxmlsnippet>
+<!-- Option state: "True" includes details for analysis tools (adds DDR_INFO element; can produce significantly larger XML). "False" does not. -->
+<!-- Required: Calculation (window name of the open file), UniversalPathList (destination file path for the XML). -->
+<!-- Requires full access privileges (or Grant Full Access Privileges on the script). -->
+<!-- XML format may change between FileMaker versions; use the same version when comparing files. -->
+<!-- See https://help.claris.com/en/pro-help/content/save-a-copy-as-xml.html -->

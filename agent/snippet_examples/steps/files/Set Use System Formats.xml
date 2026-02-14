@@ -4,3 +4,5 @@
     <Set state="True"/>
   </Step>
 </fmxmlsnippet>
+<!-- Set state: "True" (On) instructs FileMaker Pro to use the current system formats. "False" (Off) instructs FileMaker Pro to use the formats saved with the file. -->
+<!-- See https://help.claris.com/en/pro-help/content/set-use-system-formats.html -->

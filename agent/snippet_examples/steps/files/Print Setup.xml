@@ -2,6 +2,19 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Print Setup">
     <NoInteract state="True"/>
-    <Restore state="False"/>
+    <Restore state="True"/>
+    <PageFormat PageOrientation="Portrait" ScaleFactor="1" PrintableHeight="734" PrintableWidth="576" PaperRight="594" PaperBottom="774" PaperLeft="-18" PaperTop="-18">
+      <PlatformData PlatformType="M_PM"><![CDATA[]]></PlatformData>
+      <PlatformData PlatformType="MMod"><![CDATA[]]></PlatformData>
+      <PlatformData PlatformType="MMod"><![CDATA[]]></PlatformData>
+    </PageFormat>
   </Step>
 </fmxmlsnippet>
+<!-- NoInteract state: "True" suppresses the Print Setup dialog and uses the last specified printer. "False" shows the dialog. -->
+<!-- Restore state: "True" uses the page setup options stored with this step. "False" does not restore stored settings. -->
+<!-- PageFormat PageOrientation: "Portrait" | "Landscape" -->
+<!-- Optional: NoInteract, Restore, PageFormat (stored page setup including orientation, scale, paper size). -->
+<!-- FileMaker Server, Cloud, Go, and WebDirect do not support With dialog: On. -->
+<!-- In Server, Cloud, and WebDirect, this step also sets options for PDFs created with Save Records as PDF. -->
+<!-- Not supported on Data API or CWP. -->
+<!-- See https://help.claris.com/en/pro-help/content/print-setup.html -->

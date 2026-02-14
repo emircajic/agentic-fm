@@ -1,4 +1,14 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-  <Step enable="True" id="0" name="Get Data File Position"/>
+  <Step enable="True" id="0" name="Get Data File Position">
+    <Calculation><![CDATA[$fileID]]></Calculation>
+    <Text/>
+    <Field>$variable</Field>
+  </Step>
 </fmxmlsnippet>
+<!-- Required: Calculation (numeric file ID of an open data file). -->
+<!-- Target: Field element uses <Field table="" id="0" name=""/> for a field, or <Field>$variable</Field> for a variable. -->
+<!-- Optional: Target (field or variable to store the position). If targeting a variable that does not exist, this step creates it. -->
+<!-- When a data file is first opened, the read-write position is 0. After reading or writing, it moves past the data that was read or written. Use Set Data File Position to change it. -->
+<!-- Not supported on WebDirect or Data API. -->
+<!-- See https://help.claris.com/en/pro-help/content/get-data-file-position.html -->

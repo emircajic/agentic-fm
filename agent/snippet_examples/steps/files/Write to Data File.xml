@@ -2,6 +2,16 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="0" name="Write to Data File">
     <AppendLineFeed state="True"/>
-    <DataSourceType value="1"/>
+    <DataSourceType value="2"/>
+    <Calculation><![CDATA[$fileID]]></Calculation>
+    <Text/>
+    <Field>$variable</Field>
   </Step>
 </fmxmlsnippet>
+<!-- DataSourceType value: "1" (UTF-16 little endian) | "2" (UTF-8). Ignored for container data (written as binary). -->
+<!-- AppendLineFeed state: "True" adds a line feed character after the written data. "False" does not. -->
+<!-- Required: Calculation (numeric file ID of an open data file). -->
+<!-- Data source: Field element uses <Field table="" id="0" name=""/> for a field, or <Field>$variable</Field> for a variable. -->
+<!-- Data at the current read-write position is overwritten. Use Set Data File Position to change it. -->
+<!-- Maximum 64 MB per write. For larger data, write in chunks. Best performance at 64 KB or less. -->
+<!-- See https://help.claris.com/en/pro-help/content/write-to-data-file.html -->

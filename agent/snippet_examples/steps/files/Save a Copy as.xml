@@ -5,5 +5,14 @@
     <AutoOpen state="False"/>
     <CreateEmail state="False"/>
     <SaveAsType value="Copy"/>
+    <UniversalPathList>$path</UniversalPathList>
   </Step>
 </fmxmlsnippet>
+<!-- SaveAsType value: "Copy" (complete copy) | "Clone" (no records) | "Compacted" (compacted copy) | "SelfContained" (single file with embedded container content) -->
+<!-- CreateDirectories state: "True" creates folders in the output path if they don't exist. "False" does not. -->
+<!-- AutoOpen state: "True" opens the output file with the default application. "False" does not. -->
+<!-- CreateEmail state: "True" creates a new email with the file as attachment. "False" does not. -->
+<!-- Optional: UniversalPathList (output file path). If omitted, the Save As dialog is shown. -->
+<!-- In FileMaker Pro, not supported when the current file is hosted. -->
+<!-- In FileMaker Go: use SelfContained (embeds container objects); Create folders is not supported. -->
+<!-- See https://help.claris.com/en/pro-help/content/save-a-copy-as.html -->
