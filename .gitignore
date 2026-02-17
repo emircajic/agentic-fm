@@ -3,9 +3,11 @@ xml_exports/
 agent/xml_parsed/
 agent/context/
 agent/CONTEXT.json
+.private/
 
 # Specific files
 Prompt.md
+.cursorignore
 
 # macOS
 .DS_Store
