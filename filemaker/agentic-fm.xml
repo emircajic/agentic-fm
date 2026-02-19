@@ -1,0 +1,586 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Group groupCollapsed="False" includeInMenu="False" id="274" name="agentic-fm">
+    <Script includeInMenu="False" SiriShortcutVisible="False" runFullAccess="False" id="275" name="Get agentic-fm path">
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>PURPOSE: Set a global variable used by other scripts to key/value pairs used by agentic-fm.</Text>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "path" ; "" ; JSONString ]
+)]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$config_example</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[IsEmpty ( $$AGENTIC.FM ) or JSONGetElementType ( $$AGENTIC.FM ; "" ) ≠ JSONObject]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$path</Name>
+      </Step>
+      <Step enable="True" id="181" name="Get Folder Path">
+        <AllowFolderCreation state="False"/>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <DialogTitle>
+          <Calculation><![CDATA["Select the agentic-fm folder"]]></Calculation>
+        </DialogTitle>
+        <DefaultLocation>
+          <Calculation><![CDATA[Get ( DesktopPath )]]></Calculation>
+        </DefaultLocation>
+        <Name>$path</Name>
+      </Step>
+      <Step enable="True" id="69" name="Else">
+        <Restore state="False"/>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[JSONGetElement ( $$AGENTIC.FM ; "path" )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$path</Name>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Validate path</Text>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[$path & "fmparse.sh"]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$fmparse</Name>
+      </Step>
+      <Step enable="True" id="188" name="Get File Exists">
+        <UniversalPathList>$fmparse</UniversalPathList>
+        <Text/>
+        <Field>$exists</Field>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not $exists]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Invalid folder path"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["Please clear the $$AGENTIC.FM global variable and run the script again to select the agentic-fm folder."]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script">
+        <Calculation><![CDATA[False]]></Calculation>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[JSONSetElement ( If ( IsEmpty ( $$AGENTIC.FM ) ; "{}" ; $$AGENTIC.FM ) ;
+	[ "path" ; $path ; JSONString ]
+)]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$$AGENTIC.FM</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="103" name="Exit Script">
+        <Calculation><![CDATA[True]]></Calculation>
+      </Step>
+    </Script>
+    <Script includeInMenu="False" SiriShortcutVisible="False" runFullAccess="False" id="277" name="Explode XML">
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>PURPOSE: Push out solution XML to be parsed for AI use.</Text>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>DEPENDENCY: The MBS plug-in is needed to execute a call to fmparse.sh</Text>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="1" name="Perform Script">
+        <Script id="275" name="Get agentic-fm path"/>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not Get ( ScriptResult )]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Bad install"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["The agentic-fm install was not found. Please check the $$AGENTIC.FM global variable"]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[Get ( DesktopPath ) & Get ( FileName ) & ".xml"]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$output</Name>
+      </Step>
+      <Step enable="True" id="3" name="Save a Copy as XML">
+        <Option state="False"/>
+        <UniversalPathList>$output</UniversalPathList>
+        <Calculation><![CDATA[Get ( WindowName )]]></Calculation>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA["~/Desktop/agentic-fm/fmparse.sh"]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$fmparse</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[$fmparse
+& " -s \"" & Get ( FileName ) & "\""
+& " " & Substitute ( ConvertFromFileMakerPath ( $output ; 1 ) ; [ " " ; "\ " ] )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$command</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS( "Shell.New" )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$shell</Name>
+      </Step>
+      <Step enable="True" id="75" name="Commit Records/Requests">
+        <NoInteract state="True"/>
+        <Option state="False"/>
+        <ESSForceCommit state="False"/>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Add environment and arguments.</Text>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.AddEnvironment" ; $shell ; "FM_XML_EXPLODER_BIN" ; "~/bin/fm-xml-export-exploder" )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$env</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.SetArgumentsList" ; $shell ; 
+	List (
+		"-s";
+		Get ( FileName );
+		MBS ( "Path.FileMakerPathToNativePath"; $output ; 1 );
+	)
+)]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$arg</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Development check values.</Text>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.GetArgumentCount" ; $shell )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$argCount</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.GetArguments" ; $shell )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$argCheck</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.GetEnvironment" ; $shell )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$envCheck</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Execute.</Text>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.Execute" ; $shell ; $fmparse )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$run</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[""]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$error</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[""]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$result</Name>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[MBS("IsError")]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Failed to run"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA[$run]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False">
+            <Calculation><![CDATA["Cancel"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="69" name="Else">
+        <Restore state="False"/>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Loop while app runs and collect messages</Text>
+      </Step>
+      <Step enable="True" id="71" name="Loop">
+        <Restore state="False"/>
+        <FlushType value="Always"/>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.Wait" ; $shell ; 1 )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$wait</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[$error & MBS ( "Shell.ReadErrorText" ; $shell ; "UTF-8" )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$error</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[$result & MBS ( "Shell.ReadOutputText" ; $shell ; "UTF-8" )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$result</Name>
+      </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[MBS( "Shell.IsRunning"; $shell) ≠ 1]]></Calculation>
+      </Step>
+      <Step enable="True" id="73" name="End Loop"/>
+      <Step enable="True" id="75" name="Commit Records/Requests">
+        <NoInteract state="True"/>
+        <Option state="False"/>
+        <ESSForceCommit state="False"/>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[MBS ( "Shell.Release" ; $shell )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$release</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not IsEmpty ( $error )]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Error"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA[$error]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="69" name="Else">
+        <Restore state="False"/>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Finished"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["The XML has been placed into agentic-fm's xml_parsed folder."]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="103" name="Exit Script"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+    </Script>
+    <Script includeInMenu="False" SiriShortcutVisible="False" runFullAccess="False" id="276" name="Push Context">
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>PURPOSE: Push the current layout context to agentic-fm.</Text>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Check for a valid install.</Text>
+      </Step>
+      <Step enable="True" id="1" name="Perform Script">
+        <Script id="275" name="Get agentic-fm path"/>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not Get ( ScriptResult )]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Bad install"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["The agentic-fm install was not found. Please check the $$AGENTIC.FM global variable"]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA["Be as descriptive as possible."]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$task</Name>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Task description"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["Please describe the task you're trying to accomplish with the script."]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False">
+            <Calculation><![CDATA["Cancel"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+        </Buttons>
+        <InputFields>
+          <InputField UsePasswordCharacter="False">
+            <Field>$task</Field>
+            <Label>
+              <Calculation><![CDATA["Task"]]></Calculation>
+            </Label>
+          </InputField>
+          <InputField UsePasswordCharacter="False">
+            <Field table="" id="0" name=""/>
+          </InputField>
+          <InputField UsePasswordCharacter="False">
+            <Field table="" id="0" name=""/>
+          </InputField>
+        </InputFields>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[Context ( $task )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$context</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA["CONTEXT.json"]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$contextFile</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[JSONGetElement ( $$AGENTIC.FM ; "path" ) & "agent/" & $contextFile]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$target</Name>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="188" name="Get File Exists">
+        <UniversalPathList>$target</UniversalPathList>
+        <Text/>
+        <Field>$exists</Field>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[$exists]]></Calculation>
+      </Step>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>Not the best method but this will delete the existing file.</Text>
+      </Step>
+      <Step enable="True" id="132" name="Export Field Contents">
+        <CreateDirectories state="False"/>
+        <AutoOpen state="False"/>
+        <CreateEmail state="False"/>
+        <UniversalPathList>$target</UniversalPathList>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="190" name="Create Data File">
+        <CreateDirectories state="False"/>
+        <UniversalPathList>$target</UniversalPathList>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value>
+          <Calculation><![CDATA[Get ( LastError )]]></Calculation>
+        </Value>
+        <Repetition>
+          <Calculation><![CDATA[1]]></Calculation>
+        </Repetition>
+        <Name>$error</Name>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not $error]]></Calculation>
+      </Step>
+      <Step enable="True" id="191" name="Open Data File">
+        <UniversalPathList>$target</UniversalPathList>
+        <Text/>
+        <Field>$fileID</Field>
+      </Step>
+      <Step enable="True" id="192" name="Write to Data File">
+        <AppendLineFeed state="True"/>
+        <DataSourceType value="2"/>
+        <Calculation><![CDATA[$fileID]]></Calculation>
+        <Text/>
+        <Field>$context</Field>
+      </Step>
+      <Step enable="True" id="196" name="Close Data File">
+        <Calculation><![CDATA[$fileID]]></Calculation>
+      </Step>
+      <Step enable="True" id="87" name="Show Custom Dialog">
+        <Title>
+          <Calculation><![CDATA["Context written"]]></Calculation>
+        </Title>
+        <Message>
+          <Calculation><![CDATA["You may now use AI to modify or create your script."]]></Calculation>
+        </Message>
+        <Buttons>
+          <Button CommitState="True">
+            <Calculation><![CDATA["OK"]]></Calculation>
+          </Button>
+          <Button CommitState="False"/>
+          <Button CommitState="False"/>
+        </Buttons>
+      </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="89" name="# (comment)"/>
+      <Step enable="True" id="103" name="Exit Script"/>
+    </Script>
+  </Group>
+</fmxmlsnippet>

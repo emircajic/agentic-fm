@@ -159,7 +159,7 @@ python agent/scripts/validate_snippet.py [file_or_directory] [options]
 
 ### Context() custom function
 
-A FileMaker custom function (`Context.fmfn`) that generates `CONTEXT.json` at runtime inside the FileMaker solution.
+A FileMaker custom function (`filemaker/Context.fmfn`) that generates `CONTEXT.json` at runtime inside the FileMaker solution.
 
 ```
 Context ( "Create a script to add a new line item to the current invoice" )
@@ -167,6 +167,7 @@ Context ( "Create a script to add a new line item to the current invoice" )
 
 - Requires FileMaker Pro 21.0+.
 - Evaluates on the current layout and auto-discovers relevant TOs, fields, and relationships.
+- Invoked automatically by the **Push Context** companion script (`filemaker/agentic-fm.xml`).
 - See `docs/Context.fmfn.md` for the full technical reference.
 
 ## Adding New Features
@@ -186,7 +187,7 @@ When extending this project, keep the following principles in mind:
 
 5. **snippet_examples are canonical.** Never generate fmxmlsnippet output without first reading the corresponding snippet_examples file. If you add support for a new script step type, add its template to `agent/snippet_examples/` first. All snippet files must follow the conventions in `agent/snippet_examples/steps/CONVENTIONS.md`.
 
-6. **CONTEXT.json is generated, not authored.** Changes to the CONTEXT.json schema require updating the `Context()` custom function in FileMaker, not just the example file. The `agent/CONTEXT.example.json` file and `docs/Context.fmfn.md` should be updated to reflect any schema changes.
+6. **CONTEXT.json is generated, not authored.** Changes to the CONTEXT.json schema require updating the `Context()` custom function in FileMaker (`filemaker/Context.fmfn`), not just the example file. The `agent/CONTEXT.example.json` file and `docs/Context.fmfn.md` should be updated to reflect any schema changes.
 
 7. **xml_parsed is read-only.** Never modify files in `agent/xml_parsed/`. It is a reference copy of the exploded FileMaker XML and is regenerated on each `fmparse.sh` run.
 
