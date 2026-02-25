@@ -1,0 +1,40 @@
+name: Discord Notifications
+
+on:
+  push:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, reopened]
+  fork:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          EVENT="${{ github.event_name }}"
+
+          if [ "$EVENT" = "push" ]; then
+            CONTENT="🚀 **Push** to ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nBy: ${{ github.actor }}\nMessage: ${{ github.event.head_commit.message }}"
+          fi
+
+          if [ "$EVENT" = "issues" ]; then
+            CONTENT="🐛 **New Issue** in ${{ github.repository }}\nTitle: ${{ github.event.issue.title }}\nBy: ${{ github.actor }}\n${{ github.event.issue.html_url }}"
+          fi
+
+          if [ "$EVENT" = "pull_request" ]; then
+            CONTENT="🔁 **Pull Request Opened** in ${{ github.repository }}\nTitle: ${{ github.event.pull_request.title }}\nBy: ${{ github.actor }}\n${{ github.event.pull_request.html_url }}"
+          fi
+
+          if [ "$EVENT" = "fork" ]; then
+            CONTENT="🍴 **Repository Forked**\n${{ github.actor }} forked ${{ github.repository }}"
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$CONTENT\"}" \
+               $WEBHOOK
