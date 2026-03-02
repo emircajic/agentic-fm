@@ -116,7 +116,7 @@ Run the **Get agentic-fm path** script once (from the Scripts menu or Script Wor
 
 Run the **Explode XML** script to perform the first Save as XML export and populate `agent/xml_parsed/`. Re-run it any time the solution schema or scripts change.
 
-> **Current limitation:** The `fmparse.sh` path inside the **Explode XML** script is hardcoded to `~/Desktop/agentic-fm/fmparse.sh`. The repo must currently be located in your Desktop folder for this script to work. If your repo is elsewhere, open the script and update the `Set Variable [$fmparse]` step to reflect the correct path. This limitation will be resolved in a future update.
+> The script derives the `fmparse.sh` path from the `$$AGENTIC.FM` global variable set by **Get agentic-fm path**, so the repo can be located anywhere on disk.
 
 ### 5. Push Context before each AI session
 

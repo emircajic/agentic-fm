@@ -3,7 +3,9 @@ xml_exports/
 agent/xml_parsed/
 agent/context/
 agent/CONTEXT.json
+agent/sandbox/
 .private/
+.venv/
 
 # Generated Claris documentation (copyright Claris International Inc.)
 # Run agent/docs/filemaker/fetch_docs.py to generate locally.
