@@ -58,6 +58,11 @@ Parse a FileMaker XML export and archive it under a solution-specific, dated
 folder in xml_exports/. The export is then exploded into agent/xml_parsed/
 using fm-xml-export-exploder.
 
+Supports the FileMaker data separation model: each solution file (e.g.
+UI.fmp12, Data.fmp12) is parsed independently. Only the subdirectories
+matching the given solution name are cleared — other solutions' data in
+xml_parsed/ is preserved.
+
 Exports are archived as:  xml_exports/<solution-name>/YYYY-MM-DD/
 
 Arguments:
@@ -210,6 +215,11 @@ fi
 
 # ---------------------------------------------------------------------------
 # Step 3: Clear xml_parsed for this solution only
+# ---------------------------------------------------------------------------
+# Supports multi-file solutions (data separation model). Each domain
+# subdirectory (scripts/, tables/, layouts/, etc.) contains a subfolder per
+# solution name. Only the current solution's subfolders are removed so that
+# other solution files (e.g. Data.fmp12 alongside UI.fmp12) are preserved.
 # ---------------------------------------------------------------------------
 if [[ -d "$XML_PARSED_DIR" ]]; then
     # Remove only subdirectories named after this solution, preserving other solutions

@@ -8,7 +8,8 @@ This project is designed to create FileMaker scripts in the clipboard supported 
 - _xml_parsed_ is the xml output from the FileMaker solution.
   - _scripts_ subfolder contains the xml details of scripts from the solution. NOTE: This xml is not the same as the fmxmlsnippet format. It has been output from the Save As XML option in FileMaker. Use `agent/scripts/fm_xml_to_snippet.py` to convert a file from this folder into fmxmlsnippet format when needed (e.g. after script-lookup confirmation when no fmxmlsnippet already exists in `agent/scripts/` or `agent/sandbox/`).
   - _scripts_sanitized_ subfolder is the human-readable text version of a script. Logic and flow can be referenced here.
-- _snippet_examples_ is a reference folder where boilerplate xml can be referenced when needed.
+- _catalogs/_ contains the step catalog (`step-catalog-en.json`) — a structured index of all FileMaker script steps with parameter definitions, types, enums, and HR signatures. This is the primary reference for step XML structure.
+- _snippet_examples_ is a reference folder where boilerplate xml can be referenced when needed. It remains the authoritative source for complex steps and behavioral notes not captured in the catalog.
 
 # Line number referencing
 
@@ -16,10 +17,34 @@ A FileMaker developer will **ALWAYS** reference line numbers based on the human-
 
 # Output format
 
-- Any code output, unless otherwise instructed, should be as XML in the fmxmlsnippet format.
-- Output should contain ONLY script steps within the `<fmxmlsnippet type="FMObjectList">` wrapper - DO NOT wrap in `<Script>` tags.
-- Examples of fmxmlsnippets can be referenced in the snippet_examples folder.
-- Use the simplified fmxmlsnippet syntax for steps, NOT the verbose XML format found in xml_parsed/scripts.
+The developer always works in **human-readable (HR) script format**. The output format depends on the interaction context:
+
+## CLI / IDE (default)
+
+When the developer is working through a CLI (e.g. Claude Code) or an IDE (e.g. Cursor, VS Code), the agent's final deliverable is **fmxmlsnippet XML** written to `agent/sandbox/`. This is the format that gets loaded onto the clipboard and pasted into FileMaker's Script Workspace.
+
+- Output should contain ONLY script steps within the `<fmxmlsnippet type="FMObjectList">` wrapper — DO NOT wrap in `<Script>` tags.
+- Use the simplified fmxmlsnippet syntax from the step catalog or snippet_examples, NOT the verbose XML format found in xml_parsed/scripts.
+- The `script-preview` skill generates an HR preview before XML generation — use it when the developer wants to review the script logic before committing to fmxmlsnippet output.
+
+## Webviewer
+
+When the developer is working inside the webviewer's Monaco editor, the agent outputs **HR format directly**. The webviewer's client-side converter (`src/converter/hr-to-xml.ts`) handles the HR→fmxmlsnippet translation automatically — the agent never needs to produce XML in this context.
+
+The webviewer's AI chat system prompt (in `webviewer/src/ai/prompt/system-prompt.ts`) configures this behavior for the embedded AI providers. The CLAUDE.md instructions here apply to CLI/IDE agents; the webviewer has its own prompt pipeline.
+
+## Prompt markers
+
+Developers can embed agent instructions directly inside HR scripts using a configurable keyword prefix in FileMaker Comment steps. The default marker is `prompt`:
+
+```
+# prompt: Add error handling for the Set Field step below
+Set Field [ Invoices::Status ; "Sent" ]
+```
+
+When encountering `# prompt:` lines in an HR script, treat the text after the marker as task instructions for that point in the script. Generate the appropriate script steps to fulfill each marked instruction, replacing the prompt comment with the resulting steps.
+
+The marker keyword is configurable in the webviewer settings (`AI_PROMPT_MARKER` in `.env.local`). In a CLI/IDE context, treat any `# prompt:` comment the same way — as an inline instruction to the agent.
 
 # Clipboard
 
@@ -45,8 +70,10 @@ For full technical details including clipboard class codes and low-level encodin
 
 - The id attribute of most tags can be 0. When pasting into FileMaker it will be auto-assigned.
 - Certain script steps require a matching secondary step to be valid.
-  - Examples are If[], End If and Open Transaction, Commit Transaction and others.
+  - Examples are If/End If, Loop/End Loop, Open Transaction/Commit Transaction, and others.
+  - The catalog's `blockPair` field identifies these relationships and each step's role (`open`, `middle`, `close`).
   - The snippet examples will include an XML note for the matching step and the XML note should not be included in any output code.
+- The `selfClosing` flag in the catalog indicates whether a step uses `<Step ... />` (no child elements) or `<Step ...>...</Step>` (has parameter child elements).
 - Any xml comments within the snippet_examples should be referenced only and not included in code output.
 
 # Context files
@@ -109,9 +136,10 @@ Before writing a script, scan `agent/docs/knowledge/MANIFEST.md` for keyword mat
 **MANDATORY: Before writing ANY script step, you MUST:**
 
 1. Read `agent/CONTEXT.json` for the task description and all reference IDs
-2. Use the Read tool to read the corresponding snippet_examples file for that step type
-3. Copy the EXACT XML structure from the snippet_examples file while also noting any relevant comments below it.
-4. Substitute the specific IDs/names/values from CONTEXT.json
+2. Grep the step catalog for each step type used: `grep -A 60 '"name": "Step Name"' agent/catalogs/step-catalog-en.json`
+3. For steps with `"status": "complete"` and standard param types — construct the XML directly from the catalog's `params` array, `selfClosing` flag, and `id`
+4. For complex steps or when the catalog entry is insufficient — read the corresponding snippet_examples file (path is in the catalog's `snippetFile` field) and note any behavioral comments
+5. Substitute the specific IDs/names/values from CONTEXT.json
 
 **MANDATORY: After writing or updating a script within agent/sandbox/, you MUST:**
 
@@ -119,54 +147,126 @@ Before writing a script, scan `agent/docs/knowledge/MANIFEST.md` for keyword mat
 6. Fix any errors reported by the validator before presenting the script to the user
 7. Once validation passes, run `python agent/scripts/clipboard.py write agent/sandbox/<script_name>` to load the script onto the clipboard, ready to paste directly into FileMaker
 
+# Step Catalog
+
+`agent/catalogs/step-catalog-en.json` is the canonical structured reference for all FileMaker script steps. It is the **primary source for step XML structure** — use it before reading snippet_examples files.
+
+**Never read the full catalog file** (~200KB+). Always grep for individual entries:
+
+```bash
+grep -A 60 '"name": "Step Name"' agent/catalogs/step-catalog-en.json
+```
+
+Adjust `-A` line count for longer entries. To find incomplete work: `grep '"status": "auto\|unfinished"' agent/catalogs/step-catalog-en.json`.
+
+## What each catalog entry provides
+
+| Field | Purpose |
+| --- | --- |
+| `id` | The FileMaker internal step ID — use in `<Step id="X">` |
+| `selfClosing` | `true` → `<Step ... />`, `false` → `<Step ...>...</Step>` |
+| `params[]` | Full parameter spec: `xmlElement`, `type`, `hrLabel`, `wrapperElement`, `parentElement`, `xmlAttr`, `required`, `defaultValue`, `enumValues` |
+| `hrSignature` | Human-readable parameter format for HR output |
+| `blockPair` | Matching step partners and role (`open`/`middle`/`close`) — e.g., If→End If, Loop→End Loop |
+| `snippetFile` | Path to the corresponding snippet_examples file (fallback reference) |
+| `status` | `"complete"` = fully reviewed, `"auto"` = unreviewed, `"unfinished"` = partial |
+
+## Catalog param types → XML emission
+
+The `type` field on each param determines how to emit the XML element:
+
+- **`boolean`**: `<Element xmlAttr="True|False"/>` — check `enumValues` for HR labels (On/Off, Yes/No), `invertedHr` for inverted mapping
+- **`enum`**: `<Element xmlAttr="value">` or `<Element>value</Element>` — use `enumValues` for valid options
+- **`calculation`**: `<Calculation><![CDATA[expression]]></Calculation>`
+- **`namedCalc`**: Wrapped: `<WrapperElement><Calculation><![CDATA[expression]]></Calculation></WrapperElement>`
+- **`text`**: `<Element>literal text</Element>`
+- **`field`**: `<Field table="TO" id="N" name="FieldName"/>` — resolve from CONTEXT.json
+- **`script`**: `<Script id="N" name="ScriptName"/>` — resolve from CONTEXT.json
+- **`layout`**: Layout reference — resolve from CONTEXT.json
+- **`findRequests`**: See `agent/catalogs/find-requests.md`
+- **`flagElement`**: Empty element presence = on, absence = off (e.g., `<Overwrite/>`)
+
+## When to use catalog vs snippet_examples
+
+**Use catalog** (grep entry, construct XML from params) when:
+- Status is `"complete"`
+- The step uses standard param types listed above
+- You are confident in the XML emission pattern
+
+**Fall back to snippet_examples** (read the file referenced in `snippetFile`) when:
+- Status is `"auto"` or `"unfinished"`
+- The step has complex nesting (e.g., `parentElement` chains, `findRequests`)
+- The step has behavioral nuances you need to verify (snippet XML comments contain constraints and gotchas)
+- You are unsure about the correct XML structure
+
+## HR format generation
+
+When generating scripts in HR format:
+- Look up the step in the catalog by name
+- Use the `hrSignature` field for the correct parameter format
+- If `hrSignature` is null, fall back to reading the step's snippet_examples XML file
+- The catalog also contains parameter types and enum values for validation
+
 # Lookup methodology
 
-When creating scripts that reference FileMaker objects (layouts, fields, table occurrences, etc.), follow this process:
+When creating scripts, two kinds of lookup are needed: **solution-specific references** (which layout, which field, which script) and **step structure** (what XML elements and attributes a step type requires). Follow this process:
 
-**Step 1: Read CONTEXT.json**
+**Step 1: Read CONTEXT.json** — solution-specific IDs and names
 
 All IDs and names for the current task should already be here. CONTEXT.json is the single most important file to read before generating any script.
 
-**Step 2: If not in CONTEXT.json, search the index files**
+**Step 2: Grep the step catalog** — step XML structure
 
-Search the appropriate `agent/context/*.index` file. This is a single-file grep, not a multi-directory search.
+For each step type used, grep the catalog to get the full parameter specification:
 
-**Step 3: Only fall back to xml_parsed as a last resort**
+```bash
+grep -A 60 '"name": "Set Field"' agent/catalogs/step-catalog-en.json
+```
 
-If the information is not in CONTEXT.json or the index files, use grep against xml_parsed. Never read entire files from xml_parsed unless absolutely necessary.
+The catalog entry tells you the step `id`, whether it's `selfClosing`, every parameter's XML element name and type, required/optional status, default values, and valid enum options. For steps with `"status": "complete"`, this is sufficient to construct the XML.
 
-**Step 4: Read snippet_examples for the step type**
+**Step 3: Read snippet_examples** — complex steps or behavioral notes
 
-- snippet_examples contains the correct fmxmlsnippet syntax for script steps
-- **ALWAYS use the Read tool to read the snippet_examples file for each step type**
-- Use these as templates for the EXACT structure and attributes of each step
-- **DO NOT guess, assume, or infer the XML structure - read the file!**
+Fall back to reading the snippet_examples file (path in the catalog's `snippetFile` field) when:
+- The catalog entry has `"status": "auto"` or `"unfinished"`
+- The step has complex nesting (`parentElement` chains, `findRequests` type)
+- You need behavioral context (constraints, gotchas documented in snippet XML comments)
+
+Prefix the path with `agent/snippet_examples/steps/`: e.g., `snippetFile: "control/Set Variable.xml"` → `agent/snippet_examples/steps/control/Set Variable.xml`.
+
+**Step 4: Search index files** — missing references
+
+If a layout, field, script, or other object is not in CONTEXT.json, search the appropriate `agent/context/*.index` file. This is a single-file grep, not a multi-directory search.
+
+**Step 5: xml_parsed as last resort**
+
+Only fall back to grepping `agent/xml_parsed/` if the needed information is not in CONTEXT.json or the index files. Never read entire files from xml_parsed unless absolutely necessary.
 
 **Required workflow:**
 
 1. **READ CONTEXT.json** for the task and reference IDs
-2. **READ the appropriate step template file from snippet_examples** - do NOT guess or infer the structure
-3. If a reference is missing from CONTEXT.json, search `agent/context/*.index` files
-4. Combine the exact structure (from snippet_examples file) with the correct IDs/names (from CONTEXT.json or index files)
-
-**CRITICAL: You MUST read the actual snippet_examples file for EVERY step type used. Do NOT assume or remember the structure from previous conversations.**
+2. **GREP the step catalog** for each step type — construct XML from the catalog's param metadata when status is "complete"
+3. **READ snippet_examples** only when the catalog entry is insufficient (complex steps, "auto"/"unfinished" status, behavioral notes needed)
+4. If a reference is missing from CONTEXT.json, search `agent/context/*.index` files
+5. Combine the step structure (from catalog or snippet_examples) with the correct IDs/names (from CONTEXT.json or index files)
 
 **Examples:**
 
-- **Field reference**:
-  - IDs/names from: `CONTEXT.json` tables -> fields section
-  - Structure from: `snippet_examples/steps/fields/Set Field.xml`
+- **Set Field** (standard step):
+  - Grep catalog: `grep -A 60 '"name": "Set Field"' agent/catalogs/step-catalog-en.json` → params tell you the XML elements, types, and wrapper structure
+  - Field IDs/names from: `CONTEXT.json` tables → fields section
   - If field not in CONTEXT.json: `grep "FieldName" agent/context/fields.index`
-- **Layout reference**:
-  - IDs/names from: `CONTEXT.json` layouts section
-  - Structure from: `snippet_examples/steps/navigation/Go to Layout.xml`
-  - If layout not in CONTEXT.json: `grep "LayoutName" agent/context/layouts.index`
-- **Script reference**:
-  - IDs/names from: `CONTEXT.json` scripts section
-  - Structure from: `snippet_examples/steps/control/Perform Script.xml`
+- **Go to Layout** (standard step):
+  - Grep catalog: `grep -A 60 '"name": "Go to Layout"' agent/catalogs/step-catalog-en.json`
+  - Layout IDs/names from: `CONTEXT.json` layouts section
+- **Export Records** (complex step with many options):
+  - Grep catalog for the entry, then **also read** `agent/snippet_examples/steps/records/Export Records.xml` for the full XML template and behavioral comments
+- **Perform Script** (standard step):
+  - Grep catalog: `grep -A 60 '"name": "Perform Script"' agent/catalogs/step-catalog-en.json`
+  - Script IDs/names from: `CONTEXT.json` scripts section
   - If script not in CONTEXT.json: `grep "ScriptName" agent/context/scripts.index`
 
-**Key principle**: CONTEXT.json provides scoped reference data; snippet_examples provides output structure; index files are the secondary lookup; xml_parsed is the last resort.
+**Key principle**: CONTEXT.json provides scoped reference data; the step catalog provides step XML structure; snippet_examples provides complex step templates and behavioral notes; index files are the secondary reference lookup; xml_parsed is the last resort.
 
 # Custom functions
 
@@ -218,6 +318,8 @@ Use the `library-lookup` skill to access the full manifest with keywords and fil
 The context system is designed to minimize token consumption. Follow these rules:
 
 - **CONTEXT.json first**: It contains exactly what you need for the current task. Read it once at the start.
+- **Step catalog over snippet_examples**: A single grep of the catalog (~60 lines) provides the full parameter specification for a step. Only read snippet_examples when the catalog entry has `"auto"`/`"unfinished"` status or the step requires behavioral notes from the XML comments. This saves a file read per step for the vast majority of steps.
+- **Never read step-catalog-en.json in full** (~200KB+). Always grep for individual entries: `grep -A 60 '"name": "Step Name"' agent/catalogs/step-catalog-en.json`.
 - **Index files are small**: Each index file covers the entire solution in a compact pipe-delimited format. A single grep is far cheaper than searching hundreds of XML files.
 - **Never read full xml_parsed files** when CONTEXT.json or index data has the answer.
 - **Prefer scripts_sanitized** for understanding script logic. These are ~90% smaller than the raw XML in scripts/.
@@ -226,10 +328,11 @@ The context system is designed to minimize token consumption. Follow these rules
 # Common mistakes to avoid
 
 - Do NOT wrap output in `<Script>` tags - output steps only
-- Do NOT copy verbose structures from xml_parsed/scripts - use snippet_examples
+- Do NOT copy verbose structures from xml_parsed/scripts - use the step catalog or snippet_examples
 - Do NOT read full files when CONTEXT.json or index files have the needed information
+- Do NOT read the full step-catalog-en.json — always grep for individual entries
 - Do NOT add features not explicitly requested by the user
-- Do NOT guess or assume the XML structure - ALWAYS read the snippet_examples file first
+- Do NOT guess or assume the XML structure - grep the step catalog first, then read snippet_examples if needed
 - Do NOT use `<Calculation><![CDATA["text"]]></Calculation>` for comments - use `<Text>text</Text>` (check the snippet first!)
 
 # Constraints
@@ -239,3 +342,4 @@ The context system is designed to minimize token consumption. Follow these rules
 - XML within the _snippet_examples_ should NEVER be modified. It is rarely updated and only by the user. Always prompt the user if you believe changes should be made.
 - Index files in _context/_ are NEVER manually edited. They are regenerated by `fmcontext.sh`.
 - _CONTEXT.json_ is generated by FileMaker. It should not be manually created or modified by AI.
+- _step-catalog-en.json_ is maintained via the process in `agent/catalogs/UPDATING_CATALOGS.md`. Do not modify it without following that process.

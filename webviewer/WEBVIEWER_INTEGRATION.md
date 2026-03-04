@@ -172,7 +172,7 @@ fmxmlsnippet XML
 
 ## Step Catalog
 
-`agent/catalogs/step-catalog-en.json` is the canonical index for all 206 FileMaker script steps. The file was bootstrapped by `generate-step-catalog.ts` (now archived as `.old`) which seeded entries from `snippet_examples/` XML files — that generator is not part of the repo and should never be run again.
+`agent/catalogs/step-catalog-en.json` is the canonical index for all FileMaker script steps. The file was bootstrapped by `generate-step-catalog.ts` (now archived as `.old`) which seeded entries from `snippet_examples/` XML files — that generator is not part of the repo and should never be run again.
 
 **The catalog is maintained manually.** All additions and modifications follow the process in `agent/catalogs/UPDATING_CATALOGS.md`. Key points from that process:
 
@@ -294,7 +294,7 @@ Any endpoint that reads context or xml_parsed data uses `mainAgentDir()`. Endpoi
 
 `agent/catalogs/` contains the pre-compiled step catalog. The webviewer is the primary consumer; CLI agents also reference it for `hrSignature` lookups and parameter validation when composing scripts.
 
-- `step-catalog-en.json` — 206 entries, one per FileMaker script step
+- `step-catalog-en.json` — one entry per FileMaker script step
 - Originally generated from `snippet_examples/` + hardcoded step IDs and HR signatures
 
 ---

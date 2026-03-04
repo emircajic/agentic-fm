@@ -60,7 +60,7 @@ const base = import.meta.env.BASE_URL;
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">3</span>
           <div>
             <p class="font-medium text-zinc-900 dark:text-white">AI generates code</p>
-            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">AI reads <code>CONTEXT.json</code> + <code>snippet_examples</code> to generate fmxmlsnippet output in <code>agent/sandbox/</code>.</p>
+            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">AI reads <code>CONTEXT.json</code> + step catalog (+ <code>snippet_examples</code> for complex steps) to generate fmxmlsnippet output in <code>agent/sandbox/</code>.</p>
           </div>
         </div>
         <div class="flex gap-4">
@@ -84,6 +84,14 @@ const base = import.meta.env.BASE_URL;
             <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Paste the fmxmlsnippet directly at the desired insertion point in the Script Workspace.</p>
           </div>
         </div>
+      </div>
+
+      <div class="mt-6 rounded-lg border border-primary-200 bg-primary-50/50 p-4 dark:border-primary-800/50 dark:bg-primary-900/10">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">
+          <strong class="text-zinc-900 dark:text-white">Alternative:</strong> The <a href={`${base}webviewer/`}>Webviewer</a> provides
+          a visual alternative to steps 3-5. Write scripts in human-readable format with Monaco autocomplete and live XML preview —
+          the client-side converter handles the HR-to-XML translation automatically.
+        </p>
       </div>
     </div>
 
@@ -166,7 +174,7 @@ const base = import.meta.env.BASE_URL;
       <div class="mt-6 space-y-8">
         <div>
           <h3>fmparse.sh</h3>
-          <p>Archives a FileMaker XML export and parses it using <a href="https://github.com/bc-m/fm-xml-export-exploder" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline decoration-primary-600/30 hover:decoration-primary-600 dark:text-primary-400">fm-xml-export-exploder</a>.</p>
+          <p>Archives a FileMaker XML export and parses it using <a href="https://github.com/bc-m/fm-xml-export-exploder" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline decoration-primary-600/30 hover:decoration-primary-600 dark:text-primary-400">fm-xml-export-exploder</a>. Supports the data separation model — each solution file is parsed independently, preserving other solutions' data in <code>xml_parsed/</code>.</p>
           <div class="mt-3 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-950 dark:border-zinc-700">
             <pre class="overflow-x-auto p-4 text-sm text-zinc-300"><code>./fmparse.sh -s "Solution Name" /path/to/export.xml [options]</code></pre>
           </div>
@@ -201,6 +209,23 @@ python agent/scripts/clipboard.py read agent/sandbox/output.xml</code></pre>
           </div>
         </div>
       </div>
+    </div>
+
+    <hr class="my-12 border-zinc-200 dark:border-zinc-800" />
+
+    <div class="prose-section">
+      <h2 id="step-catalog">Step Catalog</h2>
+      <p>
+        <code>agent/catalogs/step-catalog-en.json</code> is a structured JSON reference for all FileMaker script steps.
+        It is the primary source for step XML structure — agents grep it to get step IDs, parameter definitions,
+        types, enums, HR signatures, and Monaco snippets. Fall back to <code>snippet_examples/</code> only for complex
+        or incomplete entries.
+      </p>
+      <p>
+        The catalog is consumed by CLI/IDE agents (for XML construction), the webviewer (for HR-to-XML conversion
+        and Monaco autocomplete), and <code>validate_snippet.py</code> (for step name validation).
+        See <a href={`${base}docs/#tools`}>ARCHITECTURE.md</a> for the full field reference.
+      </p>
     </div>
 
     <hr class="my-12 border-zinc-200 dark:border-zinc-800" />
@@ -279,6 +304,20 @@ python agent/scripts/clipboard.py read agent/sandbox/output.xml</code></pre>
         This is one of the most impactful areas for community contributions. If you know of a
         FileMaker behavior that AI commonly gets wrong, see the
         <a href={`${base}contributing`}>Contributing</a> page.
+      </p>
+    </div>
+
+    <hr class="my-12 border-zinc-200 dark:border-zinc-800" />
+
+    <div class="prose-section">
+      <h2 id="webviewer">Webviewer</h2>
+      <p>
+        The <code>webviewer/</code> directory contains a browser-based visual script editor with a three-panel layout:
+        Monaco editor, live XML preview, and AI chat. It provides an alternative to the CLI/IDE workflow where you
+        write scripts in human-readable format and the client-side converter handles HR-to-XML translation.
+      </p>
+      <p>
+        See the <a href={`${base}webviewer/`}>Webviewer page</a> for setup instructions, embedding details, and AI provider configuration.
       </p>
     </div>
 
