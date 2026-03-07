@@ -119,7 +119,7 @@ All endpoints are served by the Vite dev middleware in `server/api.ts`. The `age
 | GET    | `/api/settings`                         | Returns user settings                                                             |
 | POST   | `/api/settings`                         | Updates user settings                                                             |
 | POST   | `/api/chat`                             | Streams AI chat (SSE) via `ai-proxy.ts`                                           |
-| GET    | `/api/index/:name`                      | Parses and returns `agent/context/<name>.index` as JSON rows                      |
+| GET    | `/api/index/:name?solution=<sol>`       | Parses and returns `agent/context/<sol>/<name>.index` as JSON rows (auto-detects solution when only one exists) |
 | GET    | `/api/step-catalog`                     | Returns `agent/catalogs/step-catalog-en.json`                                     |
 | GET    | `/api/steps`                            | Lists all snippet XML files from `snippet_examples/steps/`                        |
 | GET    | `/api/snippet/:category/:step`          | Returns XML content of a specific snippet file                                    |
@@ -380,6 +380,8 @@ If a feature for the webviewer is being worked on within a git worktree, gitigno
 4. Returns `<main-repo>/agent/`
 
 Any endpoint that reads context or xml_parsed data uses `mainAgentDir()`. Endpoints that write (sandbox, autosave) use the local `agentDir()` so worktree writes don't bleed into the main repo.
+
+Index files are organized under `agent/context/{solution}/` subfolders. The `resolveContextDir()` helper in `server/api.ts` resolves the correct subfolder — auto-detecting when only one solution exists, or using the `?solution=` query parameter in multi-solution setups.
 
 ---
 

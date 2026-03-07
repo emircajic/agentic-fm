@@ -7559,7 +7559,7 @@
       }
     ],
     "hrSignature": "[ $name ; value ]",
-    "monacoSnippet": "Set Variable [ \\$$${1:varName} ; ${2:value} ]",
+    "monacoSnippet": "Set Variable [ \\$${1:varName} ; ${2:value} ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-variable.html"

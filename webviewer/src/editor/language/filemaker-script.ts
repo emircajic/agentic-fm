@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor';
 import { monarchLanguage, languageConfiguration } from './monarch';
 import { buildMonacoTheme, loadSavedTheme, loadSavedPresetId } from './themes';
-import { createCompletionProvider, createFunctionCompletionProvider } from './completion';
+import { createCompletionProvider, createFunctionCompletionProvider, createVariableCompletionProvider } from './completion';
 import { createDiagnosticsProvider } from './diagnostics';
 import { loadEditorMode } from './themes';
 import type { StepCatalogEntry } from '@/converter/catalog-types';
@@ -9,9 +9,7 @@ import type { StepCatalogEntry } from '@/converter/catalog-types';
 const LANGUAGE_ID = 'filemaker-script';
 let registered = false;
 
-export function registerFileMakerLanguage(
-  catalog?: StepCatalogEntry[],
-): void {
+export function registerFileMakerLanguage(): void {
   if (registered) return;
   registered = true;
 
@@ -22,18 +20,25 @@ export function registerFileMakerLanguage(
   const savedColors = loadSavedTheme();
   const savedPreset = loadSavedPresetId();
   monaco.editor.defineTheme('filemaker-dark', buildMonacoTheme(savedColors, savedPreset === 'solarized_light'));
+}
 
-  if (catalog && catalog.length > 0) {
-    const mode = loadEditorMode();
-    monaco.languages.registerCompletionItemProvider(
-      LANGUAGE_ID,
-      createCompletionProvider(catalog, mode),
-    );
-    monaco.languages.registerCompletionItemProvider(
-      LANGUAGE_ID,
-      createFunctionCompletionProvider(mode),
-    );
-  }
+export function registerCompletionProviders(
+  catalog: StepCatalogEntry[],
+): monaco.IDisposable {
+  const mode = loadEditorMode();
+  const d1 = monaco.languages.registerCompletionItemProvider(
+    LANGUAGE_ID,
+    createCompletionProvider(catalog, mode),
+  );
+  const d2 = monaco.languages.registerCompletionItemProvider(
+    LANGUAGE_ID,
+    createFunctionCompletionProvider(mode),
+  );
+  const d3 = monaco.languages.registerCompletionItemProvider(
+    LANGUAGE_ID,
+    createVariableCompletionProvider(mode),
+  );
+  return { dispose: () => { d1.dispose(); d2.dispose(); d3.dispose(); } };
 }
 
 export function attachDiagnostics(

@@ -9,8 +9,9 @@ export async function fetchContext(): Promise<FMContext> {
   return res.json();
 }
 
-export async function fetchIndex(name: string): Promise<string[][]> {
-  const res = await fetch(`${BASE}/api/index/${encodeURIComponent(name)}`);
+export async function fetchIndex(name: string, solution?: string): Promise<string[][]> {
+  const qs = solution ? `?solution=${encodeURIComponent(solution)}` : '';
+  const res = await fetch(`${BASE}/api/index/${encodeURIComponent(name)}${qs}`);
   if (!res.ok) throw new Error(`Failed to fetch index: ${name}`);
   return res.json();
 }

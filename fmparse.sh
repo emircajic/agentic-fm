@@ -262,5 +262,5 @@ msg "  Parsed into: agent/xml_parsed/ ($FILE_COUNT files in $DIR_COUNT directori
 # Step 6: Regenerate context index files
 # ---------------------------------------------------------------------------
 echo ""
-msg "Running fmcontext.sh to regenerate agent/context/..."
-"$SCRIPT_DIR/fmcontext.sh"
+msg "Running fmcontext.sh to regenerate agent/context/$SOLUTION_NAME/..."
+"$SCRIPT_DIR/fmcontext.sh" -s "$SOLUTION_NAME"

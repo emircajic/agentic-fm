@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'preact/hooks';
 import * as monaco from 'monaco-editor';
-import { registerFileMakerLanguage, attachDiagnostics, LANGUAGE_ID } from './language/filemaker-script';
+import { registerFileMakerLanguage, registerCompletionProviders, attachDiagnostics, LANGUAGE_ID } from './language/filemaker-script';
 import { editorConfig } from './editor.config';
 import { fetchStepCatalog } from '@/api/client';
 import type { StepCatalogEntry } from '@/converter/catalog-types';
@@ -25,7 +25,13 @@ interface EditorPanelProps {
 export function EditorPanel({ value, onChange, context }: EditorPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const completionDisposable = useRef<monaco.IDisposable | null>(null);
   const [catalog, setCatalog] = useState<StepCatalogEntry[]>([]);
+
+  // Register language once (no catalog dependency)
+  useEffect(() => {
+    registerFileMakerLanguage();
+  }, []);
 
   // Fetch step catalog for autocomplete and diagnostics
   useEffect(() => {
@@ -36,9 +42,15 @@ export function EditorPanel({ value, onChange, context }: EditorPanelProps) {
       });
   }, []);
 
-  // Register language once catalog is loaded
+  // Register completion providers once catalog is loaded
   useEffect(() => {
-    registerFileMakerLanguage(catalog.length > 0 ? catalog : undefined);
+    if (catalog.length === 0) return;
+    completionDisposable.current?.dispose();
+    completionDisposable.current = registerCompletionProviders(catalog);
+    return () => {
+      completionDisposable.current?.dispose();
+      completionDisposable.current = null;
+    };
   }, [catalog]);
 
   // Create editor

@@ -42,6 +42,27 @@ function mainAgentDir(): string {
   return path.resolve(repoRoot, 'agent');
 }
 
+/**
+ * Resolve the context directory for a given solution.
+ * Accepts an optional solution name; when omitted, auto-detects if only one
+ * solution subfolder exists under agent/context/.
+ */
+function resolveContextDir(agentDir: string, solution?: string): string {
+  const contextBase = path.join(agentDir, 'context');
+  if (solution) {
+    return path.join(contextBase, solution);
+  }
+  // Auto-detect: if only one solution subfolder, use it
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = fs.readdirSync(contextBase, { withFileTypes: true })
+      .filter(e => e.isDirectory());
+  } catch { /* context dir doesn't exist yet */ }
+  if (entries.length === 1) return path.join(contextBase, entries[0].name);
+  if (entries.length === 0) throw new Error('agent/context/ is empty — run fmcontext.sh first');
+  throw new Error('Multiple solutions in agent/context/ — specify ?solution= query param');
+}
+
 export function apiMiddleware(): Plugin {
   return {
     name: 'fm-api-middleware',
@@ -125,8 +146,11 @@ export function apiMiddleware(): Plugin {
         const indexMatch = pathname.match(/^\/api\/index\/(.+)$/);
         if (req.method === 'GET' && indexMatch) {
           const name = decodeURIComponent(indexMatch[1]);
-          const indexPath = path.join(agent, 'context', `${name}.index`);
+          const solution = url.searchParams.get('solution') ?? undefined;
           try {
+            const main = mainAgentDir();
+            const contextDir = resolveContextDir(main, solution);
+            const indexPath = path.join(contextDir, `${name}.index`);
             const data = fs.readFileSync(indexPath, 'utf-8');
             const rows = parseIndex(data);
             res.setHeader('Content-Type', 'application/json');
@@ -468,7 +492,7 @@ function searchScripts(
   query: string,
 ): { name: string; id: number; folder: string }[] {
   const main = mainAgentDir();
-  const indexPath = path.join(main, 'context', 'scripts.index');
+  const indexPath = path.join(resolveContextDir(main), 'scripts.index');
   const data = fs.readFileSync(indexPath, 'utf-8');
   const rows = parseIndex(data); // each row: [ScriptName, ScriptID, FolderPath]
 

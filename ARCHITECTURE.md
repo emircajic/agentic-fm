@@ -25,7 +25,7 @@ Data flows through three stages before it reaches an AI agent:
 
 1. **Export** -- A FileMaker solution is exported as XML via _Save a Copy as XML_.
 2. **Parse** -- `fmparse.sh` archives the export and explodes it into hundreds of individual XML files organised by domain (tables, scripts, layouts, etc.) inside `agent/xml_parsed/`.
-3. **Index** -- `fmcontext.sh` distills the exploded XML into a small set of pipe-delimited index files in `agent/context/`, extracting only signal (names, IDs, types, references) and discarding noise (UUIDs, hashes, timestamps, visual positioning).
+3. **Index** -- `fmcontext.sh` distills the exploded XML into a small set of pipe-delimited index files in `agent/context/{solution}/`, extracting only signal (names, IDs, types, references) and discarding noise (UUIDs, hashes, timestamps, visual positioning).
 
 At script-generation time three additional inputs converge:
 
@@ -42,7 +42,7 @@ The AI combines these inputs to produce fmxmlsnippet output in `agent/sandbox/`,
 | Raw XML export       | `xml_exports/<Solution>/<date>/`      | FileMaker (manual)             | Archived source of truth                                      |
 | Exploded XML         | `agent/xml_parsed/`                   | `fmparse.sh`                   | Per-object XML fragments for deep inspection                  |
 | Sanitized scripts    | `agent/xml_parsed/scripts_sanitized/` | `fmparse.sh`                   | Human-readable script text (~90% smaller than XML)            |
-| Index files          | `agent/context/*.index`               | `fmcontext.sh`                 | Compact, greppable lookup tables covering the entire solution |
+| Index files          | `agent/context/{solution}/*.index`    | `fmcontext.sh`                 | Compact, greppable lookup tables covering the entire solution |
 | CONTEXT.json         | `agent/CONTEXT.json`                  | FileMaker `Context()` function | Scoped context for a single script-generation request         |
 | CONTEXT.example.json | `agent/CONTEXT.example.json`          | Manual (checked in)            | Schema reference and realistic example                        |
 | Snippet examples     | `agent/snippet_examples/`             | Manual (checked in)            | Canonical fmxmlsnippet templates for each step type           |
@@ -56,18 +56,18 @@ The AI combines these inputs to produce fmxmlsnippet output in `agent/sandbox/`,
 The AI uses a strict hierarchy when looking up FileMaker objects. This hierarchy exists to minimise token consumption -- each level is progressively larger and more expensive to read.
 
 ```
-Priority 1 ─ agent/CONTEXT.json         (scoped to the current task, ~2-5 KB)
-Priority 2 ─ agent/context/*.index       (solution-wide indexes, ~50-100 KB total)
-Priority 3 ─ agent/xml_parsed/           (full exploded XML, several MB)
+Priority 1 ─ agent/CONTEXT.json                    (scoped to the current task, ~2-5 KB)
+Priority 2 ─ agent/context/{solution}/*.index      (solution-wide indexes, ~50-100 KB total)
+Priority 3 ─ agent/xml_parsed/                     (full exploded XML, several MB)
 ```
 
 1. **CONTEXT.json** -- Read first. Contains everything needed for the current task with IDs ready to use.
-2. **Index files** -- Search via `grep` when CONTEXT.json is missing an object. Each index file is a single flat file covering the entire solution.
+2. **Index files** -- Search via `grep` when CONTEXT.json is missing an object. Each index file is a single flat file covering the entire solution, located under `agent/context/{solution}/`.
 3. **xml_parsed/** -- Last resort. Only grep into this directory when indexes and CONTEXT.json both lack the needed information.
 
 ## Index File Format
 
-All index files in `agent/context/` follow the same conventions:
+All index files in `agent/context/{solution}/` follow the same conventions:
 
 - **Pipe-delimited**, one record per line.
 - **Header comment** on the first line documents the column order.
@@ -144,7 +144,7 @@ The AI follows a mandatory sequence when generating fmxmlsnippet output:
 1. **Read `agent/CONTEXT.json`** -- understand the task and collect all reference IDs.
 2. **Grep the step catalog** (`agent/catalogs/step-catalog-en.json`) for each step type being generated. For steps with `"status": "complete"`, construct XML directly from the catalog's `params` array. Fall back to reading the corresponding `agent/snippet_examples/` file for complex or incomplete steps.
 3. **Substitute IDs and names** from CONTEXT.json into the step structure.
-4. If a reference is missing from CONTEXT.json, search the relevant `agent/context/*.index` file.
+4. If a reference is missing from CONTEXT.json, search the relevant `agent/context/{solution}/*.index` file.
 5. Only fall back to `agent/xml_parsed/` as a last resort.
 6. Write the resulting fmxmlsnippet to `agent/sandbox/`.
 7. Run `validate_snippet.py` to check the output for structural and reference errors before handing it to the user.
@@ -175,12 +175,14 @@ Archives a FileMaker XML export and explodes it into per-object XML files using 
 Generates AI-optimised index files from the exploded XML.
 
 ```
-./fmcontext.sh
+./fmcontext.sh                         # regenerate all solutions
+./fmcontext.sh -s "Invoice Solution"   # regenerate one solution only
 ```
 
-- Reads `agent/xml_parsed/` and writes to `agent/context/`.
+- Reads `agent/xml_parsed/` and writes to `agent/context/{solution}/`.
+- Supports multiple solutions: each solution gets its own subfolder, mirroring the xml_parsed hierarchy.
 - Uses `xmllint --xpath` (ships with macOS; `libxml2-utils` on Linux).
-- Clears and regenerates the output directory on each run.
+- Clears and regenerates only the targeted solution's subfolder on each run.
 - Run after `fmparse.sh` whenever the solution XML changes.
 
 ### validate_snippet.py
@@ -214,7 +216,7 @@ Context ( "Create a script to add a new line item to the current invoice" )
 
 When extending this project, keep the following principles in mind:
 
-1. **Preserve the context hierarchy.** Any new data source should slot into the existing priority order (CONTEXT.json > index files > xml_parsed). If you add a new index file, document it in this file and in `.cursor/AGENTS.md`.
+1. **Preserve the context hierarchy.** Any new data source should slot into the existing priority order (CONTEXT.json > index files > xml_parsed). If you add a new index file, document it in this file and in `.cursor/AGENTS.md`. New index files follow the same `agent/context/{solution}/` subfolder pattern.
 
 2. **Keep indexes lean.** Index files exist to reduce token consumption. Only extract signal -- names, IDs, types, and references. Discard UUIDs, hashes, timestamps, and visual positioning data.
 

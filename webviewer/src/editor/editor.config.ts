@@ -19,4 +19,6 @@ export const editorConfig: monaco.editor.IStandaloneEditorConstructionOptions = 
     bracketPairs: false,
   },
   padding: { top: 8, bottom: 8 },
+  quickSuggestions: { other: true, comments: false, strings: true },
+  suggestOnTriggerCharacters: true,
 };
