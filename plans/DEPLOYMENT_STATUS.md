@@ -165,6 +165,7 @@ These were verified working for Tier 2. Do not change without testing.
 | Tier 2 append mode (`select_all=false`) | ✅ Working |
 | `/pending` endpoint | ✅ Working |
 | Tier 3 (create + rename + save + inline paste via host AppleScript) | ✅ Working |
+| Context refresh via `/trigger` → Push Context (client-side) | ✅ Working |
 
 ---
 
@@ -189,6 +190,16 @@ The two-click approach (tab button + SEFabricView) is implemented in `agent/sand
 
 **Do NOT use Agentic-fm Paste itself as the test target** — a script cannot reliably replace its own steps while executing (FM reverts or blocks changes to the running script).
 
+### Test context refresh via `/trigger`
+Verify the full Tier 2/3 context refresh path:
+1. Make sure FM Pro is open on the desired layout
+2. Call `POST /trigger` on companion with `{ "fm_app_name": "FileMaker Pro — 22.0.4.406", "script": "Push Context" }`
+3. Confirm FM Pro activates and shows the task-description dialog
+4. Confirm `agent/CONTEXT.json` is written with the correct layout and `snapshot_path`/`snapshot_timestamp` fields
+5. Confirm `agent/context/snapshot.xml` exists
+
+Expected failure mode: if Push Context (interactive mode) is not yet installed with the snapshot additions, `snapshot_path` will be absent from the output. Tier 1-install the updated `agent/sandbox/Push Context.xml` first.
+
 ### Run Explode XML
 Once Agentic-fm Paste is confirmed stable, run `Explode XML` in FM Pro to export the solution and get Agentic-fm Paste (and any other agentic-fm scripts) into `xml_parsed/`. This is the canonical record of what's installed in the solution.
 
@@ -208,9 +219,22 @@ Allows the agent to validate FileMaker calculation expressions at runtime agains
 ### Confirmed: `Save Records as Snapshot Link` works server-side
 Tested via OData → Sandbox script. The step executes without error and writes the file to `Get(DocumentsPath)` inside the FMS container. This enables both client-side reference snapshots and server-side verification snapshots.
 
+### Context refresh architecture
+
+**Push Context must always run on the FM Pro client.** `Context()` captures the layout state of the active client FM session. Running it server-side via OData produces the server's isolated session context (wrong layout, wrong data). Confirmed: OData call to Push Context produced `"Dashboard"` when the client was on `"Invoices Details"`.
+
+**Correct Tier 2/3 context refresh flow**:
+1. Agent calls `POST /trigger` → `{ "fm_app_name": ..., "script": "Push Context" }` (no parameter = interactive mode)
+2. Companion fires `osascript do script "Push Context"` on FM Pro client
+3. FM Pro shows task-description dialog; developer confirms
+4. Push Context calls `Context()` client-side, writes CONTEXT.json via FM file steps, saves snapshot.xml
+5. Agent reads updated CONTEXT.json
+
+**OData is not a valid context refresh path.** Use OData only for Explode XML (server-side, topology-correct) and AGFMEvaluation (server-side calc evaluator — intentionally server context).
+
 ### Path decisions
 - **`CONTEXT.json` stays at `agent/CONTEXT.json`** — no refactor. The context subdirectory (`agent/context/`) holds index files and will also hold the reference snapshot.
-- **Client reference snapshot**: `agent/context/snapshot.xml` — written by Push Context (client-side, via `do script`), readable directly by the agent from the repo filesystem
+- **Client reference snapshot**: `agent/context/snapshot.xml` — written by Push Context (client-side, via `/trigger` + `do script`), readable directly by the agent from the repo filesystem
 - **Server verification snapshot**: `Get(DocumentsPath) & "snapshot-eval.xml"` — written by AGFMEvaluation server-side, readable by companion (same path mechanism as Explode XML)
 - **`snapshot_path` field added to `CONTEXT.json`** — Push Context writes the absolute path of the reference snapshot so the agent always knows where to find it without guessing
 
@@ -231,15 +255,42 @@ Tested via OData → Sandbox script. The step executes without error and writes 
 5. `Save Records as Snapshot Link [ Get(DocumentsPath) & "snapshot-eval.xml" ]`
 6. `Exit Script [ { success, error_code, result, expression } ]`
 
-**Return** (success):
+**Return** (confirmed valid — result is a real value):
 ```json
-{ "success": true, "error_code": 0, "result": "1234.56", "expression": "Sum ( LineItems::ExtendedPrice )" }
+{ "success": true, "error_code": 0, "result": "4", "expression": "2 + 2", "layout": "Dashboard" }
 ```
 
-**Return** (failure):
+**Return** (ambiguous — `"?"` with error_code 0):
 ```json
-{ "success": false, "error_code": 1201, "result": "", "expression": "Get(NonExistentFunc)" }
+{ "success": true, "error_code": 0, "result": "?", "expression": "Sum ( LineItems::ExtendedPrice )", "layout": "Invoices Details" }
 ```
+
+**Return** (parameter error — bad JSON):
+```json
+{ "success": false, "error": "Invalid parameter: expected JSON object" }
+```
+
+### Critical limitation: `EvaluationError` catches almost nothing
+
+Tested and confirmed: FM returns `"?"` with `error_code: 0` for all of the following:
+- Invalid `Get()` parameter name (`Get(NonExistentFunc)` → `"?"`, code 0)
+- Syntax errors / unbalanced expressions (`If ( 1 = 1 ; "yes"` → `"?"`, code 0)
+- Non-existent field references (`Invoices::NonExistentField999` → `"?"`, code 0)
+- Division by zero (`1 / 0` → `"?"`, code 0)
+
+FM converts most expression problems to `"?"` rather than raising a numbered error. `EvaluationError` is not a reliable syntax checker.
+
+### Agent interpretation rules for `calc-eval`
+
+| result | error_code | Interpretation |
+|---|---|---|
+| Real value (not `"?"`) | 0 | ✅ Confirmed valid — expression ran and produced data |
+| `"?"` | 0 | ⚠️ Unverifiable — expression may be invalid OR valid with no data in context |
+| `"?"` | 0 on `Sum`/aggregate | ℹ️ Likely valid but no records in found set server-side — needs client context |
+| Any | > 0 | ❌ FM error — check error code |
+| (guard fired) | — | ❌ Bad parameter — not a JSON object |
+
+When result is `"?"`: agent should flag it as unverifiable and note that a real-value confirmation requires the developer to have data in context (via a reference snapshot from Push Context).
 
 ### Push Context update (planned)
 Add two steps after the existing CONTEXT.json write:
@@ -264,3 +315,4 @@ After `AGFMEvaluation` returns, the agent can ask the companion to read `snapsho
 | `agent/context/snapshot.xml` | Reference data snapshot — written by Push Context (planned) |
 | `agent/docs/COMPANION_SERVER.md` | Full endpoint reference |
 | `plans/SKILL_INTERFACES.md` | Deployment module contract for skills |
+| `plans/WEBVIEWER_STATUS.md` | Webviewer output channel build status and test plan |

@@ -63,17 +63,27 @@ Build the pluggable deployment module described in `VISION.md` → Automation Ti
 
 ### Webviewer Output Channel
 
-Cross-cutting output infrastructure consumed by every skill that produces HR script output. Must be built alongside the first HR-output skill — retrofitting later requires touching every skill. See `SKILL_INTERFACES.md` → Webviewer output channel for the full interface spec.
+Cross-cutting output infrastructure consumed by every skill that produces HR script output. Must be built alongside the first HR-output skill — retrofitting later requires touching every skill. See `SKILL_INTERFACES.md` → Webviewer output channel for the full interface spec. See `plans/WEBVIEWER_STATUS.md` for build status, what is already built, and the test plan.
 
 **Scope**:
-- `automation.json` — add `webviewer_url` field (Vite dev server URL)
-- **Companion endpoints**:
-  - `GET /webviewer/status` — checks `webviewer_url` reachability, returns `{ available: true/false }`
-  - `POST /webviewer/push` — accepts `{ type, content, before? }`, forwards to webviewer via SSE
-- **Webviewer**: persistent SSE connection to companion; "Agent output" panel renders pushed content in Monaco; diff editor for `type: "diff"` payloads
+- `automation.json` — add `webviewer_url` field (Vite dev server URL; distinct from process-management endpoints already built)
+- **Companion endpoints** (to build):
+  - `GET /webviewer/status` — checks whether `webviewer_url` is reachable, returns `{ "available": true/false }` (note: existing `/webviewer/status` checks process state, not URL reachability — this is a different concern)
+  - `POST /webviewer/push` — accepts `{ type, content, before? }`, broadcasts to all connected SSE clients
+- **Companion SSE stream** (to build): `GET /webviewer/events` — long-lived SSE endpoint; webviewer connects here to receive pushed payloads
+- **Webviewer** (to build): "Agent output" panel with Monaco editor; SSE listener connected to companion `/webviewer/events`; diff editor for `type: "diff"` payloads
 - **Payload types**: `preview` (HR display), `diff` (before/after Monaco diff editor), `result` (evaluation or structured output)
 
 **Design constraint**: webviewer channel is always additive. Skills must still produce useful terminal output when the webviewer is unavailable. No skill should require the Vite server to be running.
+
+**Done when**:
+1. `automation.json` has `webviewer_url` field
+2. `GET /webviewer/status` returns `{ "available": true }` when Vite is running and reachable
+3. `POST /webviewer/push` with `{ "type": "preview", "content": "..." }` broadcasts to connected clients
+4. Webviewer "Agent output" panel displays pushed HR content in Monaco with FileMaker syntax highlighting
+5. `POST /webviewer/push` with `{ "type": "diff", "content": "...", "before": "..." }` opens Monaco diff editor
+6. When Vite is not running, `/webviewer/status` returns `{ "available": false }` and skills fall back to terminal-only output without error
+7. End-to-end test: agent generates HR script, calls `/webviewer/push`, preview appears in Monaco
 
 ---
 

@@ -64,11 +64,19 @@ The full autonomous loop requires the agent to reach the FM solution's file syst
 - `fmnet://{server}/{database}` — file is open from a FileMaker Server (any topology)
 - `file:/{path}` (or `filewin:`, `filelinux:`, `filemac:`) — local file, no server
 
-The agentic-fm FM scripts (Push Context, Explode XML) should call `Get ( FilePath )` and branch:
-- **Hosted** (`fmnet:/`): OData triggering is available; server-mode parameter path works
-- **Local**: OData unavailable; interactive mode (dialog-driven, writes via file steps) is the only path; the companion server can still trigger scripts via `osascript → tell application FM Pro to perform script`
+**Push Context must always run on the FM Pro client.** The `Context()` custom function captures the layout state of the client session — running it server-side (via OData) captures the server's isolated session, which is almost certainly on the wrong layout and will produce stale or incorrect context. OData is NOT a valid trigger path for Push Context.
 
-The `osascript` trigger path in the companion server (`/trigger` endpoint, to be built) enables Tier 2/3 automation for both hosted and local files — it does not depend on OData.
+**Explode XML** may be triggered via OData (it runs server-side and calls `Save a Copy as XML` + POSTs to the companion). This is fine — it does not depend on client layout context.
+
+**The `/trigger` endpoint** (`POST /trigger` on the companion server, using `osascript do script`) is the correct mechanism for agent-initiated context refresh. It runs Push Context on the FM Pro client, which captures real client-side context and writes CONTEXT.json via FM file steps.
+
+Push Context interactive mode (triggered with no parameter via `/trigger`) shows the task-description dialog to the developer. For silent/autonomous operation in a future enhancement, Push Context would need to fetch its task description from `GET /pending`.
+
+The agentic-fm FM scripts should call `Get ( FilePath )` for topology awareness:
+- **Hosted** (`fmnet:/`): OData triggering is available for Explode XML; `/trigger` is used for Push Context
+- **Local**: OData unavailable for any script; `/trigger` is still available for Push Context; interactive mode only for Explode XML
+
+The `/trigger` path works for both hosted and local files — it does not depend on OData.
 
 ---
 
@@ -114,8 +122,17 @@ Not a skill. A shared output routing layer consumed by every skill that produces
 
 **Outputs**:
 - `agent/CONTEXT.json` written with current layout scope
+- `agent/context/snapshot.xml` written alongside it (reference data snapshot)
 
-**Calls**: none
+**Workflow**:
+1. Call `POST /trigger` on companion server with `{ "fm_app_name": ..., "script": "Push Context" }` — no parameter (interactive mode)
+2. FM Pro activates, shows "Task description" dialog to developer
+3. Developer confirms task → Push Context calls `Context()` client-side, writes CONTEXT.json via FM file steps, saves snapshot.xml
+4. Agent reads updated `agent/CONTEXT.json`
+
+**Critical constraint**: Push Context must ALWAYS be triggered via `/trigger` (client-side). Never call it via OData — `Context()` captures the client FM session layout, not the server's session.
+
+**Calls**: `POST /trigger` on companion server
 
 **Called by**: `multi-script-scaffold`
 
@@ -224,11 +241,17 @@ A single skill with three sub-modes covering OData connection setup, schema crea
 - If invalid: identified cause (bad field ref, syntax error, unknown function) and proposed fix
 
 **Workflow**:
-1. Read `current_layout.name` from `CONTEXT.json`; note `snapshot_path` if present (confirms developer has established data context)
+1. Read `current_layout.name` from `CONTEXT.json`; note `snapshot_path` if present
 2. Call `AGFMEvaluation` via OData → AGFMScriptBridge with `{ expression, layout }`
-3. `AGFMEvaluation` navigates to layout, evaluates, saves `snapshot-eval.xml` to server Documents, returns result
-4. Agent optionally asks companion to read `snapshot-eval.xml` and confirm layout name matches `CONTEXT.json` — mismatch means context drift, flag it
-5. Route full result to webviewer if channel available
+3. Interpret result:
+   - Real value + `error_code: 0` → ✅ confirmed valid
+   - `"?"` + `error_code: 0` → ⚠️ unverifiable — expression may be invalid OR valid with no data in server context; flag it, do not treat as confirmed
+   - `error_code > 0` → ❌ FM error; report code and likely cause
+   - Guard fired → ❌ bad parameter
+4. Optionally ask companion to read `snapshot-eval.xml` and confirm layout matches `CONTEXT.json`
+5. Route result to webviewer if channel available
+
+**Known limitation**: `EvaluationError` does not catch most expression problems — bad field refs, division by zero, unknown functions, and unbalanced syntax all return `"?"` with `error_code: 0`. A real non-`"?"` result is the only reliable confirmation of a valid, executable expression.
 
 **Calls**: none (direct OData call to `AGFMEvaluation` FM script)
 
