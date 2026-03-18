@@ -309,6 +309,7 @@ class CompanionHandler(BaseHTTPRequestHandler):
         fm_app = payload.get("fm_app_name", "FileMaker Pro")
         script = payload.get("script", "")
         parameter = payload.get("parameter", "")
+        target_file = payload.get("target_file", "")
 
         def as_str(s):
             """Escape double-quotes for use inside an AppleScript double-quoted string."""
@@ -333,10 +334,20 @@ class CompanionHandler(BaseHTTPRequestHandler):
                     _pending_job = {"target": parameter, "auto_save": auto_save, "select_all": select_all}
                 log.info("Pending job set: target=%r auto_save=%s select_all=%s", parameter, auto_save, select_all)
 
+            # When target_file is provided, address the specific FM document
+            # by name instead of positional document 1. This ensures the
+            # correct file is targeted when multiple files are open.
+            if target_file:
+                doc_clause = f'tell (first document whose name contains "{as_str(target_file)}")'
+                log.info("Trigger: targeting document %r", target_file)
+            else:
+                doc_clause = "tell document 1"
+                log.info("Trigger: no target_file — using document 1")
+
             applescript = (
                 f'tell application "{as_str(fm_app)}"\n'
                 f'    activate\n'
-                f'    tell document 1\n'
+                f'    {doc_clause}\n'
                 f'        do script "{as_str(script)}"\n'
                 f'    end tell\n'
                 f'end tell'

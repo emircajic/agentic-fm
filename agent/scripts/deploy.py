@@ -56,6 +56,35 @@ def _load_config() -> dict:
         return DEFAULT_CONFIG.copy()
 
 
+def _resolve_target_file(config: dict) -> str | None:
+    """Auto-resolve the FM file name to target for multi-file deploys.
+
+    Priority:
+      1. CONTEXT.json → 'solution' field (scoped to what the developer is working on)
+      2. automation.json → 'solutions' keys (only if exactly 1 solution configured)
+
+    Returns None if the file cannot be unambiguously determined.
+    """
+    # Try CONTEXT.json first
+    here = os.path.dirname(os.path.abspath(__file__))
+    context_path = os.path.join(here, "..", "CONTEXT.json")
+    try:
+        with open(context_path, "r", encoding="utf-8") as f:
+            ctx = json.load(f)
+        solution = ctx.get("solution", "")
+        if solution:
+            return solution
+    except (OSError, ValueError):
+        pass
+
+    # Fall back to automation.json solutions keys
+    solutions = config.get("solutions", {})
+    if len(solutions) == 1:
+        return next(iter(solutions))
+
+    return None
+
+
 # ---------------------------------------------------------------------------
 # HTTP helper
 # ---------------------------------------------------------------------------
@@ -82,10 +111,72 @@ def _post_json(url: str, payload: dict, timeout: int = 15) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Window switching helper
+# ---------------------------------------------------------------------------
+
+def _switch_to_document(
+    companion_url: str,
+    fm_app_name: str,
+    target_file: str,
+) -> dict:
+    """Bring the target file's window to front via System Events.
+
+    FM gates AppleScript do-script privilege checks on the frontmost
+    document. If the wrong file is frontmost and lacks fmextscriptaccess,
+    do-script fails with -10004 even when targeting the correct document.
+    This helper switches the frontmost window before any do-script call.
+
+    Uses the Tools > Custom Menus > [Standard FileMaker Menus] guard to
+    ensure the Window menu is available, then clicks the target file's
+    entry in the Window menu.
+    """
+    def _esc(s: str) -> str:
+        return s.replace("\\", "\\\\").replace('"', '\\"')
+
+    fm_process = fm_app_name.split(" \u2014 ")[0].strip()
+
+    applescript = (
+        f'tell application "{_esc(fm_app_name)}"\n'
+        f'    activate\n'
+        f'end tell\n'
+        f'\n'
+        f'delay 0.3\n'
+        f'\n'
+        f'tell application "System Events"\n'
+        f'    tell process "{_esc(fm_process)}"\n'
+        # Switch to standard menus so the Window menu is available
+        f'        try\n'
+        f'            click menu item "[Standard FileMaker Menus]" of menu "Custom Menus" of menu item "Custom Menus" of menu "Tools" of menu bar 1\n'
+        f'            delay 0.3\n'
+        f'        end try\n'
+        # Click the target file in the Window menu
+        f'        try\n'
+        f'            set _menuItems to every menu item of menu "Window" of menu bar 1 whose name contains "{_esc(target_file)}"\n'
+        f'            if (count of _menuItems) > 0 then\n'
+        f'                click (item 1 of _menuItems)\n'
+        f'                delay 0.5\n'
+        f'            end if\n'
+        f'        end try\n'
+        f'    end tell\n'
+        f'end tell\n'
+    )
+
+    return _post_json(
+        f"{companion_url}/trigger",
+        {"raw_applescript": applescript},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Tier 1
 # ---------------------------------------------------------------------------
 
-def _tier1(xml: str, companion_url: str, target_script: str | None) -> dict:
+def _tier1(
+    xml: str,
+    companion_url: str,
+    target_script: str | None,
+    target_file: str | None = None,
+) -> dict:
     """Write XML to clipboard via companion, return paste instructions."""
     result = _post_json(f"{companion_url}/clipboard", {"xml": xml})
     if not result.get("success"):
@@ -95,17 +186,18 @@ def _tier1(xml: str, companion_url: str, target_script: str | None) -> dict:
             "error": result.get("error", "Clipboard write failed"),
         }
 
+    file_hint = f" in **{target_file}**" if target_file else ""
     if target_script:
         instructions = (
             f"Script loaded to clipboard.\n"
-            f"  1. In FM Pro open '{target_script}' in Script Workspace\n"
+            f"  1. In FM Pro open '{target_script}'{file_hint} in Script Workspace\n"
             f"  2. Select all steps (⌘A)\n"
             f"  3. Paste (⌘V)"
         )
     else:
         instructions = (
-            "Script loaded to clipboard.\n"
-            "  Paste (⌘V) into the target script in Script Workspace."
+            f"Script loaded to clipboard.\n"
+            f"  Paste (⌘V) into the target script{file_hint} in Script Workspace."
         )
 
     return {"success": True, "tier_used": 1, "instructions": instructions}
@@ -115,6 +207,70 @@ def _tier1(xml: str, companion_url: str, target_script: str | None) -> dict:
 # Tier 2
 # ---------------------------------------------------------------------------
 
+def _paste_applescript(fm_app_name: str, target_script: str, select_all: bool, auto_save: bool) -> str:
+    """Build the raw AppleScript for Phase 2: AXPress tab + paste.
+
+    This runs from outside FM (via companion osascript), not from within
+    a Perform AppleScript step. AXPress only works from outside FM —
+    Perform AppleScript within FM causes Script Workspace to lose focus.
+    """
+    def _esc(s: str) -> str:
+        return s.replace("\\", "\\\\").replace('"', '\\"')
+
+    fm_process = fm_app_name.split(" \u2014 ")[0].strip()
+
+    # Build the select+delete block if replacing
+    if select_all:
+        paste_block = (
+            f'        keystroke "a" using {{command down}}\n'
+            f'        delay 0.2\n'
+            f'        key code 51\n'
+            f'        delay 0.2\n'
+            f'        keystroke "v" using {{command down}}\n'
+        )
+    else:
+        paste_block = (
+            f'        keystroke "v" using {{command down}}\n'
+        )
+
+    # Build auto-save block
+    save_block = ""
+    if auto_save:
+        save_block = (
+            f'        delay 0.5\n'
+            f'        keystroke "s" using {{command down}}\n'
+        )
+
+    return (
+        f'tell application "{_esc(fm_app_name)}"\n'
+        f'    activate\n'
+        f'end tell\n'
+        f'\n'
+        f'delay 0.3\n'
+        f'\n'
+        f'tell application "System Events"\n'
+        f'    tell process "{_esc(fm_process)}"\n'
+        # AXPress the script tab to move focus to step editor
+        f'        set wsWindows to windows whose title contains "Script Workspace"\n'
+        f'        if (count of wsWindows) > 0 then\n'
+        f'            tell item 1 of wsWindows\n'
+        f'                tell splitter group 1\n'
+        f'                    set tabButtons to every button whose description is "{_esc(target_script)}"\n'
+        f'                    if (count of tabButtons) > 0 then\n'
+        f'                        perform action "AXPress" of item 1 of tabButtons\n'
+        f'                    end if\n'
+        f'                end tell\n'
+        f'            end tell\n'
+        f'        end if\n'
+        f'        delay 0.5\n'
+        # Paste sequence
+        f'{paste_block}'
+        f'{save_block}'
+        f'    end tell\n'
+        f'end tell\n'
+    )
+
+
 def _tier2(
     xml: str,
     companion_url: str,
@@ -122,8 +278,20 @@ def _tier2(
     target_script: str | None,
     auto_save: bool = False,
     select_all: bool = True,
+    target_file: str | None = None,
 ) -> dict:
-    """Load clipboard then trigger FM Pro to run Agentic-fm Paste via AppleScript."""
+    """Two-phase deploy: FM opens the script tab, companion pastes from outside.
+
+    Phase 1 — FM-side (do script "Agentic-fm Paste"):
+      Activates FM, opens Script Workspace, opens the target script tab
+      via MBS ScriptWorkspace.OpenScript. Then exits.
+
+    Phase 2 — Companion-side (raw AppleScript via osascript):
+      AXPress the tab button to focus the step editor, then
+      Cmd+A → Delete → Cmd+V (or just Cmd+V for append).
+      AXPress must run from outside FM — Perform AppleScript within FM
+      causes Script Workspace to lose focus on the step editor.
+    """
     # Step 1: load clipboard
     clip_result = _post_json(f"{companion_url}/clipboard", {"xml": xml})
     if not clip_result.get("success"):
@@ -142,19 +310,26 @@ def _tier2(
             ),
         }
 
-    # Step 2: trigger FM Pro to run Agentic-fm Paste
-    trigger_result = _post_json(
-        f"{companion_url}/trigger",
-        {
-            "fm_app_name": fm_app_name,
-            "script": "Agentic-fm Paste",
-            "parameter": target_script,
-            "auto_save": auto_save,
-            "select_all": select_all,
-        },
-    )
+    # Step 2: if targeting a specific file, switch its window to front first.
+    # FM gates do-script privilege checks on the frontmost document — if the
+    # wrong file is frontmost and lacks fmextscriptaccess, do-script fails
+    # with -10004 even when the tell-document targets the correct file.
+    if target_file:
+        _switch_to_document(companion_url, fm_app_name, target_file)
+
+    # Phase 1: trigger FM Pro to run Agentic-fm Paste (opens script tab only)
+    trigger_payload = {
+        "fm_app_name": fm_app_name,
+        "script": "Agentic-fm Paste",
+        "parameter": target_script,
+    }
+    if target_file:
+        trigger_payload["target_file"] = target_file
+
+    trigger_result = _post_json(f"{companion_url}/trigger", trigger_payload)
     if not trigger_result.get("success"):
         # Fall back to Tier 1 instructions — clipboard is already loaded
+        file_hint = f" in **{target_file}**" if target_file else ""
         return {
             "success": True,
             "tier_used": 1,
@@ -162,9 +337,27 @@ def _tier2(
             "fallback_reason": trigger_result.get("error", "Trigger failed"),
             "instructions": (
                 f"Auto-paste unavailable — clipboard is loaded, paste manually.\n"
-                f"  1. In FM Pro open '{target_script}' in Script Workspace\n"
+                f"  1. In FM Pro open '{target_script}'{file_hint} in Script Workspace\n"
                 f"  2. Select all steps (⌘A)\n"
                 f"  3. Paste (⌘V)"
+            ),
+        }
+
+    # Phase 2: AXPress tab + paste from outside FM
+    paste_as = _paste_applescript(fm_app_name, target_script, select_all, auto_save)
+    paste_result = _post_json(
+        f"{companion_url}/trigger",
+        {"raw_applescript": paste_as},
+    )
+    if not paste_result.get("success"):
+        return {
+            "success": True,
+            "tier_used": 1,
+            "fallback_from": 2,
+            "fallback_reason": f"Script opened but paste failed: {paste_result.get('error', 'unknown')}",
+            "instructions": (
+                f"Script '{target_script}' is open but paste failed.\n"
+                f"  Clipboard is loaded — paste manually (⌘A → Delete → ⌘V)."
             ),
         }
 
@@ -172,7 +365,7 @@ def _tier2(
     return {
         "success": True,
         "tier_used": 2,
-        "message": f"Script steps {mode} '{target_script}' via MBS.",
+        "message": f"Script steps {mode} '{target_script}' via Tier 2.",
     }
 
 
@@ -186,18 +379,22 @@ def _tier3(
     fm_app_name: str,
     target_script: str | None,
     auto_save: bool = False,
+    target_file: str | None = None,
 ) -> dict:
-    """Create and name a script placeholder via AppleScript, then paste inline.
+    """Create and name a script via monolithic AppleScript, then paste steps.
 
     Loads XML to clipboard first, then runs a raw AppleScript on the host
     (synchronous — waits for completion):
+      0. Switch to Standard FileMaker Menus via Tools > Custom Menus
+         (guards against custom menu sets that hide the Scripts menu)
       1. Open Script Workspace if not already open
       2. Cmd+N  → creates "New Script"
       3. Scripts menu → Rename Script → type target name → Return
       4. Cmd+S  → save (required before do script, or FM blocks with dialog)
       5. Cmd+A  → select all steps
-      6. Cmd+V  → paste from clipboard (already loaded in step 0)
-      7. Cmd+S  → save after paste (always — new scripts are always saved)
+      6. Delete  → remove default step
+      7. Cmd+V  → paste from clipboard (already loaded in step 0)
+      8. Cmd+S  → save after paste (always — new scripts are always saved)
 
     Notes:
       - tell application uses fm_app_name (versioned, with em dash)
@@ -205,9 +402,10 @@ def _tier3(
         process names never include the version suffix
       - raw_applescript is synchronous; clipboard must be loaded before firing
       - paste is done inline via System Events Cmd+V, not via Agentic-fm Paste
+      - Custom menu guard ensures Scripts menu is always available
     """
     if not target_script:
-        return _tier2(xml, companion_url, fm_app_name, target_script, auto_save)
+        return _tier2(xml, companion_url, fm_app_name, target_script, auto_save, target_file=target_file)
 
     # Step 0: load clipboard before firing the AppleScript
     clip_result = _post_json(f"{companion_url}/clipboard", {"xml": xml})
@@ -226,6 +424,46 @@ def _tier3(
     # "FileMaker Pro — 22.0.4.406" → "FileMaker Pro"
     fm_process = fm_app_name.split(" \u2014 ")[0].strip()
 
+    # Build the document-targeting preamble. When target_file is set:
+    #   1. Switch to Standard FM Menus (so Window menu is available)
+    #   2. Use Window menu to bring the target file's window to front
+    #   3. Switch to Standard FM Menus again (the target file may have
+    #      its own custom menus that replaced the menu bar on switch)
+    # When no target_file, just do the standard menu switch once.
+    if target_file:
+        doc_targeting = (
+            # First: switch to standard menus on whatever file is frontmost
+            # so the Window menu becomes available
+            f'        try\n'
+            f'            click menu item "[Standard FileMaker Menus]" of menu "Custom Menus" of menu item "Custom Menus" of menu "Tools" of menu bar 1\n'
+            f'            delay 0.3\n'
+            f'        end try\n'
+            # Use Window menu to bring the target file's window to front.
+            # Menu item name is the window title which may differ from
+            # the file name, but typically contains it.
+            f'        try\n'
+            f'            set _menuItems to every menu item of menu "Window" of menu bar 1 whose name contains "{_esc(target_file)}"\n'
+            f'            if (count of _menuItems) > 0 then\n'
+            f'                click (item 1 of _menuItems)\n'
+            f'                delay 0.5\n'
+            f'            end if\n'
+            f'        end try\n'
+            # Now the target file is frontmost — switch its menus to
+            # standard too (it may have its own custom menu set)
+            f'        try\n'
+            f'            click menu item "[Standard FileMaker Menus]" of menu "Custom Menus" of menu item "Custom Menus" of menu "Tools" of menu bar 1\n'
+            f'            delay 0.3\n'
+            f'        end try\n'
+        )
+    else:
+        doc_targeting = (
+            # No multi-file targeting — just ensure standard menus
+            f'        try\n'
+            f'            click menu item "[Standard FileMaker Menus]" of menu "Custom Menus" of menu item "Custom Menus" of menu "Tools" of menu bar 1\n'
+            f'            delay 0.3\n'
+            f'        end try\n'
+        )
+
     applescript = (
         f'tell application "{_esc(fm_app_name)}"\n'
         f'    activate\n'
@@ -235,22 +473,23 @@ def _tier3(
         f'\n'
         f'tell application "System Events"\n'
         f'    tell process "{_esc(fm_process)}"\n'
+        f'{doc_targeting}'
+        # Open Script Workspace (try/end try — may already be open)
         f'        try\n'
         f'            click menu item "Script Workspace..." of menu "Scripts" of menu bar 1\n'
         f'            delay 1.0\n'
         f'        end try\n'
+        # Create new script
         f'        keystroke "n" using {{command down}}\n'
         f'        delay 0.5\n'
+        # Rename the new script
         f'        click menu item "Rename Script" of menu "Scripts" of menu bar 1\n'
         f'        delay 1.0\n'
         f'        keystroke "{_esc(target_script)}"\n'
         f'        delay 0.2\n'
         f'        key code 36\n'
         f'        delay 0.5\n'
-        f'        keystroke "s" using {{command down}}\n'
-        f'        delay 0.3\n'
-        f'        keystroke "a" using {{command down}}\n'
-        f'        delay 0.2\n'
+        # Paste → Save (new script has no existing steps — no select/delete needed)
         f'        keystroke "v" using {{command down}}\n'
         f'        delay 0.5\n'
         f'        keystroke "s" using {{command down}}\n'
@@ -266,7 +505,10 @@ def _tier3(
     if not create_result.get("success"):
         # Script creation failed — fall through to Tier 2 (paste into existing)
         # Clipboard is already loaded so Tier 2 can skip the clipboard step.
-        tier2_result = _tier2(xml, companion_url, fm_app_name, target_script, auto_save)
+        tier2_result = _tier2(
+            xml, companion_url, fm_app_name, target_script, auto_save,
+            target_file=target_file,
+        )
         return {
             **tier2_result,
             "fallback_from": 3,
@@ -290,6 +532,7 @@ def deploy(
     tier: int | None = None,
     auto_save: bool | None = None,
     select_all: bool = True,
+    target_file: str | None = None,
 ) -> dict:
     """
     Deploy a validated fmxmlsnippet XML file to FileMaker.
@@ -299,6 +542,9 @@ def deploy(
         target_script: Name of the script to paste into (Tier 2/3).
         tier:          Override the configured default tier (1, 2, or 3).
         auto_save:     Override the configured auto_save setting.
+        select_all:    Replace (True) or append (False) existing steps (Tier 2).
+        target_file:   FM file name to target (for multi-file solutions).
+                       Auto-resolved from CONTEXT.json or automation.json if None.
 
     Returns:
         Result dict — always contains 'success' and 'tier_used'.
@@ -311,6 +557,10 @@ def deploy(
     companion_url = config.get("companion_url", "http://local.hub:8765").rstrip("/")
     fm_app_name = config.get("fm_app_name", "FileMaker Pro")
 
+    # Auto-resolve target file if not provided
+    if target_file is None:
+        target_file = _resolve_target_file(config)
+
     try:
         with open(xml_path, "r", encoding="utf-8") as f:
             xml = f.read()
@@ -318,11 +568,11 @@ def deploy(
         return {"success": False, "error": f"Cannot read {xml_path}: {exc}"}
 
     if effective_tier == 3:
-        return _tier3(xml, companion_url, fm_app_name, target_script, effective_auto_save)
+        return _tier3(xml, companion_url, fm_app_name, target_script, effective_auto_save, target_file)
     elif effective_tier == 2:
-        return _tier2(xml, companion_url, fm_app_name, target_script, effective_auto_save, select_all)
+        return _tier2(xml, companion_url, fm_app_name, target_script, effective_auto_save, select_all, target_file)
     else:
-        return _tier1(xml, companion_url, target_script)
+        return _tier1(xml, companion_url, target_script, target_file)
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +599,10 @@ def main():
     parser.add_argument(
         "--no-auto-save", action="store_false", dest="auto_save",
         help="Do not auto-save after paste (overrides config)"
+    )
+    parser.add_argument(
+        "--file", dest="target_file", default=None,
+        help="FM file name to target (for multi-file solutions). Auto-resolved if omitted."
     )
     paste_group = parser.add_mutually_exclusive_group()
     paste_group.add_argument(
@@ -384,7 +638,7 @@ def main():
             elif choice == "a":
                 select_all = False
 
-    result = deploy(args.xml_path, args.target_script, args.tier, args.auto_save, select_all)
+    result = deploy(args.xml_path, args.target_script, args.tier, args.auto_save, select_all, args.target_file)
 
     # Human-friendly output
     if result.get("instructions"):
