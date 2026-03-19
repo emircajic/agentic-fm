@@ -87,16 +87,13 @@ Cross-cutting output infrastructure consumed by every skill that produces HR scr
 
 ---
 
-### AGFMEvaluation + Snapshot
+### ~~AGFMEvaluation + Snapshot~~ ✅ Done
 
 FM-side infrastructure for runtime calculation validation and data context capture. See `DEPLOYMENT_STATUS.md` → AGFMEvaluation + Snapshot for full design.
 
-**Scope**:
-- **`AGFMEvaluation` FM script** — server-side via OData; navigates to a layout, evaluates an expression via `EvaluationError`/`Evaluate`, saves a verification snapshot, returns result JSON
-- **Push Context update** — add `Save Records as Snapshot Link` step writing to `$$AGENTIC.FM & "/agent/context/snapshot.xml"`; add `snapshot_path` and `snapshot_timestamp` to CONTEXT.json output
-- **`calc-eval` skill** — see `SKILL_INTERFACES.md`; agent calls `AGFMEvaluation` via OData, reads result, routes to webviewer channel if available
-
-**Human prerequisite**: developer installs `AGFMEvaluation` in the solution (paste from `agent/sandbox/AGFMEvaluation.xml`), then runs Push Context once to generate the first reference snapshot.
+- **`AGFMEvaluation` FM script** — installed in Invoice Solution (script ID 315). Confirmed working 2026-03-18.
+- **Push Context update** — `snapshot_path` and `snapshot_timestamp` in CONTEXT.json, `agent/context/snapshot.xml` written on each Push Context run. Confirmed 2026-03-19.
+- **`calc-eval` skill** — deferred; not yet implemented.
 
 ---
 
@@ -105,13 +102,13 @@ FM-side infrastructure for runtime calculation validation and data context captu
 **Status**: `planned`
 **Branch**: `feature/multi-script`
 **Worktree**: `/worktrees/multi-script`
-**Vision ref**: What Makes This Hard → Untitled Placeholder Technique; Skills → `multi-script-scaffold`
+**Vision ref**: What Makes This Hard → Placeholder Technique; Skills → `multi-script-scaffold`
 
 This is the proof-of-concept phase. It validates the worktree workflow, skill authoring process, and FM integration loop with a low-risk, self-contained skill before scaling up.
 
 **Scope**:
 - Implement the `multi-script-scaffold` skill — calculate placeholder count, guide creation, capture IDs via Push Context, generate all scripts in one pass with correct Perform Script wiring, walk developer through renames
-- Integrate with `context-refresh` to capture Untitled script IDs before generation
+- Integrate with `context-refresh` to capture placeholder script IDs before generation (developer renames placeholders to final names before Push Context — FM names all new scripts `New Script`)
 - Integrate with the deployment module — at Tier 1 the developer pastes each script manually; at Tier 2 MBS auto-pastes into each placeholder; at Tier 3 AppleScript creates the placeholders and MBS pastes, fully autonomous
 - Test against a 3-script and a 5-script interdependent system
 

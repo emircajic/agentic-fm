@@ -114,7 +114,7 @@ git worktree add /worktrees/multi-script -b feature/multi-script
 ```
 
 **Agent prompt**:
-> You are building the `multi-script-scaffold` skill for the agentic-fm project. Read `plans/VISION.md` (Untitled Placeholder Technique and Automation Tiers sections), `plans/SKILL_INTERFACES.md`, and existing skill files in `.claude/skills/` for format reference. The skill must integrate with `context-refresh` per the interface spec and use the deployment module (`agent/scripts/deploy.py`) for all output — the developer chooses whether to paste manually (Tier 1), have MBS auto-paste (Tier 2), or run fully autonomous with script creation + auto-paste (Tier 3). Test against a 3-script and a 5-script interdependent scenario. Do not modify shared infrastructure files.
+> You are building the `multi-script-scaffold` skill for the agentic-fm project. Read `plans/VISION.md` (Placeholder Technique and Automation Tiers sections), `plans/SKILL_INTERFACES.md`, and existing skill files in `.claude/skills/` for format reference. The skill must integrate with `context-refresh` per the interface spec and use the deployment module (`agent/scripts/deploy.py`) for all output — the developer chooses whether to paste manually (Tier 1), have MBS auto-paste (Tier 2), or run fully autonomous with script creation + auto-paste (Tier 3). Note: FileMaker names all new scripts `New Script` — the skill must instruct the developer to rename placeholders to their final names **before** running Push Context. Test against a 3-script and a 5-script interdependent scenario. Do not modify shared infrastructure files.
 
 **Done when**:
 - Skill file passes snapshot tests

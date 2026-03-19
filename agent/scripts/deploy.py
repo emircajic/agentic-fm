@@ -29,6 +29,7 @@ Result dict keys:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -373,6 +374,49 @@ def _tier2(
 # Tier 3
 # ---------------------------------------------------------------------------
 
+def _check_accessibility() -> tuple[bool, str]:
+    """Check whether the calling process has macOS Accessibility permission.
+
+    Runs a minimal System Events AppleScript. If Accessibility access has not
+    been granted to the terminal / shell executing this script, macOS blocks
+    the call and returns an error containing 'not authorized' or error code
+    -1743. The check is fast (~0.3 s) and silent on success.
+
+    Returns:
+        (True, "")            — permission granted, safe to proceed
+        (False, reason_str)   — permission denied; reason_str is a human-
+                                readable explanation with remediation steps
+    """
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", 'tell application "System Events" to get name of first process'],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return True, ""
+        err = result.stderr.strip().lower()
+        if "not authorized" in err or "1743" in err or "accessibility" in err or "assistive" in err:
+            import shutil
+            terminal = os.environ.get("TERM_PROGRAM") or os.environ.get("LC_TERMINAL") or "your terminal app"
+            return False, (
+                f"Tier 3 requires Accessibility permission for '{terminal}'.\n"
+                f"\n"
+                f"  1. Open System Settings → Privacy & Security → Accessibility\n"
+                f"  2. Add '{terminal}' (or the app running this shell) and enable it\n"
+                f"  3. Re-run the deploy command\n"
+                f"\n"
+                f"  If the app is already listed but toggled off, toggle it off and back on.\n"
+                f"  macOS may have shown an authorization dialog — check for it behind other windows."
+            )
+        return False, f"System Events error: {result.stderr.strip()}"
+    except FileNotFoundError:
+        return False, "osascript not found — Tier 3 requires macOS."
+    except subprocess.TimeoutExpired:
+        return False, "Accessibility check timed out."
+
+
 def _tier3(
     xml: str,
     companion_url: str,
@@ -406,6 +450,15 @@ def _tier3(
     """
     if not target_script:
         return _tier2(xml, companion_url, fm_app_name, target_script, auto_save, target_file=target_file)
+
+    # Pre-flight: verify Accessibility permission before doing any work
+    accessible, reason = _check_accessibility()
+    if not accessible:
+        return {
+            "success": False,
+            "tier_used": 3,
+            "error": f"Accessibility permission required for Tier 3.\n{reason}",
+        }
 
     # Step 0: load clipboard before firing the AppleScript
     clip_result = _post_json(f"{companion_url}/clipboard", {"xml": xml})

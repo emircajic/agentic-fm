@@ -275,10 +275,8 @@ FM converts most expression problems to `"?"` rather than raising a numbered err
 
 When result is `"?"`: agent should flag it as unverifiable and note that a real-value confirmation requires the developer to have data in context (via a reference snapshot from Push Context).
 
-### Push Context update (planned)
-Add two steps after the existing CONTEXT.json write:
-1. `Save Records as Snapshot Link [ $$AGENTIC.FM & "/agent/context/snapshot.xml" ; Records being browsed ]`
-2. Include `snapshot_path` and `snapshot_timestamp` in the CONTEXT.json output
+### ~~Push Context update~~ ✅ Done
+`Save Records as Snapshot Link` writes to `agent/context/snapshot.xml`. `snapshot_path` and `snapshot_timestamp` confirmed present in CONTEXT.json. Verified 2026-03-19.
 
 ### Agent verification (optional)
 After `AGFMEvaluation` returns, the agent can ask the companion to read `snapshot-eval.xml` and confirm the layout name matches `CONTEXT.json current_layout.name`. A mismatch means context was not established correctly — developer needs to re-run Push Context.
@@ -294,9 +292,9 @@ After `AGFMEvaluation` returns, the agent can ask the companion to read `snapsho
 | `agent/scripts/companion_server.py` | HTTP companion server on host |
 | `agent/config/automation.json` | Tier config, fm_app_name, companion_url, auto_save, webviewer_url |
 | `agent/sandbox/Agentic-fm Paste.xml` | FM script — opens script tab via MBS (install in solution) |
-| `agent/sandbox/AGFMEvaluation.xml` | FM script — server-side calc evaluator (planned, install in solution) |
+| `agent/sandbox/AGFMEvaluation.xml` | FM script — server-side calc evaluator (installed in solution) |
 | `agent/CONTEXT.json` | Schema/layout context — written by Push Context, read by agent |
-| `agent/context/snapshot.xml` | Reference data snapshot — written by Push Context (planned) |
+| `agent/context/snapshot.xml` | Reference data snapshot — written by Push Context |
 | `agent/docs/COMPANION_SERVER.md` | Full endpoint reference |
 | `plans/SKILL_INTERFACES.md` | Deployment module contract for skills |
 | `plans/WEBVIEWER_STATUS.md` | Webviewer output channel build status and test plan |

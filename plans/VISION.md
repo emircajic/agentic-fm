@@ -188,7 +188,9 @@ FileMaker's closed nature creates specific challenges that shape how this projec
 1. **No file system access**: FileMaker cannot read text files at design time. Everything must flow through the clipboard.
 2. **ID dependencies**: Every object reference in FileMaker uses internal numeric IDs. Scripts reference other scripts by ID, layout objects reference fields by table occurrence and field ID, and custom menus reference their UUIDs. These IDs must be known before generation.
 
-   > **The Untitled Placeholder Technique** — a practical resolution for multi-script systems: the `Perform Script` step references a target script by its internal numeric ID, which FileMaker assigns at creation time. A developer can click the **+** button N times to create N blank placeholder scripts (`Untitled`, `Untitled 2` … `Untitled N`), then run **Push Context** — which returns all their IDs. The agent now has the real script IDs it needs for `Perform Script` calls and can generate all N interdependent scripts in one pass, with correct wiring between them. Each generated snippet is pasted into its corresponding placeholder, and the developer renames them as the agent directs. The only manual steps are clicking + a few times and doing the renames — everything else is AI-authored. This technique scales to arbitrarily complex multi-script architectures.
+   > **The Placeholder Technique** — a practical resolution for multi-script systems: the `Perform Script` step references a target script by its internal numeric ID, which FileMaker assigns at creation time. A developer can click the **+** button N times to create N blank placeholder scripts (FileMaker names each one `New Script`), then immediately rename each to its final target name — then run **Push Context**, which returns all their IDs. The agent now has the real script IDs it needs for `Perform Script` calls and can generate all N interdependent scripts in one pass, with correct wiring between them. Each generated snippet is pasted into its corresponding script. The only manual steps are clicking + N times and typing the rename for each — everything else is AI-authored. This technique scales to arbitrarily complex multi-script architectures.
+   >
+   > **Important**: FileMaker names every new script `New Script` regardless of how many are created. Because `Context()` keys scripts by name, duplicate names cause earlier entries to be overwritten. Scripts must be renamed to unique final names **before** running Push Context.
 
 3. **Context must be exported**: The `CONTEXT.json` file bridges this gap — FileMaker exports the IDs and metadata for the objects relevant to a given task, giving the agent the reference data it needs.
 4. **Runtime observation requires explicit instrumentation**: The agent cannot run scripts or observe FM state directly. Three feedback loops bridge this gap: **Push Context** (current layout state → `CONTEXT.json`), **Explode XML** (full solution → `xml_parsed/`), and **Agentic-fm Debug** (runtime state → `debug/output.json`). When the developer has set up an OData connection to the hosted solution, the agent can trigger these scripts programmatically via `POST /fmi/odata/v4/{database}/Script/{ScriptName}` — closing the loop without any manual step. Without OData, the developer runs them manually in FM Pro.
@@ -254,7 +256,7 @@ What AppleScript adds beyond MBS:
 
 Constraints:
 - **Fragile** — sensitive to FM version changes, element naming, timing, and modal dialogs
-- The controlling application must be granted Accessibility access in System Settings
+- **Accessibility permission is required** — the terminal app (Terminal.app, iTerm2, VS Code, etc.) executing the deploy script must be granted Accessibility access in **System Settings → Privacy & Security → Accessibility**. macOS may present an authorization dialog the first time; if the dialog is dismissed without granting access, Tier 3 will fail. `deploy.py` performs a pre-flight check and returns a clear remediation message if permission is missing.
 - **Cannot automate the relationship graph** — it's a custom-rendered canvas, not individual accessible elements
 - **Cannot reliably automate layout object placement** — spatial positioning is too brittle
 - **Cannot automate drag-and-drop operations**
@@ -284,13 +286,13 @@ Skills should not hardcode a deployment tier. Instead, every skill that produces
 
 The deployment tier is a **runtime decision**, not a build-time one. A developer can opt in to full automation for a multi-script scaffold workflow and fall back to manual paste for a one-off script fix. The agent should ask once per session (or read from a config) and adjust its instructions accordingly.
 
-This model means the Untitled Placeholder Technique described above becomes a spectrum:
+This model means the Placeholder Technique described above becomes a spectrum:
 
-| Tier | Script creation | Paste | Verification |
+| Tier | Script creation & naming | Paste | Verification |
 |---|---|---|---|
-| Tier 1 | Developer clicks **+** N times | Developer pastes (`⌘V`) | Developer confirms |
-| Tier 2 | Developer clicks **+** N times | MBS auto-pastes | MBS reads back script text |
-| Tier 3 | AppleScript creates N scripts | MBS auto-pastes | MBS reads back + Explode XML |
+| Tier 1 | Developer clicks **+** N times, renames each to final name | Developer pastes (`⌘V`) | Developer confirms |
+| Tier 2 | Developer clicks **+** N times, renames each to final name | MBS auto-pastes | MBS reads back script text |
+| Tier 3 | AppleScript creates N scripts with final names | MBS auto-pastes | MBS reads back + Explode XML |
 
 At Tier 3, the full multi-script scaffold workflow — from "build me an invoicing system with 5 scripts" to verified scripts in the Script Workspace — requires no human intervention beyond approval.
 
@@ -353,7 +355,7 @@ Skills are the primary unit of capability in agentic-fm. Each skill is a focused
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `script-refactor`       | Analyse an existing script and produce an improved version — better error handling, cleaner variable naming, consolidation of repeated logic — while preserving observable behaviour                                                                                                                                                                                              |
 | `script-test`           | Generate a companion verification script that exercises a target script and asserts expected results, using the `fm-debug` companion server to report pass/fail back to the agent                                                                                                                                                                                                 |
-| `multi-script-scaffold` | Guide the developer through the Untitled placeholder technique for multi-script systems — calculate how many placeholder scripts are needed, instruct the developer to create them, trigger a context refresh to capture their IDs, generate all scripts with correct inter-script `Perform Script` wiring in one pass, then walk the developer through renaming each placeholder |
+| `multi-script-scaffold` | Guide the developer through the placeholder technique for multi-script systems — calculate how many placeholder scripts are needed, instruct the developer to create them with their final names (FM names all new scripts `New Script` — rename before Push Context), trigger a context refresh to capture their IDs, then generate all scripts with correct inter-script `Perform Script` wiring in one pass |
 
 **Layout & UI**
 
