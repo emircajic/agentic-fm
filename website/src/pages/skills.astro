@@ -1,0 +1,587 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
+import CTA from '../components/CTA.astro';
+---
+
+<Base
+  title="Skills"
+  description="Explore the full catalog of agentic-fm skills — specialized AI workflows for FileMaker script development, debugging, schema design, and more."
+>
+  <PageHeader
+    title="Skills"
+    description="Skills are specialized AI workflows that extend what the agent can do. Invoke them naturally in conversation or by name."
+  />
+
+  <div class="mx-auto max-w-4xl px-6 py-16">
+    <div class="prose-section">
+      <p>
+        Each skill is a focused workflow that guides the AI through a specific task. You don't need to memorize commands &mdash;
+        just describe what you want and the agent activates the right skill automatically.
+      </p>
+
+      <div class="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700/50 dark:bg-amber-900/10">
+        <p class="text-sm text-zinc-700 dark:text-zinc-300">
+          <strong class="text-zinc-900 dark:text-white">CLI/IDE only.</strong> Skills are loaded by external AI agents &mdash;
+          Claude Code, Cursor, Windsurf, and similar tools that read the skill definitions from the project directory.
+          The embedded <a href="webviewer/">webviewer</a> does not load or execute skills; its AI chat provides
+          direct script editing assistance without the multi-step workflows described here.
+        </p>
+      </div>
+
+      <div class="mt-4 rounded-lg border border-primary-200 bg-primary-50/50 p-4 dark:border-primary-800/50 dark:bg-primary-900/10">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">
+          <strong class="text-zinc-900 dark:text-white">How skills are invoked:</strong> Skills activate through natural language.
+          Say <code>"preview the script"</code> and the agent runs the <strong>script-preview</strong> skill.
+          Say <code>"where is this field used?"</code> and it runs <strong>trace</strong>.
+          No slash commands or special syntax required.
+        </p>
+      </div>
+    </div>
+
+    <!-- Table of contents -->
+    <nav class="mt-12 rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Categories</h3>
+      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        <a href="#script-development" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Script Development</a>
+        <a href="#debugging-testing" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Debugging & Testing</a>
+        <a href="#planning" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Planning</a>
+        <a href="#schema-data-model" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Schema & Data Model</a>
+        <a href="#data-operations" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Data Operations</a>
+        <a href="#layout-ui" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Layout & UI</a>
+        <a href="#analysis-reference" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Analysis & Reference</a>
+      </div>
+    </nav>
+
+    <!-- Script Development -->
+    <div class="mt-16" id="script-development">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Script Development</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Create, locate, review, refactor, and scaffold FileMaker scripts.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-preview</h3>
+            <span class="shrink-0 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">core</span>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Generates a human-readable, numbered step outline of a proposed script before committing to XML generation.
+            Lets you review and iterate on logic before any code is produced.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"preview the script"</code>
+              <code class="trigger-tag">"show me the steps before generating"</code>
+              <code class="trigger-tag">"outline the logic"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-lookup</h3>
+            <span class="shrink-0 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">core</span>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Locates a specific script in the parsed XML exports, resolving to both the human-readable version
+            (for understanding logic) and the Save-As-XML version (for conversion to fmxmlsnippet).
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"show me the Create Invoice script"</code>
+              <code class="trigger-tag">"open script ID 142"</code>
+              <code class="trigger-tag">"find the Sort Line Items script"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-review</h3>
+            <span class="shrink-0 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">core</span>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Code review of an existing script and its full call tree &mdash; all subscripts reached via Perform Script
+            are loaded and analyzed together. Evaluates error handling, structure, naming, performance, and parameter contracts.
+            Groups findings by severity: Critical, Important, Suggestions, and Positive.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"review the Create Invoice script"</code>
+              <code class="trigger-tag">"code review script ID 87"</code>
+              <code class="trigger-tag">"assess this script's error handling"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-refactor</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Analyzes an existing script and produces an improved version &mdash; better error handling,
+            cleaner variable naming, consolidated repeated logic &mdash; while preserving observable behavior.
+            Outputs as fmxmlsnippet ready to paste.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"refactor the Print Report script"</code>
+              <code class="trigger-tag">"clean up this script"</code>
+              <code class="trigger-tag">"optimize script ID 205"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">multi-script-scaffold</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Implements the Untitled Placeholder Technique for building systems of interdependent scripts.
+            Guides you through creating placeholder scripts in FileMaker, captures their IDs via Push Context,
+            then generates all scripts with correct Perform Script wiring in one pass.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"scaffold a multi-script system for invoice processing"</code>
+              <code class="trigger-tag">"use the placeholder technique"</code>
+              <code class="trigger-tag">"build a set of interdependent scripts"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Debugging & Testing -->
+    <div id="debugging-testing">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Debugging & Testing</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Diagnose script issues and verify behavior with automated tests.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-debug</h3>
+            <span class="shrink-0 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">core</span>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Systematic debugging workflow: reproduce the issue, isolate the failure point, form a hypothesis,
+            verify with runtime data, and produce a fix. At Tier 1 the developer runs scripts manually and provides
+            debug output. At Tier 3 the agent autonomously instruments, deploys, triggers, and iterates.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"debug the Create Invoice script"</code>
+              <code class="trigger-tag">"this script isn't working right"</code>
+              <code class="trigger-tag">"I'm getting an unexpected error on line 34"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">fm-debug</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Low-level runtime state capture. Instruments a script with debug steps that write variable values,
+            error codes, and execution state to <code>agent/debug/output.json</code> via the companion server.
+            Used internally by script-debug, or directly when you need raw runtime data.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"capture the runtime state of this script"</code>
+              <code class="trigger-tag">"instrument this script for debugging"</code>
+              <code class="trigger-tag">"what are the variable values at line 22?"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">script-test</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Generates a companion verification script that exercises a target script with known inputs
+            and asserts expected outputs. Uses the fm-debug infrastructure to report pass/fail results.
+            At Tier 1 you run the test manually; at Tier 3 the agent runs it autonomously.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"write a test for the Calculate Total script"</code>
+              <code class="trigger-tag">"verify this script handles empty inputs"</code>
+              <code class="trigger-tag">"prove this works with edge cases"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Planning -->
+    <div id="planning">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Planning</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Think through requirements and constraints before writing code.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">implementation-plan</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Structured planning before script creation. Decomposes requirements into discrete concerns,
+            identifies FileMaker objects needed, surfaces platform constraints, and produces a written plan
+            for your confirmation &mdash; no code until you approve.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"plan the invoice approval workflow before coding"</code>
+              <code class="trigger-tag">"decompose the requirements for this feature"</code>
+              <code class="trigger-tag">"what do we need before building this?"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Schema & Data Model -->
+    <div id="schema-data-model">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Schema & Data Model</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Design, build, visualize, and modify your database schema.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">schema-plan</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Design the data model for a new FileMaker solution from a natural language description.
+            Produces a Mermaid ERD showing base tables and relationships, then extends it to a
+            FileMaker-specific model with table occurrences and a relationship specification.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"design a schema for an invoice management system"</code>
+              <code class="trigger-tag">"plan the data model for a CRM"</code>
+              <code class="trigger-tag">"create an ERD for this project"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">schema-build</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Create and modify FileMaker database schema via OData REST calls against a live hosted solution.
+            Three sub-modes: <strong>connect</strong> (OData setup walkthrough), <strong>build</strong> (execute table and field creation),
+            and <strong>relationships</strong> (produce a manual relationship specification checklist).
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"build the schema from my plan"</code>
+              <code class="trigger-tag">"create the Invoices and LineItems tables"</code>
+              <code class="trigger-tag">"set up OData for my solution"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">extract-erd</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Derive a true ERD (Mermaid diagram) from an existing FileMaker solution by analyzing table occurrences,
+            relationships, and fields. Collapses utility TOs to base tables and classifies tables as
+            Entity, Join, or Utility.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"extract the ERD from this solution"</code>
+              <code class="trigger-tag">"show me the database structure"</code>
+              <code class="trigger-tag">"map the schema visually"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">menu-lookup</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Locate a specific custom menu or menu set in the parsed XML exports and extract the real UUIDs
+            required before creating or modifying any menu XML. Without these UUIDs, FileMaker silently
+            ignores the paste.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"look up the Records custom menu"</code>
+              <code class="trigger-tag">"find the menu set for data entry"</code>
+              <code class="trigger-tag">"I need to modify the Edit menu"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Data Operations -->
+    <div id="data-operations">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Data Operations</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Seed test data and migrate records into your FileMaker solution via OData.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">data-seed</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Generate realistic seed or test data and load it into a live FileMaker solution via OData.
+            Populates tables with contextually appropriate data while respecting referential integrity
+            and topological ordering (parent tables before children).
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"seed 50 test invoices with line items"</code>
+              <code class="trigger-tag">"populate the solution with sample data"</code>
+              <code class="trigger-tag">"generate realistic contact records"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">data-migrate</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Move records from an external source (CSV, JSON, SQL dump, or API response) into a live FileMaker solution via OData.
+            Auto-maps source columns to FM fields with type coercion, gets your approval on the mapping,
+            then executes with error tracking.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"import contacts from contacts.csv"</code>
+              <code class="trigger-tag">"migrate data from the JSON export"</code>
+              <code class="trigger-tag">"load the SQL dump into FileMaker"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Layout & UI -->
+    <div id="layout-ui">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Layout & UI</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Spec, design, and build FileMaker layouts and web viewer applications.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">layout-spec</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Conducts a design conversation and produces a written layout specification &mdash; object list, field bindings,
+            section layout, portal configuration, button wiring, and style assignments.
+            This is the planning phase; no XML or code output.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"spec out the Invoice Detail layout"</code>
+              <code class="trigger-tag">"what objects should the dashboard layout have?"</code>
+              <code class="trigger-tag">"create a layout blueprint for the contact form"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">layout-design</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Generates FileMaker layout objects from a spec or brief. Previews in the webviewer for iteration,
+            then outputs as either FM XML2 fmxmlsnippet (paste into Layout Mode) or self-contained HTML (for the Web Viewer path).
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"design the invoice detail layout"</code>
+              <code class="trigger-tag">"build the layout from the spec"</code>
+              <code class="trigger-tag">"add a portal for line items to this layout"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">webviewer-build</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Generates a complete web application inside a FileMaker Web Viewer &mdash; self-contained HTML/CSS/JS
+            styled with the FM theme, plus companion FM bridge scripts for bidirectional data flow.
+            Ideal for modern, responsive UI, charts, drag-and-drop, or rich text editing.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"build a web viewer for a Kanban board"</code>
+              <code class="trigger-tag">"create an interactive chart in a web viewer"</code>
+              <code class="trigger-tag">"HTML app for drag-and-drop sorting"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Analysis & Reference -->
+    <div id="analysis-reference">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-white">Analysis & Reference</h2>
+      <p class="mt-2 text-zinc-600 dark:text-zinc-400">Trace object usage across your solution and look up reusable library code.</p>
+
+      <div class="mt-8 space-y-6">
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">trace</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Traces references to a FileMaker object across the entire solution. Supports three modes:
+            <strong>usage reports</strong> ("where is this field used?"),
+            <strong>impact analysis</strong> ("what breaks if I rename this?"), and
+            <strong>dead object scans</strong> ("show unused fields/scripts").
+            Handles ExecuteSQL strings, dynamic references, and ambiguous matches.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"where is the Status field used?"</code>
+              <code class="trigger-tag">"what breaks if I rename Invoices::Total?"</code>
+              <code class="trigger-tag">"find all unused scripts"</code>
+              <code class="trigger-tag">"show dead fields in the Contacts table"</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">library-lookup</h3>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Searches the curated snippet library for reusable fmxmlsnippet code &mdash; complete scripts,
+            step block patterns, custom functions, and more. The agent scans the library proactively
+            before writing significant logic and adapts found code to your context.
+          </p>
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Example prompts</h4>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <code class="trigger-tag">"use the HTTP request script from the library"</code>
+              <code class="trigger-tag">"add a timeout loop"</code>
+              <code class="trigger-tag">"is there a transaction wrapper in the library?"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-16 border-zinc-200 dark:border-zinc-800" />
+
+    <!-- Deployment tiers -->
+    <div class="prose-section">
+      <h2 id="deployment-tiers">Deployment Tiers</h2>
+      <p>
+        Skills that produce FileMaker code support multiple deployment tiers, depending on your environment:
+      </p>
+
+      <div class="mt-6 space-y-4">
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">1</span>
+            <h4 class="font-semibold text-zinc-900 dark:text-white">Tier 1 &mdash; Manual paste</h4>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            The agent generates fmxmlsnippet XML, validates it, and loads it onto the clipboard.
+            You paste it into Script Workspace yourself. Works everywhere, no setup required.
+          </p>
+        </div>
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">2</span>
+            <h4 class="font-semibold text-zinc-900 dark:text-white">Tier 2 &mdash; Assisted deployment</h4>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            The agent loads the clipboard and opens the target script tab in Script Workspace via the
+            companion server. You still confirm the paste.
+          </p>
+        </div>
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">3</span>
+            <h4 class="font-semibold text-zinc-900 dark:text-white">Tier 3 &mdash; Autonomous</h4>
+          </div>
+          <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            The agent generates, validates, deploys, and verifies scripts end-to-end via OData and the
+            companion server. Requires OData configuration in <code>automation.json</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <CTA />
+</Base>
+
+<style>
+  @reference "../styles/global.css";
+  .prose-section h2 {
+    @apply text-2xl font-bold text-zinc-900 dark:text-white;
+  }
+  .prose-section h3 {
+    @apply text-lg font-semibold text-zinc-900 dark:text-white;
+  }
+  .prose-section p {
+    @apply mt-3 leading-relaxed text-zinc-600 dark:text-zinc-400;
+  }
+  .prose-section ul {
+    @apply mt-3 space-y-2 pl-5;
+  }
+  .prose-section li {
+    @apply list-disc text-zinc-600 dark:text-zinc-400;
+  }
+  .prose-section code {
+    @apply rounded bg-zinc-100 px-1.5 py-0.5 text-sm font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200;
+  }
+  .prose-section a {
+    @apply text-primary-600 underline decoration-primary-600/30 hover:decoration-primary-600 dark:text-primary-400;
+  }
+  .skill-card {
+    @apply rounded-lg border border-zinc-200 p-5 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700;
+  }
+  .skill-card code {
+    @apply rounded bg-zinc-100 px-1.5 py-0.5 text-sm font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200;
+  }
+  .trigger-tag {
+    @apply rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
+  }
+</style>

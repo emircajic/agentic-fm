@@ -133,37 +133,12 @@ const base = import.meta.env.BASE_URL;
     <div class="prose-section">
       <h2 id="agent-skills">Agent Skills</h2>
       <p>
-        Skills are opt-in workflows that extend AI behavior. Invoke them naturally in conversation.
+        Skills are specialized AI workflows that extend what the agent can do &mdash; from script development and debugging
+        to schema design, data operations, and layout building. Invoke them naturally in conversation.
       </p>
-
-      <div class="mt-6 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-zinc-200 text-left dark:border-zinc-800">
-              <th class="pb-3 pr-6 font-semibold text-zinc-900 dark:text-white">Skill</th>
-              <th class="pb-3 pr-6 font-semibold text-zinc-900 dark:text-white">What it does</th>
-              <th class="pb-3 font-semibold text-zinc-900 dark:text-white">Example triggers</th>
-            </tr>
-          </thead>
-          <tbody class="text-zinc-600 dark:text-zinc-400">
-            <tr class="border-b border-zinc-100 dark:border-zinc-800/50">
-              <td class="py-3 pr-6 font-medium text-zinc-900 dark:text-white">script-preview</td>
-              <td class="py-3 pr-6">Generates a numbered step outline for review before XML generation.</td>
-              <td class="py-3">"preview the script", "outline the steps"</td>
-            </tr>
-            <tr class="border-b border-zinc-100 dark:border-zinc-800/50">
-              <td class="py-3 pr-6 font-medium text-zinc-900 dark:text-white">script-review</td>
-              <td class="py-3 pr-6">Code review of existing scripts — logic flow, efficiency, correctness.</td>
-              <td class="py-3">"review this script", "check the logic"</td>
-            </tr>
-            <tr>
-              <td class="py-3 pr-6 font-medium text-zinc-900 dark:text-white">library-lookup</td>
-              <td class="py-3 pr-6">Searches the curated snippet library for reusable code.</td>
-              <td class="py-3">"use the HTTP request script", "add a timeout loop"</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p>
+        See the <a href={`${base}skills/`}>Skills page</a> for the full catalog with descriptions, example prompts, and deployment tier details.
+      </p>
     </div>
 
     <hr class="my-12 border-zinc-200 dark:border-zinc-800" />
