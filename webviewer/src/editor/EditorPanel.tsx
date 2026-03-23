@@ -101,7 +101,15 @@ export function EditorPanel({ value, onChange, context, getLiveContent }: Editor
     (window as any).insertAtEditorCursor = (text: string): boolean => {
       const selection = lastSelectionRef.current ?? editor.getSelection();
       if (!selection) return false;
-      editor.executeEdits('library-insert', [{ range: selection, text, forceMoveMarkers: true }]);
+      editor.pushUndoStop();
+      editor.executeEdits('editor-insert', [{ range: selection, text, forceMoveMarkers: true }]);
+      editor.pushUndoStop();
+      // Scroll to reveal cursor if the edit pushed it outside the viewport —
+      // without this, Monaco's input handler stalls on unrendered positions
+      const pos = editor.getPosition();
+      if (pos) {
+        editor.revealPositionInCenterIfOutsideViewport(pos);
+      }
       editor.focus();
       return true;
     };

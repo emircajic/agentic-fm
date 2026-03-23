@@ -351,6 +351,8 @@ Before writing a script, scan `agent/docs/knowledge/MANIFEST.md` for keyword mat
 
 This format is clear and scannable. Always bold the script name and the keyboard shortcuts.
 
+**Container and non-macOS environments**: `deploy.py` detects the runtime environment automatically. When running inside a Docker container or any non-macOS host, the local Accessibility pre-flight check is skipped — all AppleScript execution is delegated to the companion server on the macOS host via `/trigger`. All three deployment tiers work transparently in both native macOS and containerised environments. No special handling is needed — just call `deploy.py` the same way. Note: the companion server's terminal process (not the container) must hold macOS Accessibility permission for Tiers 2 and 3.
+
 # Step Catalog
 
 `agent/catalogs/step-catalog-en.json` is the canonical structured reference for all FileMaker script steps. It is the **primary source for step XML structure** — use it before reading snippet_examples files.

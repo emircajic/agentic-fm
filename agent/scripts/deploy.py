@@ -374,8 +374,24 @@ def _tier2(
 # Tier 3
 # ---------------------------------------------------------------------------
 
+def _is_local_macos() -> bool:
+    """True when deploy.py is running natively on macOS, not in a container.
+
+    When False, osascript is not available locally. All AppleScript execution
+    is delegated to the companion server on the macOS host via /trigger.
+    The Accessibility pre-flight check is skipped — the companion's terminal
+    process (not the agent's container) must hold Accessibility permission.
+    """
+    return sys.platform == "darwin"
+
+
 def _check_accessibility() -> tuple[bool, str]:
     """Check whether the calling process has macOS Accessibility permission.
+
+    Only meaningful when running natively on macOS (_is_local_macos() is True).
+    In a container or non-macOS environment, skip this check entirely — the
+    companion server on the macOS host runs osascript, and its process is the
+    one that needs Accessibility permission.
 
     Runs a minimal System Events AppleScript. If Accessibility access has not
     been granted to the terminal / shell executing this script, macOS blocks
@@ -398,7 +414,6 @@ def _check_accessibility() -> tuple[bool, str]:
             return True, ""
         err = result.stderr.strip().lower()
         if "not authorized" in err or "1743" in err or "accessibility" in err or "assistive" in err:
-            import shutil
             terminal = os.environ.get("TERM_PROGRAM") or os.environ.get("LC_TERMINAL") or "your terminal app"
             return False, (
                 f"Tier 3 requires Accessibility permission for '{terminal}'.\n"
@@ -451,14 +466,17 @@ def _tier3(
     if not target_script:
         return _tier2(xml, companion_url, fm_app_name, target_script, auto_save, target_file=target_file)
 
-    # Pre-flight: verify Accessibility permission before doing any work
-    accessible, reason = _check_accessibility()
-    if not accessible:
-        return {
-            "success": False,
-            "tier_used": 3,
-            "error": f"Accessibility permission required for Tier 3.\n{reason}",
-        }
+    # Pre-flight: verify Accessibility permission before doing any work.
+    # Only when running natively on macOS — in a container, AppleScript
+    # runs on the companion host and its process needs the permission.
+    if _is_local_macos():
+        accessible, reason = _check_accessibility()
+        if not accessible:
+            return {
+                "success": False,
+                "tier_used": 3,
+                "error": f"Accessibility permission required for Tier 3.\n{reason}",
+            }
 
     # Step 0: load clipboard before firing the AppleScript
     clip_result = _post_json(f"{companion_url}/clipboard", {"xml": xml})
