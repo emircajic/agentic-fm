@@ -1,6 +1,7 @@
 ---
 name: setup
 description: Interactive setup wizard for agentic-fm. Detects what's already configured, walks the user through each remaining step, and verifies completion before proceeding. Use when the developer says "help me set up", "setup", "get started", "onboard", "first time setup", "install agentic-fm", "configure agentic-fm", or is clearly new to the project and needs guidance.
+compatibility: Requires Python 3 and xmllint (libxml2). Optionally Node.js for the webviewer.
 ---
 
 # setup
@@ -136,9 +137,11 @@ This step usually passes automatically on macOS. Move on quickly if it does.
 > 7. Click **OK** and save
 >
 > Alternatively, you can install it via the clipboard:
+>
 > ```bash
 > python3 agent/scripts/clipboard.py write filemaker/context.xml
 > ```
+>
 > Then in FileMaker: **File > Manage > Custom Functions** — click in the function list and press **Cmd+V**.
 
 Ask the developer to confirm when done.
@@ -215,6 +218,7 @@ Once confirmed, proceed.
 > Run the **Explode XML** script in FileMaker (from the Scripts menu). This exports your solution as XML and parses it into individual files that the AI agent can reference.
 >
 > The script will:
+>
 > 1. Save a Copy as XML of your solution
 > 2. Send the export to the companion server
 > 3. Parse it into `agent/xml_parsed/` (individual tables, scripts, layouts, etc.)
@@ -285,6 +289,7 @@ Report what was found (layout name, table count) to confirm it worked.
 > 5. In FileMaker Script Workspace: **Cmd+V** to paste
 >
 > **Every session checklist:**
+>
 > - Companion server running
 > - `$$AGENTIC.FM` set (run **Get agentic-fm path** if needed)
 > - **Push Context** run on the target layout
@@ -302,6 +307,7 @@ Report what was found (layout name, table count) to confirm it worked.
 > Node.js 18+ is required for the webviewer dev server.
 >
 > Install from [nodejs.org](https://nodejs.org) or via Homebrew:
+>
 > ```bash
 > brew install node
 > ```
@@ -313,6 +319,7 @@ Report what was found (layout name, table count) to confirm it worked.
 > **From FileMaker (easiest):** Run the **Agentic-fm webviewer** script from the Scripts menu. It installs dependencies and starts the dev server automatically.
 >
 > **From the terminal:**
+>
 > ```bash
 > cd webviewer
 > npm install
@@ -394,20 +401,21 @@ When all applicable steps are done, present a final summary:
 
 > **Setup complete!** Here's what's configured:
 >
-> | Component | Status |
-> |-----------|--------|
-> | Python 3 | vX.Y.Z |
-> | fm-xml-export-exploder | installed |
-> | xmllint | installed |
-> | Context custom function | installed |
-> | Companion scripts | installed |
-> | Repo path ($$AGENTIC.FM) | set |
-> | Companion server | running on port 8765 |
-> | Explode XML | done — N solution(s) parsed |
-> | CONTEXT.json | generated |
-> | Workflow | CLI/IDE / Webviewer / Both |
+> | Component                | Status                      |
+> | ------------------------ | --------------------------- |
+> | Python 3                 | vX.Y.Z                      |
+> | fm-xml-export-exploder   | installed                   |
+> | xmllint                  | installed                   |
+> | Context custom function  | installed                   |
+> | Companion scripts        | installed                   |
+> | Repo path ($$AGENTIC.FM) | set                         |
+> | Companion server         | running on port 8765        |
+> | Explode XML              | done — N solution(s) parsed |
+> | CONTEXT.json             | generated                   |
+> | Workflow                 | CLI/IDE / Webviewer / Both  |
 >
 > **Quick reference — every session:**
+>
 > 1. Start companion server: `python3 agent/scripts/companion_server.py`
 > 2. In FileMaker: run **Get agentic-fm path** (if not in startup script)
 > 3. Navigate to your target layout

@@ -1,6 +1,7 @@
 ---
 name: fm-debug
 description: Debug a FileMaker script by capturing runtime state. At Tier 1 the agent instruments the script and gives the developer run instructions. At Tier 3 the agent can autonomously look up the script source, generate a debug-instrumented copy, deploy it via AppleScript, trigger it via the companion, and read the results — no human intervention required. Triggers on phrases like "debug this", "script not working", "wrong output", "script error", or when a script produces unexpected behavior that cannot be diagnosed from source alone.
+compatibility: Tier 3 requires the companion server and macOS Accessibility permission for AppleScript deployment.
 ---
 
 # fm-debug

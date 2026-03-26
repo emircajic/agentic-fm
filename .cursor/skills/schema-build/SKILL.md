@@ -1,6 +1,7 @@
 ---
 name: schema-build
 description: Create and modify FileMaker database schema via OData REST calls against a live hosted solution. Three sub-modes — connect (OData setup walkthrough), build (execute table and field creation), relationships (produce a manual relationship specification checklist). Use when the developer says "build schema", "create tables", "create fields", "run schema", "set up OData", "connect OData", "configure OData", "OData walkthrough", "relationship spec", "specify relationships", "define relationships", or "relationship checklist".
+compatibility: Requires OData access to a hosted FileMaker Server solution.
 ---
 
 # schema-build

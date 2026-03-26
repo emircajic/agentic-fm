@@ -1,6 +1,7 @@
 ---
 name: data-migrate
 description: Move records from an external source (CSV, JSON, SQL dump, or API response) into a live FileMaker solution via OData. Reads the source data, maps source columns to FM fields with type coercion, gets developer approval on the mapping, then executes the migration with error tracking. Use when the developer asks to "migrate data", "import records", "move data into FileMaker", "load CSV", or "import JSON".
+compatibility: Requires OData access to a hosted FileMaker Server solution.
 ---
 
 # data-migrate

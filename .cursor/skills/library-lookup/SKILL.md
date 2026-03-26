@@ -1,6 +1,6 @@
 ---
 name: library-lookup
-description: Code lookup and research.
+description: Look up and integrate reusable code from the curated snippet library — scripts, step patterns, custom functions, layout objects, and web viewer components. Use when the developer says "use this from the library", "look up the snippet for", "include the library script", "add a timeout loop", or references any library item by name or keyword.
 ---
 
 # Library Lookup

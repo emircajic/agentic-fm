@@ -1,6 +1,7 @@
 ---
 name: data-seed
 description: Generate realistic seed or test data and load it into a live FileMaker solution via OData. Populates tables with contextually appropriate data while respecting referential integrity. Use when the developer asks to "seed data", "test data", "populate solution", "generate records", or wants sample records in a new or existing schema.
+compatibility: Requires OData access to a hosted FileMaker Server solution.
 ---
 
 # data-seed
