@@ -197,8 +197,8 @@ AGFMEvaluation installed in agentic-fm.fmp12 (also installed in Invoice Solution
 ### ~~fm-debug autonomous validation~~ ✅ Done (2026-03-22)
 Full autonomous testing of the fm-debug skill completed. The agent deployed test scripts via Tier 3, triggered them via `/trigger`, and read debug output — all without human intervention. Key discovery: `Get(LastError)` resets the error state, requiring all error data to be captured in a single `JSONSetElement` expression. See `plans/DEBUG_FINDINGS.md` for full results. Updated files: `fm-debug` skill, `AGENTIC_DEBUG.md`, new knowledge article `error-data-capture.md`.
 
-### `deploy.py` container detection (should fix)
-`deploy.py`'s `_check_accessibility()` fails in Linux containers because it tries to run `osascript` locally. For containerised agents, `deploy.py` should detect the environment and skip the local pre-flight, relying on the companion to run AppleScript. Workaround: call companion endpoints directly (as done during the 2026-03-22 testing session).
+### ~~`deploy.py` container detection~~ ✅ Done (2026-03-23)
+`deploy.py` now detects the runtime environment via `_is_local_macos()` (`sys.platform == "darwin"`). When running in a Linux container or any non-macOS environment, the Accessibility pre-flight check in `_tier3()` is skipped entirely — all AppleScript execution is delegated to the companion server on the macOS host via `/trigger`. The companion's terminal process (not the agent's container) must hold Accessibility permission for Tiers 2 and 3. All three tiers work transparently in both environments with no special handling by the agent.
 
 ---
 
