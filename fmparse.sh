@@ -341,12 +341,14 @@ PYEOF
                         _search_dirs=(
                             "$XML_PARSED_DIR/scripts/$SOLUTION_NAME"
                             "$XML_PARSED_DIR/scripts_sanitized/$SOLUTION_NAME"
+                            "$XML_PARSED_DIR/script_stubs/$SOLUTION_NAME"
                         )
                         ;;
                     custom_function)
                         _search_dirs=(
-                            "$XML_PARSED_DIR/custom_functions/$SOLUTION_NAME"
+                            "$XML_PARSED_DIR/custom_function_calcs/$SOLUTION_NAME"
                             "$XML_PARSED_DIR/custom_function_stubs/$SOLUTION_NAME"
+                            "$XML_PARSED_DIR/custom_functions_sanitized/$SOLUTION_NAME"
                         )
                         ;;
                     *) continue ;;
