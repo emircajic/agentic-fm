@@ -72,7 +72,7 @@ _KNOWN_PREFIXES = {
     "D": range(1, 4),     # D001–D003
     "R": range(1, 10),    # R001–R009
     "B": range(1, 6),     # B001–B005
-    "C": range(1, 6),     # C001–C005
+    "C": range(1, 7),     # C001–C006
 }
 
 # Rule-specific config keys that must be numeric

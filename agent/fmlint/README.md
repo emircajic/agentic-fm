@@ -117,6 +117,7 @@ Calculation expression analysis. Tier 1 rules check syntax offline. Tier 3 rules
 | C003 | Function name not in built-in FM function list. Custom functions can be added via config (`extra_known_functions`) |
 | C004 | **Tier 3 only.** Calculation fails when evaluated by the live FM engine via AGFMEvaluation over OData |
 | C005 | **Tier 3 only.** Reserved for non-fatal evaluation issues (stub) |
+| C006 | HTML/XML entities (`&gt;`, `&lt;`, `&amp;`, `&ge;`, `&le;`) in calculation expressions — these must be literal operators inside CDATA blocks |
 
 ---
 
@@ -401,6 +402,7 @@ The TypeScript linter implements a subset of rules optimized for real-time feedb
 | S008 | Unknown step names vs. step catalog |
 | N001 | ASCII operators (disabled by default, same as Python) |
 | C001 | Unclosed string literals |
+| C006 | HTML/XML entities in calculations (same as Python) |
 | D001 | PURPOSE comment on first line |
 
 For the full rule set (tier 2 references, tier 3 live eval, all N/B/C rules), the webviewer calls the Python linter via the companion server's `POST /lint` endpoint.

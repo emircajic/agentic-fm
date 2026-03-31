@@ -1,8 +1,8 @@
-"""Calculation rules C001–C003 for FMLint.
+"""Calculation rules C001–C003, C006 for FMLint.
 
 These are tier-1 (offline) rules that check calculation expressions for
-common syntax issues: unclosed strings, unbalanced parentheses, and
-unknown function names.
+common syntax issues: unclosed strings, unbalanced parentheses, unknown
+function names, and HTML/XML entities where literal operators belong.
 """
 
 import re
@@ -284,4 +284,94 @@ class KnownFunction(LintRule):
                         message=f'Unknown function "{func_name}" in calculation',
                         line=ln.line_number,
                     ))
+        return diags
+
+
+# ---------------------------------------------------------------------------
+# C006 — html-entities-in-calc
+# ---------------------------------------------------------------------------
+
+# Entities that represent operators and are never valid in FM calculations.
+# Maps the entity text to the literal operator the author intended.
+_ENTITY_TO_OPERATOR = {
+    "&gt;":  ">",
+    "&lt;":  "<",
+    "&ge;":  ">=",  # HTML entity, not even standard XML
+    "&le;":  "<=",  # HTML entity, not even standard XML
+    "&amp;": "&",
+    "&quot;": '"',
+    "&apos;": "'",
+    "&ne;":  "<>",  # HTML entity for not-equal
+}
+
+# Pre-compile a single pattern that matches any of the entities (case-insensitive).
+_ENTITY_RE = re.compile(
+    "|".join(re.escape(e) for e in _ENTITY_TO_OPERATOR),
+    re.IGNORECASE,
+)
+
+
+@rule
+class C006HtmlEntitiesInCalc(LintRule):
+    """Detect HTML/XML entities used in place of literal operators in calculations.
+
+    Inside <Calculation><![CDATA[...]]></Calculation> blocks, text is literal —
+    entity encoding is not interpreted.  Writing ``&gt;`` instead of ``>``
+    produces a broken calculation because FileMaker sees the ampersand and
+    semicolon as literal characters, not the operator.
+
+    The same applies to HR bracket content, which represents raw calculation
+    text that will eventually be placed inside a CDATA block.
+    """
+
+    rule_id = "C006"
+    name = "html-entities-in-calc"
+    category = "calculations"
+    default_severity = Severity.ERROR
+    formats = {"xml", "hr"}
+    tier = 1
+
+    def _find_entities(self, text):
+        """Return list of (entity, replacement) found in *text* outside quoted strings."""
+        stripped = _strip_strings(text)
+        hits = []
+        for m in _ENTITY_RE.finditer(stripped):
+            entity = m.group(0).lower()
+            replacement = _ENTITY_TO_OPERATOR.get(entity, "")
+            hits.append((m.group(0), replacement))
+        return hits
+
+    def check_xml(self, parse_result, catalog, context, config):
+        if not parse_result.ok:
+            return []
+        sev = self.severity(config)
+        diags = []
+        for idx, step in enumerate(parse_result.steps):
+            for calc in step.iter("Calculation"):
+                if not calc.text:
+                    continue
+                for entity, replacement in self._find_entities(calc.text):
+                    diags.append(Diagnostic(
+                        rule_id=self.rule_id,
+                        severity=sev,
+                        message=f'HTML entity "{entity}" in calculation — use the literal operator "{replacement}" instead',
+                        line=idx + 1,
+                        fix_hint=f'Replace "{entity}" with "{replacement}"',
+                    ))
+        return diags
+
+    def check_hr(self, lines, catalog, context, config):
+        sev = self.severity(config)
+        diags = []
+        for ln in lines:
+            if ln.is_comment or not ln.bracket_content or not _is_calc_step(ln):
+                continue
+            for entity, replacement in self._find_entities(ln.bracket_content):
+                diags.append(Diagnostic(
+                    rule_id=self.rule_id,
+                    severity=sev,
+                    message=f'HTML entity "{entity}" in calculation — use the literal operator "{replacement}" instead',
+                    line=ln.line_number,
+                    fix_hint=f'Replace "{entity}" with "{replacement}"',
+                ))
         return diags

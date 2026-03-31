@@ -140,6 +140,8 @@
       "extra_known_functions": []
     },
 
+    "C006": { "enabled": true, "severity": "error" },
+
     "C004": {
       "enabled": true,
       "severity": "error",
