@@ -4,6 +4,13 @@ This folder is your personal code library — a collection of reusable FileMaker
 
 The library ships empty. You populate it with code from your own solutions.
 
+This repo now also includes a reusable Settings API package under:
+
+- `agent/library/Functions/Settings/`
+- `agent/library/Scripts/Settings/`
+
+That package is intended to be copied into other FileMaker solutions as a starting point for a hardened key-value settings architecture.
+
 ---
 
 ## How it works
@@ -205,3 +212,73 @@ git submodule add <repo-url> agent/library
 ```
 
 After linking, run the AI manifest update described above so the new files are indexed.
+
+---
+
+## Reusable Settings Package
+
+The `Settings` package in this library is a reusable pattern, not just a snapshot from one solution.
+
+### What it contains
+
+Custom functions:
+
+- `Settings_Get`
+- `Settings_GetObject`
+- `Settings_IsLoaded`
+- `Settings_CacheVersion`
+- `Settings_GetScopeObject`
+- `LayoutSetting_Get`
+- `LayoutSetting_Set`
+
+Scripts:
+
+- `SETTINGS__Load`
+- `SETTINGS__EnsureLoaded`
+- `SETTINGS__SetValue`
+- `SETTINGS__BulkSet`
+- `SETTINGS__SyncScopeDraft`
+- `SETTINGS__LayoutEnter`
+- `SETTINGS__LayoutExit`
+
+### What it assumes
+
+Your target solution should already provide:
+
+- a `Settings` table occurrence
+- a `Settings::FUNCTION` field that evaluates to the committed JSON payload
+- response helper CFs:
+  - `Response_Init`
+  - `Response_AddError`
+  - `Response_SetData`
+  - `Response_Finalize`
+- a `GlobalSettings` helper CF returning `$$SETTINGS`
+
+### Recommended installation order
+
+1. Install the helper dependencies in the target file.
+2. Seed the `_system.settings_version` row in the `Settings` table.
+3. Install the Settings custom functions.
+4. Install the Settings scripts.
+5. Wire startup into `SETTINGS__EnsureLoaded`.
+6. Add `SETTINGS__LayoutEnter` and `SETTINGS__LayoutExit` only to layouts that use layout-scope draft settings.
+
+### Settings scopes
+
+The package assumes three setting scopes:
+
+- `app.*`
+  Global app configuration. Save explicitly.
+- `layouts.<layoutNumber>.*`
+  Layout-specific draftable preferences. Load on layout enter, sync on layout exit.
+- `tables.<baseTableName>.*`
+  Shared settings used by multiple layouts for the same table. Write through immediately.
+
+### Important trade-offs
+
+- `$$SETTINGS` is session-local, so stale caches are detected with `_system.settings_version`.
+- `$$LAYOUT_SETTINGS` is keyed by layout number, not by window.
+- If the same layout is open in multiple windows, those windows intentionally share one in-memory draft.
+- If the client crashes before layout exit, committed settings remain safe and unsaved draft changes are discarded.
+
+See [SETTINGS_API.md](/Users/emircajic/agentic-fm/agent/docs/SETTINGS_API.md) for the full architecture and migration notes.

@@ -24,6 +24,7 @@ Prompt.md
 agent/library/
 agent/config/removals.json
 agent/config/automation.json
+agent/scripts/companion_server_ext.py
 agent/config/.autosave.json
 agent/config/.layout-prefs.json
 agent/config/.custom-instructions.md

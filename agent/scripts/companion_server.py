@@ -52,6 +52,17 @@ def _read_local_version() -> str:
 VERSION = _read_local_version()
 
 # ---------------------------------------------------------------------------
+# Local extension hook — load companion_server_ext.py if present (gitignored).
+# That file can define handle_post(handler) returning True when it handles a
+# route, keeping local customisations out of this file and away from merges.
+# ---------------------------------------------------------------------------
+_ext = None
+try:
+    import companion_server_ext as _ext  # type: ignore[import]
+except ImportError:
+    pass
+
+# ---------------------------------------------------------------------------
 # Webviewer process state (module-level, shared across request threads)
 # ---------------------------------------------------------------------------
 
@@ -207,6 +218,8 @@ class CompanionHandler(BaseHTTPRequestHandler):
             self._handle_webviewer_push()
         elif self.path == "/lint":
             self._handle_lint()
+        elif _ext and hasattr(_ext, "handle_post") and _ext.handle_post(self):
+            pass
         else:
             self._send_json({"error": "Not found"}, status=404)
 
