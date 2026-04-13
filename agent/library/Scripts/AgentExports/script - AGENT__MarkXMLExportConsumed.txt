@@ -1,0 +1,78 @@
+/*
+AGENT__MarkXMLExportConsumed
+
+Mark one AgentExports job as consumed after the local downloader finishes successfully.
+
+Required script parameter JSON:
+{
+  "id": "<AgentExports::id>"
+}
+
+Response data:
+- `id`
+- `status`
+- `consumedOn`
+*/
+
+Set Error Capture [ On ]
+Allow User Abort [ Off ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $param ; Get ( ScriptParameter ) ]
+Set Variable [ $id ; JSONGetElement ( $param ; "id" ) ]
+
+If [ IsEmpty ( $id ) ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_CONSUME_ID_MISSING" ;
+		"AgentExports id is required." ;
+		"Get ( ScriptParameter )" ;
+		"{}" ;
+		Get ( ScriptName )
+	) ]
+Else
+	Go to Layout [ “AgentExports” (AgentExports) ; Animation: None ]
+	Enter Find Mode [ Pause: Off ]
+	Set Field [ AgentExports::id ; "=" & $id ]
+	Perform Find
+
+	If [ Get ( FoundCount ) ≠ 1 ]
+		Set Variable [ $response ; Response_AddError (
+			"AGENT_CONSUME_NOT_FOUND" ;
+			"Expected exactly one AgentExports row for the supplied id." ;
+			"AgentExports::id" ;
+			JSONSetElement ( "{}" ; [ "id" ; $id ; JSONString ] ) ;
+			Get ( ScriptName )
+		) ]
+	Else
+		Set Field [ AgentExports::Status ; "consumed" ]
+		Set Field [ AgentExports::consumedOn ; Get ( CurrentTimestamp ) ]
+		Commit Records/Requests [ With dialog: Off ]
+
+		If [ Get ( LastError ) ≠ 0 ]
+			Set Variable [ $response ; Response_AddError (
+				"AGENT_CONSUME_COMMIT_FAILED" ;
+				"Failed to mark AgentExports row as consumed." ;
+				"AgentExports::Status" ;
+				JSONSetElement (
+					"{}" ;
+					[ "id" ; $id ; JSONString ] ;
+					[ "error" ; Get ( LastError ) ; JSONNumber ]
+				) ;
+				Get ( ScriptName )
+			) ]
+		Else
+			Set Variable [ $response ; Response_SetData (
+				JSONSetElement (
+					"{}" ;
+					[ "id" ; AgentExports::id ; JSONString ] ;
+					[ "status" ; AgentExports::Status ; JSONString ] ;
+					[ "consumedOn" ; GetAsText ( AgentExports::consumedOn ) ; JSONString ]
+				)
+			) ]
+		End If
+	End If
+End If
+
+Go to Layout [ original layout ]
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

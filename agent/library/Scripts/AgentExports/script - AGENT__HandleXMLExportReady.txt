@@ -1,0 +1,105 @@
+/*
+AGENT__HandleXMLExportReady
+
+Client-side callback for `Perform Script on Server with Callback`.
+
+Callback inputs
+- `Get ( ScriptParameter )`: queued `AgentExports::id`
+- `Get ( ScriptResult )`: JSON returned by `AGENT__BuildXMLExport`
+
+Current responsibility
+- validate callback payload
+- write callback diagnostics back to the `AgentExports` row
+- trigger the local downloader handoff on success
+
+This version posts the export `id` to the local companion's
+`/agentexports/consume` endpoint after a successful callback so the Mac
+side can download `Payload`, run `fmparse.sh`, and mark the export consumed.
+*/
+
+Set Error Capture [ On ]
+Allow User Abort [ Off ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $id ; Get ( ScriptParameter ) ]
+Set Variable [ $serverResult ; Get ( ScriptResult ) ]
+Set Variable [ $status ; JSONGetElement ( $serverResult ; "data.status" ) ]
+Set Variable [ $originLayout ; Get ( LayoutName ) ]
+Set Variable [ $companionUrl ; JSONGetElement ( Globals::AgenticFM ; "companion_url" ) ]
+
+If [ IsEmpty ( $id ) ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_CALLBACK_ID_MISSING" ;
+		"Callback did not receive an AgentExports id." ;
+		"Get ( ScriptParameter )" ;
+		"{}" ;
+		Get ( ScriptName )
+	) ]
+Else If [ JSONGetElementType ( $serverResult ; "" ) ≠ JSONObject ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_CALLBACK_RESULT_INVALID" ;
+		"Callback did not receive a valid JSON script result." ;
+		"Get ( ScriptResult )" ;
+		JSONSetElement ( "{}" ; [ "result" ; $serverResult ; JSONString ] ) ;
+		Get ( ScriptName )
+	) ]
+Else If [ JSONGetElement ( $serverResult ; "status" ) = "fail" ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_BUILD_FAILED" ;
+		"Server XML build failed." ;
+		"AGENT__BuildXMLExport" ;
+		$serverResult ;
+		Get ( ScriptName )
+	) ]
+Else
+	Go to Layout [ “AgentExports” (AgentExports) ; Animation: None ]
+	Enter Find Mode [ Pause: Off ]
+	Set Field [ AgentExports::id ; "=" & $id ]
+	Perform Find [ ]
+
+	If [ Get ( FoundCount ) = 1 ]
+		Set Variable [ $notes ; Case (
+			JSONGetElementType ( AgentExports::Notes ; "" ) = JSONObject ;
+			AgentExports::Notes ;
+			JSONSetElement ( "{}" ; [ "buildNotes" ; AgentExports::Notes ; JSONString ] )
+		) ]
+		Set Variable [ $notes ; JSONSetElement (
+			$notes ;
+			[ "callback.receivedOn" ; Get ( CurrentTimestamp ) ; JSONString ] ;
+			[ "callback.status" ; $status ; JSONString ] ;
+			[ "callback.result" ; $serverResult ; JSONObject ]
+		) ]
+		Set Field [ AgentExports::Notes ; $notes ]
+		Commit Records/Requests [ With dialog: Off ]
+	End If
+
+	Go to Layout [ By calculation: $originLayout ; Animation: None ]
+
+	Set Variable [ $callbackPayload ; JSONSetElement (
+		"{}" ;
+		[ "id" ; $id ; JSONString ] ;
+		[ "solution_name" ; Get ( FileName ) ; JSONString ] ;
+		[ "repo_path" ; JSONGetElement ( $$AGENTIC.FM ; "path" ) ; JSONString ]
+	) ]
+	Set Variable [ $consumeResult ; "" ]
+
+	If [ not IsEmpty ( $companionUrl ) ]
+		Insert from URL [ Select ; With dialog: Off ; Target: $consumeResult ;
+			$companionUrl & "/agentexports/consume" ;
+			cURL options: "--header " & Quote ( "Content-Type: application/json" ) & " --request POST --data " & Quote ( $callbackPayload )
+		]
+	End If
+
+	Set Variable [ $response ; Response_SetData (
+		JSONSetElement (
+			"{}" ;
+			[ "id" ; $id ; JSONString ] ;
+			[ "status" ; $status ; JSONString ] ;
+			[ "serverResult" ; $serverResult ; JSONObject ] ;
+			[ "consumeResult" ; $consumeResult ; JSONString ]
+		)
+	) ]
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

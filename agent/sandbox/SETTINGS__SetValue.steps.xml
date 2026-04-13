@@ -1,0 +1,261 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Authoritative native write API for a single setting row.</Text>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$input</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Left ( Trim ( $input ) ; 1 ) = "{"]]></Calculation>
+    </Value>
+    <Name>$isJSONInput</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "key" ) ;
+    GetValue ( Substitute ( $input ; "|" ; Char ( 13 ) ) ; 1 )
+)]]></Calculation>
+    </Value>
+    <Name>$key</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "value" ) ;
+    GetValue ( Substitute ( $input ; "|" ; Char ( 13 ) ) ; 2 )
+)]]></Calculation>
+    </Value>
+    <Name>$value</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "valueType" ) ;
+    ""
+)]]></Calculation>
+    </Value>
+    <Name>$valueType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Name>$storedType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONString]]></Calculation>
+    </Value>
+    <Name>$storedTypeConstant</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "reload" ) ;
+    False
+)]]></Calculation>
+    </Value>
+    <Name>$reload</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $key )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_KEY_MISSING" ;
+    "Settings key is required." ;
+    "Settings::key" ;
+    "{}" ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[JSONGetElement ( $response ; "status" ) ≠ "fail"]]></Calculation>
+  </Step>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="210" name="Settings"/>
+    <Animation value=""/>
+  </Step>
+  <Step enable="True" id="16" name="Enter Find Mode">
+    <Pause state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Field table="Settings" id="1" name="key"/>
+    <Calculation><![CDATA["=" & $key]]></Calculation>
+  </Step>
+  <Step enable="True" id="18" name="Perform Find"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( FoundCount ) ≠ 1]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_KEY_NOT_FOUND" ;
+    "Expected exactly one settings row." ;
+    "Settings::key" ;
+    JSONSetElement ( "{}" ; [ "key" ; $key ; JSONString ] ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings::type]]></Calculation>
+    </Value>
+    <Name>$storedType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+    $storedType = "JSONNumber" ; JSONNumber ;
+    $storedType = "JSONBoolean" ; JSONBoolean ;
+    $storedType = "JSONObject" ; JSONObject ;
+    $storedType = "JSONArray" ; JSONArray ;
+    $storedType = "JSONRaw" ; JSONRaw ;
+    $storedType = "JSONNull" ; JSONNull ;
+    JSONString
+)]]></Calculation>
+    </Value>
+    <Name>$storedTypeConstant</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $valueType ) and $valueType ≠ $storedType]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_TYPE_MISMATCH" ;
+    "Provided valueType does not match the setting row type." ;
+    "Settings::type" ;
+    JSONSetElement ( "{}" ;
+        [ "key" ; $key ; JSONString ] ;
+        [ "providedType" ; $valueType ; JSONString ] ;
+        [ "storedType" ; $storedType ; JSONString ]
+    ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Field table="Settings" id="9" name="value"/>
+    <Calculation><![CDATA[$value]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <WithDialog state="False"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_COMMIT_FAILED" ;
+    "Failed to commit settings change." ;
+    "Settings::value" ;
+    JSONSetElement ( "{}" ; [ "key" ; $key ; JSONString ] ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="16" name="Enter Find Mode">
+    <Pause state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Field table="Settings" id="1" name="key"/>
+    <Calculation><![CDATA["=_system.settings_version"]]></Calculation>
+  </Step>
+  <Step enable="True" id="18" name="Perform Find"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( FoundCount ) = 1]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Field table="Settings" id="9" name="value"/>
+    <Calculation><![CDATA[Get ( CurrentTimeUTCMilliseconds )]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <WithDialog state="False"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[GetAsBoolean ( $reload )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__Load"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement ( "{}" ;
+        [ "key" ; $key ; JSONString ] ;
+        [ "value" ; $value ; $storedTypeConstant ] ;
+        [ "valueType" ; $storedType ; JSONString ] ;
+        [ "reload" ; GetAsBoolean ( $reload ) ; JSONBoolean ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Finalize]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$response]]></Calculation>
+  </Step>
+</fmxmlsnippet>

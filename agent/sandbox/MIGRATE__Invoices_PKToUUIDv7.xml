@@ -1,0 +1,483 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Migrate Invoices::PrimaryKey to UUIDv7 via staging field. Phases A–E update PrimaryKey_New, then propagate to all FK children before swapping. Run once, off-hours. See UUIDv7_Migration_Runbook.md.</Text>
+  </Step>
+
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="171" name="Invoices"/>
+    <Animation value=""/>
+  </Step>
+
+  <Step enable="True" id="23" name="Show All Records"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$total</Name>
+    <Value>
+      <Calculation><![CDATA[Count ( Invoices::PrimaryKey )]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PHASE A — Generate new UUIDs into PrimaryKey_New</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[UUIDv7FromTimestamp ( Invoices::CreationTimestamp )]]></Calculation>
+      <Field table="Invoices" id="0" name="PrimaryKey_New"/>
+    </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$errors</Name>
+        <Value>
+          <Calculation><![CDATA[$errors + 1]]></Calculation>
+        </Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$errors > 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="87" name="Show Custom Dialog">
+      <Title>
+        <Calculation><![CDATA["MIGRATE — Phase A FAILED"]]></Calculation>
+      </Title>
+      <Message>
+        <Calculation><![CDATA["Errors generating PrimaryKey_New: " & $errors & ¶ & "Aborting — no FK data has been changed."]]></Calculation>
+      </Message>
+      <Buttons>
+        <Button CommitState="True">
+          <Calculation><![CDATA["OK"]]></Calculation>
+        </Button>
+      </Buttons>
+    </Step>
+
+    <Step enable="True" id="90" name="Halt Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PHASE B — Update InvoiceLines::ForeignKeyInvoiceID</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Reads Invoices::PrimaryKey_New via the existing relationship</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>(old PK still intact — relationship still resolves correctly)</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="178" name="InvoiceLines"/>
+    <Animation value=""/>
+  </Step>
+
+  <Step enable="True" id="23" name="Show All Records"/>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[Invoices::PrimaryKey_New]]></Calculation>
+      <Field table="InvoiceLines" id="6" name="ForeignKeyInvoiceID"/>
+    </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$errors</Name>
+        <Value>
+          <Calculation><![CDATA[$errors + 1]]></Calculation>
+        </Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$errors > 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="87" name="Show Custom Dialog">
+      <Title>
+        <Calculation><![CDATA["MIGRATE — Phase B FAILED"]]></Calculation>
+      </Title>
+      <Message>
+        <Calculation><![CDATA["Errors updating InvoiceLines FKs: " & $errors & ¶ & "Restore from backup — do not attempt in-place repair."]]></Calculation>
+      </Message>
+      <Buttons>
+        <Button CommitState="True">
+          <Calculation><![CDATA["OK"]]></Calculation>
+        </Button>
+      </Buttons>
+    </Step>
+
+    <Step enable="True" id="90" name="Halt Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PHASE C — Update InvoiceLinks::ForeignKeyInvoiceID</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="172" name="InvoiceLinks"/>
+    <Animation value=""/>
+  </Step>
+
+  <Step enable="True" id="23" name="Show All Records"/>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[Invoices::PrimaryKey_New]]></Calculation>
+      <Field table="InvoiceLinks" id="6" name="ForeignKeyInvoiceID"/>
+    </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$errors</Name>
+        <Value>
+          <Calculation><![CDATA[$errors + 1]]></Calculation>
+        </Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$errors > 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="87" name="Show Custom Dialog">
+      <Title>
+        <Calculation><![CDATA["MIGRATE — Phase C FAILED"]]></Calculation>
+      </Title>
+      <Message>
+        <Calculation><![CDATA["Errors updating InvoiceLinks FKs: " & $errors & ¶ & "Restore from backup — do not attempt in-place repair."]]></Calculation>
+      </Message>
+      <Buttons>
+        <Button CommitState="True">
+          <Calculation><![CDATA["OK"]]></Calculation>
+        </Button>
+      </Buttons>
+    </Step>
+
+    <Step enable="True" id="90" name="Halt Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PHASE D — Update self-referential FK (ForeignKeyOriginalInvoiceID)</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Refund invoices only. OriginalInvoice TO still resolves via old PK.</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="171" name="Invoices"/>
+    <Animation value=""/>
+  </Step>
+
+  <Step enable="True" id="23" name="Show All Records"/>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[not IsEmpty ( Invoices::ForeignKeyOriginalInvoiceID )]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="76" name="Set Field">
+        <Calculation><![CDATA[OriginalInvoice::PrimaryKey_New]]></Calculation>
+        <Field table="Invoices" id="37" name="ForeignKeyOriginalInvoiceID"/>
+      </Step>
+
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+      </Step>
+
+        <Step enable="True" id="141" name="Set Variable">
+          <Name>$errors</Name>
+          <Value>
+            <Calculation><![CDATA[$errors + 1]]></Calculation>
+          </Value>
+        </Step>
+
+      <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$errors > 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="87" name="Show Custom Dialog">
+      <Title>
+        <Calculation><![CDATA["MIGRATE — Phase D FAILED"]]></Calculation>
+      </Title>
+      <Message>
+        <Calculation><![CDATA["Errors updating ForeignKeyOriginalInvoiceID: " & $errors & ¶ & "Restore from backup — do not attempt in-place repair."]]></Calculation>
+      </Message>
+      <Buttons>
+        <Button CommitState="True">
+          <Calculation><![CDATA["OK"]]></Calculation>
+        </Button>
+      </Buttons>
+    </Step>
+
+    <Step enable="True" id="90" name="Halt Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PHASE E — Swap PrimaryKey = PrimaryKey_New (point of no return)</Text>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>──────────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[Invoices::PrimaryKey_New]]></Calculation>
+      <Field table="Invoices" id="1" name="PrimaryKey"/>
+    </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$errors</Name>
+        <Value>
+          <Calculation><![CDATA[$errors + 1]]></Calculation>
+        </Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$errors > 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="87" name="Show Custom Dialog">
+      <Title>
+        <Calculation><![CDATA["MIGRATE — Phase E FAILED"]]></Calculation>
+      </Title>
+      <Message>
+        <Calculation><![CDATA["Errors swapping PrimaryKey: " & $errors & ¶ & "PKs are partially updated. Restore from backup immediately."]]></Calculation>
+      </Message>
+      <Buttons>
+        <Button CommitState="True">
+          <Calculation><![CDATA["OK"]]></Calculation>
+        </Button>
+      </Buttons>
+    </Step>
+
+    <Step enable="True" id="90" name="Halt Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["MIGRATE__Invoices_PKToUUIDv7 — Complete"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["All phases completed successfully." & ¶ & "Records processed: " & $total & ¶ & ¶ & "Next step: delete PrimaryKey_New field from Invoices."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+    </Buttons>
+  </Step>
+
+</fmxmlsnippet>

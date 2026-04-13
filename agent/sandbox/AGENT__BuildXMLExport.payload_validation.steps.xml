@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetContainerAttribute ( AgentExports::Payload ; "size" )]]></Calculation>
+    </Value>
+    <Name>$payloadBytes</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( AgentExports::Payload ) or $payloadBytes ≤ 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["failed"]]></Calculation>
+    <Field table="AgentExports" id="15" name="Status"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Get ( CurrentTimestamp )]]></Calculation>
+    <Field table="AgentExports" id="23" name="finishedOn"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["XML was exported, but AgentExports::Payload is empty after import."]]></Calculation>
+    <Field table="AgentExports" id="25" name="Error"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "AGENT_BUILD_EMPTY_PAYLOAD" ;
+    "XML export completed, but AgentExports::Payload is empty after import." ;
+    "AgentExports::Payload" ;
+    JSONSetElement (
+        "{}" ;
+        [ "id" ; AgentExports::id ; JSONString ] ;
+        [ "path" ; $xmlFmPath ; JSONString ] ;
+        [ "bytes" ; $payloadBytes ; JSONNumber ]
+    ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$payloadBytes]]></Calculation>
+    <Field table="AgentExports" id="18" name="Bytes"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[CryptDigest ( Base64EncodeRFC ( AgentExports::Payload ; 0 ) ; "SHA256" )]]></Calculation>
+    <Field table="AgentExports" id="19" name="Sha256"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["ready"]]></Calculation>
+    <Field table="AgentExports" id="15" name="Status"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Get ( CurrentTimestamp )]]></Calculation>
+    <Field table="AgentExports" id="23" name="finishedOn"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="AgentExports" id="25" name="Error"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[BE_FileDelete ( $xmlNativePath )]]></Calculation>
+    </Value>
+    <Name>$deleteResult</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "id" ; AgentExports::id ; JSONString ] ;
+        [ "status" ; AgentExports::Status ; JSONString ] ;
+        [ "filename" ; AgentExports::Filename ; JSONString ] ;
+        [ "bytes" ; AgentExports::Bytes ; JSONNumber ] ;
+        [ "sha256" ; AgentExports::Sha256 ; JSONString ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+</fmxmlsnippet>

@@ -1,0 +1,78 @@
+/*
+AGENT__GetXMLExportStatus
+
+Return the current state of one AgentExports job for local polling.
+
+Required script parameter JSON:
+{
+  "id": "<AgentExports::id>"
+}
+
+Response data:
+- `id`
+- `type`
+- `solution`
+- `status`
+- `filename`
+- `bytes`
+- `sha256`
+- `error`
+- `requestedOn`
+- `startedOn`
+- `finishedOn`
+- `consumedOn`
+*/
+
+Set Error Capture [ On ]
+Allow User Abort [ Off ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $param ; Get ( ScriptParameter ) ]
+Set Variable [ $id ; JSONGetElement ( $param ; "id" ) ]
+
+If [ IsEmpty ( $id ) ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_STATUS_ID_MISSING" ;
+		"AgentExports id is required." ;
+		"Get ( ScriptParameter )" ;
+		"{}" ;
+		Get ( ScriptName )
+	) ]
+Else
+	Go to Layout [ “AgentExports” (AgentExports) ; Animation: None ]
+	Enter Find Mode [ Pause: Off ]
+	Set Field [ AgentExports::id ; "=" & $id ]
+	Perform Find
+
+	If [ Get ( FoundCount ) ≠ 1 ]
+		Set Variable [ $response ; Response_AddError (
+			"AGENT_STATUS_NOT_FOUND" ;
+			"Expected exactly one AgentExports row for the supplied id." ;
+			"AgentExports::id" ;
+			JSONSetElement ( "{}" ; [ "id" ; $id ; JSONString ] ) ;
+			Get ( ScriptName )
+		) ]
+	Else
+		Set Variable [ $response ; Response_SetData (
+			JSONSetElement (
+				"{}" ;
+				[ "id" ; AgentExports::id ; JSONString ] ;
+				[ "type" ; AgentExports::Type ; JSONString ] ;
+				[ "solution" ; AgentExports::Solution ; JSONString ] ;
+				[ "status" ; AgentExports::Status ; JSONString ] ;
+				[ "filename" ; AgentExports::Filename ; JSONString ] ;
+				[ "bytes" ; AgentExports::Bytes ; JSONNumber ] ;
+				[ "sha256" ; AgentExports::Sha256 ; JSONString ] ;
+				[ "error" ; AgentExports::Error ; JSONString ] ;
+				[ "requestedOn" ; GetAsText ( AgentExports::requestedOn ) ; JSONString ] ;
+				[ "startedOn" ; GetAsText ( AgentExports::startedOn ) ; JSONString ] ;
+				[ "finishedOn" ; GetAsText ( AgentExports::finishedOn ) ; JSONString ] ;
+				[ "consumedOn" ; GetAsText ( AgentExports::consumedOn ) ; JSONString ]
+			)
+		) ]
+	End If
+End If
+
+Go to Layout [ original layout ]
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

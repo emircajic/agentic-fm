@@ -1,0 +1,20 @@
+/*
+Settings_GetScopeObject ( scope ; scopeId ; defaultObject )
+
+Convenience wrapper for scope-based reads.
+Examples:
+  Settings_GetScopeObject ( "layouts" ; Get ( LayoutNumber ) ; "{}" )
+  Settings_GetScopeObject ( "tables" ; "ServiceOrders" ; "{}" )
+*/
+
+Let (
+[
+    ~prefix =
+        Case (
+            IsEmpty ( scopeId ) ;
+            scope ;
+            scope & "." & scopeId
+        )
+];
+    Settings_GetObject ( ~prefix ; defaultObject )
+)

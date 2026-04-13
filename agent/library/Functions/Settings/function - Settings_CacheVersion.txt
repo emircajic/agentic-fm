@@ -1,0 +1,7 @@
+/*
+Settings_CacheVersion ( )
+
+Read the reserved version token from the cached settings object.
+*/
+
+Settings_Get ( "_system.settings_version" ; "" )

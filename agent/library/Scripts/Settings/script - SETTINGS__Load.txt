@@ -1,0 +1,40 @@
+# PURPOSE: Rebuild $$SETTINGS from the Settings table and persist the current cache version.
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $originLayout ; Get ( LayoutName ) ]
+
+Go to Layout [ "Settings" (Settings) ; Animation: None ]
+Show All Records
+
+Set Variable [ $settingsJSON ; Evaluate ( Settings::FUNCTION ) ]
+
+If [ JSONGetElementType ( $settingsJSON ; "" ) ≠ JSONObject ]
+	Set Variable [ $response ; Response_AddError (
+					        "SETTINGS_LOAD_INVALID_JSON" ;
+					        "Settings::FUNCTION did not evaluate to a JSON object." ;
+					        "Settings::FUNCTION" ;
+					        JSONSetElement (
+					            "{}" ;
+					            [ "result" ; $settingsJSON ; JSONString ]
+					        ) ;
+					        Get ( ScriptName )
+					    ) ]
+Else
+	Set Variable [ $$SETTINGS ; $settingsJSON ]
+	Set Variable [ $$SETTINGS_VERSION ; JSONGetElement ( $$SETTINGS ; "_system.settings_version" ) ]
+	Set Variable [ $response ; Response_SetData (
+					        JSONSetElement (
+					            "{}" ;
+					            [ "settings_version" ; $$SETTINGS_VERSION ; JSONString ] ;
+					            [ "settings" ; $$SETTINGS ; JSONObject ]
+					        )
+					    ) ]
+End If
+
+Go to Layout [ original layout ]
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

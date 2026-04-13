@@ -1,0 +1,207 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Script includeInMenu="False" SiriShortcutVisible="False" runFullAccess="False" id="759" name="SETTINGS__BulkSet">
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>PURPOSE: Batch settings writer for migrations and seeding.</Text>
+    </Step>
+    <Step enable="True" id="86" name="Set Error Capture">
+      <Set state="True"/>
+    </Step>
+    <Step enable="True" id="85" name="Allow User Abort">
+      <Set state="False"/>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+      </Value>
+      <Name>$input</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElementType ( $input ; "items" ) ≠ JSONArray]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_ITEMS_MISSING" ;
+    "Script parameter must contain an items array." ;
+    "items" ;
+    "{}" ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="70" name="End If"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[JSONGetElement ( $input ; "items" )]]></Calculation>
+      </Value>
+      <Name>$items</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[ValueCount ( JSONListKeys ( $items ; "" ) )]]></Calculation>
+      </Value>
+      <Name>$count</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[0]]></Calculation>
+      </Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[0]]></Calculation>
+      </Value>
+      <Name>$processed</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+    <Step enable="True" id="72" name="Exit Loop If">
+      <Calculation><![CDATA[$i ≥ $count or JSONGetElement ( $response ; "status" ) = "fail"]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[JSONGetElement ( $items ; "[" & $i & "]" )]]></Calculation>
+      </Value>
+      <Name>$row</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[JSONSetElement ( $row ; "reload" ; False ; JSONBoolean )]]></Calculation>
+      </Value>
+      <Name>$row</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA["SETTINGS__SetValue 2"]]></Calculation>
+      </Value>
+      <Name>$script</Name>
+    </Step>
+    <Step enable="True" id="1" name="Perform Script">
+      <Calculated>
+        <Calculation><![CDATA[$script]]></Calculation>
+      </Calculated>
+      <Calculation><![CDATA[$row]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+      </Value>
+      <Name>$rowResult</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElement ( $rowResult ; "status" ) = "fail"]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_BULK_ITEM_FAILED" ;
+    "One item in the batch failed." ;
+    "items[" & $i & "]" ;
+    JSONSetElement (
+        "{}" ;
+        [ "index" ; $i ; JSONNumber ] ;
+        [ "item" ; $row ; JSONObject ] ;
+        [ "result" ; $rowResult ; JSONObject ]
+    ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="69" name="Else">
+      <Restore state="False"/>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[$processed + 1]]></Calculation>
+      </Value>
+      <Name>$processed</Name>
+    </Step>
+    <Step enable="True" id="70" name="End If"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[$i + 1]]></Calculation>
+      </Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElement ( $response ; "status" ) ≠ "fail"]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA["SETTINGS__Load"]]></Calculation>
+      </Value>
+      <Name>$script</Name>
+    </Step>
+    <Step enable="True" id="1" name="Perform Script">
+      <Calculated>
+        <Calculation><![CDATA[$script]]></Calculation>
+      </Calculated>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+      </Value>
+      <Name>$loadResult</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElement ( $loadResult ; "status" ) = "fail"]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_BULK_RELOAD_FAILED" ;
+    "The batch completed, but reloading settings failed." ;
+    "SETTINGS__Load" ;
+    $loadResult ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="69" name="Else">
+      <Restore state="False"/>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "processed" ; $processed ; JSONNumber ] ;
+        [ "settings_version" ; $$SETTINGS_VERSION ; JSONString ] ;
+        [ "settings" ; $$SETTINGS ; JSONObject ]
+    )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="70" name="End If"/>
+    <Step enable="True" id="70" name="End If"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_Finalize]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[$response]]></Calculation>
+    </Step>
+  </Script>
+</fmxmlsnippet>

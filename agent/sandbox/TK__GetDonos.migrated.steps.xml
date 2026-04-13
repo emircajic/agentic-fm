@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Calculate donos before the requested date for a company.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Expects JSON: { "companyID": &lt;text&gt;, "datumOd": &lt;date&gt; }</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Returns JSON: { "status": "success|fail", "companyID": "", "datumOd": "", "donos": 0, "zaduzenjeBefore": 0, "razduzenjeVirmanBefore": 0, "razduzenjePoloziBefore": 0, "razduzenjeBefore": 0, "errors": [] }</Text>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "companyID" )]]></Calculation>
+    </Value>
+    <Name>$companyID</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "datumOd" )]]></Calculation>
+    </Value>
+    <Name>$datumOd</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsBoolean ( Settings_Get ( "polozi.pologUkljucujeKartice" ; "" ) )]]></Calculation>
+    </Value>
+    <Name>$ukljuciKartice</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[False]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$zaduzenjeBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$razduzenjeVirmanBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$razduzenjePoloziBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$razduzenjeBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$donos</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $companyID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje companyID" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $datumOd )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje datumOd" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$exit]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+                        [ "status" ; "fail" ; JSONString ] ;
+                        [ "companyID" ; $companyID ; JSONString ] ;
+                        [ "datumOd" ; $datumOd ; JSONString ] ;
+                        [ "donos" ; 0 ; JSONNumber ] ;
+                        [ "zaduzenjeBefore" ; 0 ; JSONNumber ] ;
+                        [ "razduzenjeVirmanBefore" ; 0 ; JSONNumber ] ;
+                        [ "razduzenjePoloziBefore" ; 0 ; JSONNumber ] ;
+                        [ "razduzenjeBefore" ; 0 ; JSONNumber ] ;
+                        [ "errors" ; $errors ; JSONArray ]
+                    )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ([
+                    ~suma = ExecuteSQL(
+                    "SELECT SUM(UkupnoMP_Roba)
+                     FROM KMP__KalkulacijaMP
+                     WHERE ForeignKeyCompanyID = ?
+                       AND Status = 'Knjižena'
+                       AND DatumKalkulacije < ?";
+                    "";
+                    "";
+                    $companyID;
+                    $datumOd
+                )
+                ];
+                    If ( not IsEmpty ( ~suma ) ;
+                        ~suma ;
+                        0
+                    )
+                )]]></Calculation>
+    </Value>
+    <Name>$zaduzenjeBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ExecuteSQL (
+                    "SELECT SUM(UkupnoMP_Roba)
+                     FROM Invoices
+                     WHERE ForeignKeyCompanyID = ?
+                       AND Datum < ?
+                       AND UkupnoMP_Roba > 0
+                       AND NacinPlacanja = 'Virman'" ;
+                    "" ; "" ;
+                    $companyID ; $datumOd
+                )]]></Calculation>
+    </Value>
+    <Name>$razduzenjeVirmanBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( $ukljuciKartice ; "UkupnoGotovina + UkupnoKartice" ; "UkupnoGotovina" )]]></Calculation>
+    </Value>
+    <Name>$sumField</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ExecuteSQL(
+                    "SELECT SUM("& $sumField &")
+                     FROM DP__DnevniPolog
+                     WHERE ForeignKeyCompanyID = ?
+                       AND DatumPologa < ?
+                       AND Status = 'Zaključen'";
+                    "";
+                    "";
+                    $companyID;
+                    $datumOd
+                )]]></Calculation>
+    </Value>
+    <Name>$razduzenjePoloziBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( $zaduzenjeBefore )]]></Calculation>
+    </Value>
+    <Name>$zaduzenjeBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( $razduzenjeVirmanBefore )]]></Calculation>
+    </Value>
+    <Name>$razduzenjeVirmanBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( $razduzenjePoloziBefore )]]></Calculation>
+    </Value>
+    <Name>$razduzenjePoloziBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$razduzenjeVirmanBefore + $razduzenjePoloziBefore]]></Calculation>
+    </Value>
+    <Name>$razduzenjeBefore</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$zaduzenjeBefore - $razduzenjeBefore]]></Calculation>
+    </Value>
+    <Name>$donos</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+                    [ "status" ; "success" ; JSONString ] ;
+                    [ "companyID" ; $companyID ; JSONString ] ;
+                    [ "datumOd" ; $datumOd ; JSONString ] ;
+                    [ "donos" ; $donos ; JSONNumber ] ;
+                    [ "zaduzenje" ; $zaduzenjeBefore ; JSONNumber ] ;
+                    [ "razduzenje" ; $razduzenjeBefore ; JSONNumber ] ;
+                    [ "errors" ; $errors ; JSONArray ]
+                )]]></Calculation>
+  </Step>
+</fmxmlsnippet>

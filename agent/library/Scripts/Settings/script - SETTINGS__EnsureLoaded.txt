@@ -1,0 +1,29 @@
+# PURPOSE: Reload settings when the cache is empty or stale.
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+
+If [ not Settings_IsLoaded ( ) ]
+    Perform Script [ "SETTINGS__Load" ]
+    Exit Script [ Get ( ScriptResult ) ]
+End If
+
+Set Variable [ $cachedVersion ; $$SETTINGS_VERSION ]
+Set Variable [ $currentVersion ; Settings_Get ( "_system.settings_version" ; "" ) ]
+
+If [ $cachedVersion ≠ $currentVersion ]
+    Perform Script [ "SETTINGS__Load" ]
+    Exit Script [ Get ( ScriptResult ) ]
+End If
+
+Set Variable [ $response ; Response_SetData (
+                        JSONSetElement (
+                            "{}" ;
+                            [ "loaded" ; False ; JSONBoolean ] ;
+                            [ "settings_version" ; $cachedVersion ; JSONString ]
+                        )
+                    ) ]
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

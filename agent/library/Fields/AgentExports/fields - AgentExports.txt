@@ -1,0 +1,40 @@
+AgentExports field contract
+
+Core identifiers
+- `id`: text UUID primary key
+- `recid`: calculated internal FileMaker record id
+
+Audit/template fields
+- `createdOn`
+- `createdBy`
+- `modifiedOn`
+- `modifiedBy`
+- `createdUTC`
+- `modifiedUTC`
+
+Pipeline fields
+- `Type`: artifact category, first use is `xml_export`
+- `Solution`: logical solution name, for example `Autoklinika`
+- `Status`: queue/build/download state
+- `Filename`: exported filename, for example `Autoklinika.xml`
+- `Payload`: container payload for the generated file
+- `Bytes`: optional payload byte size
+- `Sha256`: optional payload hash
+- `requestedBy`: who requested the export
+- `requestedOn`: when the export was queued
+- `startedOn`: when generation started
+- `finishedOn`: when generation finished
+- `consumedOn`: when local tooling consumed the file
+
+Template utility fields also present
+- `FOUNDCOUNT`
+- `LOAD`
+- `json`
+- `unindexed`
+
+Current schema warning
+- `Error` is currently `Timestamp` in the live XML, not `Text`
+- `Notes` is currently `Timestamp` in the live XML, not `Text`
+- `RetentionTag` is currently `Timestamp` in the live XML, not `Text`
+
+Because of that mismatch, the first-pass scripts should not write text diagnostics into those fields yet.

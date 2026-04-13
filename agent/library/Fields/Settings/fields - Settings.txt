@@ -1,0 +1,92 @@
+# FIELDS: Settings
+#
+# Canonical field contract for the reusable Settings API.
+#
+# These definitions are based on the current Autoklinika implementation and are
+# meant as a future reuse reference, not as raw DDR XML.
+
+`key`
+- Type: Text
+- Required: yes
+- Validation: unique, not empty
+- Purpose: machine-safe identifier, e.g. `app.locale`, `layouts.184.currentView`
+
+`value`
+- Type: Text
+- Required: no
+- Purpose: raw persisted value before row-level type coercion in `pairs`
+
+`type`
+- Type: Text
+- Auto-enter: `"JSONString"`
+- Required: yes
+- Purpose: FileMaker JSON constant name used by `pairs`
+- Expected values:
+  - `JSONString`
+  - `JSONNumber`
+  - `JSONBoolean`
+  - `JSONObject`
+  - `JSONArray`
+  - `JSONRaw`
+  - `JSONNull`
+
+`default`
+- Type: Text
+- Purpose: fallback when `value` is empty
+
+`valid`
+- Type: Text
+- Purpose: validation template using `%value%`
+- Examples:
+  - `PatternCount ( "daily¶weekly¶monthly" ; %value% ) > 0`
+  - `JSONGetElementType ( %value% ; "" ) = JSONObject`
+
+`pairs`
+- Type: Text
+- Auto-enter: stored calculation
+- Purpose: converts one row into the tuple consumed by `JSONSetElement`
+- Responsibilities:
+  - apply default fallback
+  - sanitize unsafe `Let(` input if desired
+  - evaluate `valid`
+  - coerce output to the row’s `type`
+
+`FUNCTION`
+- Type: Text
+- Calculation: unstored
+- Purpose: builds the full committed JSON object from `summaryListOfPairs`
+- Expected output:
+  - a valid `JSONSetElement ( "{}" ; ... )` expression
+  - evaluates to one JSON object string
+
+`summaryListOfPairs`
+- Type: Summary (Text)
+- Purpose: aggregate all `pairs` rows for `FUNCTION`
+
+`name`
+- Type: Text
+- Purpose: human-readable setting title
+
+`description`
+- Type: Text
+- Purpose: developer or user explanation
+
+`section`
+- Type: Text
+- Purpose: optional grouping or UI categorization
+
+`hidden`
+- Type: Number
+- Purpose: optional UI visibility flag
+
+Metadata fields:
+- `createdOn`
+- `createdBy`
+- `modifiedOn`
+- `modifiedBy`
+- `createdUTC`
+- `modifiedUTC`
+- `recid`
+
+Optional helper field:
+- `LOAD` global text field for import / staging workflows

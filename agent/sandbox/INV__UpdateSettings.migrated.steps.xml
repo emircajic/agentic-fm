@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="210" name="Settings"/>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["=invoices.*"]]></Calculation>
+    <Field table="Settings" id="1" name="key"/>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <GoTo value="First"/>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings::key]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$key</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings::value]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$value</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings_Get ( $key ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$savedValue</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $savedValue )]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$value  ≠ $savedValue]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$savedValue]]></Calculation>
+    <Field table="Settings" id="9" name="value"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <GoTo value="Next"/>
+    <Exit state="True"/>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let(
+	[
+		~pairs = GetSummary(
+			Settings::summaryListOfPairs;
+			Settings::summaryListOfPairs
+		);
+		~pairs = Substitute( ~pairs; ¶; ";¶	" );
+		~function = Substitute(
+			"JSONSetElement ( \"{}\" ; ¶	%pairs%¶)";
+			"%pairs%";
+			~pairs
+		);
+		~error = EvaluationError( Evaluate( ~function ) )
+	];
+	If( not ~error; True; False )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$valid</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not $valid]]></Calculation>
+  </Step>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <GoTo value="First"/>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Settings::default]]></Calculation>
+    <Field table="Settings" id="9" name="value"/>
+  </Step>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <GoTo value="Next"/>
+    <Exit state="True"/>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="1" name="Perform Script">
+    <Script id="754" name="SETTINGS__Load"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+</fmxmlsnippet>

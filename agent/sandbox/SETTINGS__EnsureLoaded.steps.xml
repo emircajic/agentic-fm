@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Reload settings when the cache is empty or stale.</Text>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not Settings_IsLoaded ( )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__Load"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$$SETTINGS_VERSION]]></Calculation>
+    </Value>
+    <Name>$cachedVersion</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings_Get ( "_system.settings_version" ; "" )]]></Calculation>
+    </Value>
+    <Name>$currentVersion</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$cachedVersion ≠ $currentVersion]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__Load"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "loaded" ; False ; JSONBoolean ] ;
+        [ "settings_version" ; $cachedVersion ; JSONString ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Finalize]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$response]]></Calculation>
+  </Step>
+</fmxmlsnippet>

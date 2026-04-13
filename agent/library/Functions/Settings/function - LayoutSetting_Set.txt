@@ -1,0 +1,28 @@
+/*
+LayoutSetting_Set ( key ; value ; valueType )
+
+Return an updated $$LAYOUT_SETTINGS wrapper with the current layout draft changed.
+Use in a Set Variable step:
+
+Set Variable [ $$LAYOUT_SETTINGS ; LayoutSetting_Set ( "ui.sidebar.collapsed" ; True ; JSONBoolean ) ]
+
+Notes:
+- This custom function does not mutate globals by itself.
+- valueType should be a FileMaker JSON type constant such as JSONString, JSONNumber,
+  JSONBoolean, JSONObject, JSONArray, or JSONNull.
+*/
+
+Let (
+[
+    ~layoutNumber = Get ( LayoutNumber ) ;
+    ~drafts = Case ( JSONGetElementType ( $$LAYOUT_SETTINGS ; "" ) = JSONObject ; $$LAYOUT_SETTINGS ; "{}" ) ;
+    ~draft =
+        Case (
+            JSONGetElementType ( ~drafts ; ~layoutNumber ) = JSONObject ;
+            JSONGetElement ( ~drafts ; ~layoutNumber ) ;
+            "{}"
+        ) ;
+    ~updatedDraft = JSONSetElement ( ~draft ; key ; value ; valueType )
+];
+    JSONSetElement ( ~drafts ; ~layoutNumber ; ~updatedDraft ; JSONObject )
+)

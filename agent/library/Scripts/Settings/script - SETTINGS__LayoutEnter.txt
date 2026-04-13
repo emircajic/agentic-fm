@@ -1,0 +1,61 @@
+# PURPOSE: Initialize a shared per-layout settings draft on layout enter.
+#
+# MODEL:
+# $$LAYOUT_SETTINGS is a JSON object keyed by layout number:
+# {
+#   "184": { ...draft... },
+#   "210": { ...draft... }
+# }
+#
+# Trade-off:
+# Multiple instances of the same layout share one draft object in the client session.
+# That is acceptable for layout settings, which should not diverge per window.
+#
+# PARAMETER:
+# none
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $layoutNumber ; Get ( LayoutNumber ) ]
+Set Variable [ $scopePrefix ; "layouts." & $layoutNumber ]
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+	Perform Script [ "SETTINGS__EnsureLoaded" ; Parameter: "" ]
+	Set Variable [ $ensureResult ; Get ( ScriptResult ) ]
+	
+	If [ JSONGetElement ( $ensureResult ; "status" ) = "fail" ]
+		Set Variable [ $response ; Response_AddError (
+						    "SETTINGS_LAYOUT_ENTER_ENSURE_FAILED" ;
+						    "Unable to ensure settings cache before creating layout draft." ;
+						    "SETTINGS__EnsureLoaded" ;
+						    $ensureResult ;
+						    Get ( ScriptName )
+						) ]
+	End If
+End If
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+	Set Variable [ $$LAYOUT_SETTINGS ; Case ( JSONGetElementType ( $$LAYOUT_SETTINGS ; "" ) = JSONObject ; $$LAYOUT_SETTINGS ; "{}" ) ]
+	Set Variable [ $existingDraft ; JSONGetElement ( $$LAYOUT_SETTINGS ; $layoutNumber ) ]
+	
+	If [ JSONGetElementType ( $existingDraft ; "" ) = JSONObject ]
+		Set Variable [ $draft ; $existingDraft ]
+	Else
+		Set Variable [ $draft ; Settings_GetObject ( $scopePrefix ; "{}" ) ]
+		Set Variable [ $$LAYOUT_SETTINGS ; JSONSetElement ( $$LAYOUT_SETTINGS ; $layoutNumber ; $draft ; JSONObject ) ]
+	End If
+	
+	Set Variable [ $response ; Response_SetData (
+					    JSONSetElement (
+					        "{}" ;
+					        [ "layoutNumber" ; $layoutNumber ; JSONNumber ] ;
+					        [ "scope" ; $scopePrefix ; JSONString ] ;
+					        [ "draft" ; $draft ; JSONObject ]
+					    )
+					) ]
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

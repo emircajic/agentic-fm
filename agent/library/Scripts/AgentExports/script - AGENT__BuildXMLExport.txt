@@ -1,0 +1,164 @@
+/*
+AGENT__BuildXMLExport
+
+Build one queued XML export into AgentExports::Payload.
+
+Required script parameter JSON:
+{
+  "id": "<AgentExports::id>",
+  "callbackUrl": "http://reachable-host:8765/fm-export-ready"
+}
+
+Behavior
+- finds exactly one AgentExports row by `id`
+- marks it `assembling`
+- saves current solution XML to a temporary file
+- imports the file into `AgentExports::Payload`
+- stamps `Bytes`, `Sha256`, `startedOn`, `finishedOn`
+- marks the row `ready`
+- if `callbackUrl` is present, POSTs `{ "id": "...", "status": "ready" }` or `{ "id": "...", "status": "failed" }`
+- records a failure message in `Error` and `Status = "failed"` if any critical step fails
+
+Notes
+- Assumes `Error` is now a text field in the live file.
+- Uses `ConvertFromFileMakerPath ( ... ; 1 )` before BaseElements file functions.
+*/
+
+Set Error Capture [ On ]
+Allow User Abort [ Off ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $param ; Get ( ScriptParameter ) ]
+Set Variable [ $id ; JSONGetElement ( $param ; "id" ) ]
+Set Variable [ $callbackUrl ; Let ( [ v = JSONGetElement ( $param ; "callbackUrl" ) ] ; Case ( not IsEmpty ( v ) and Left ( v ; 1 ) ≠ "?" ; v ; "" ) ) ]
+
+If [ IsEmpty ( $id ) ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_BUILD_ID_MISSING" ;
+		"AgentExports id is required." ;
+		"Get ( ScriptParameter )" ;
+		"{}" ;
+		Get ( ScriptName )
+	) ]
+	Go to Layout [ original layout ]
+	Set Variable [ $response ; Response_Finalize ]
+	Exit Script [ $response ]
+End If
+
+Go to Layout [ “AgentExports” (AgentExports) ; Animation: None ]
+Enter Find Mode [ Pause: Off ]
+Set Field [ AgentExports::id ; "=" & $id ]
+Perform Find
+
+If [ Get ( FoundCount ) ≠ 1 ]
+	Set Variable [ $response ; Response_AddError (
+		"AGENT_BUILD_NOT_FOUND" ;
+		"Expected exactly one AgentExports row for the supplied id." ;
+		"AgentExports::id" ;
+		JSONSetElement ( "{}" ; [ "id" ; $id ; JSONString ] ) ;
+		Get ( ScriptName )
+	) ]
+Else
+	Set Field [ AgentExports::Status ; "assembling" ]
+	Set Field [ AgentExports::startedOn ; Get ( CurrentTimestamp ) ]
+	Set Field [ AgentExports::Error ; "" ]
+	Commit Records/Requests [ With dialog: Off ]
+
+	Set Variable [ $xmlFilename ; Case ( IsEmpty ( AgentExports::Filename ) ; AgentExports::Solution & ".xml" ; AgentExports::Filename ) ]
+	Set Variable [ $xmlFmPath ; Get ( TemporaryPath ) & AgentExports::id & "__" & $xmlFilename ]
+	Set Variable [ $xmlNativePath ; ConvertFromFileMakerPath ( $xmlFmPath ; 1 ) ]
+
+	Save a Copy as XML [ Get ( WindowName ) ; $xmlFmPath ]
+	Set Variable [ $saveError ; Get ( LastError ) ]
+
+	If [ $saveError ≠ 0 ]
+		Set Field [ AgentExports::Status ; "failed" ]
+		Set Field [ AgentExports::finishedOn ; Get ( CurrentTimestamp ) ]
+		Set Field [ AgentExports::Error ; "Save as XML failed (error " & $saveError & ")." ]
+		Commit Records/Requests [ With dialog: Off ]
+		Set Variable [ $response ; Response_AddError (
+			"AGENT_BUILD_SAVE_XML_FAILED" ;
+			"Save a Copy as XML failed." ;
+			"Save a Copy as XML" ;
+			JSONSetElement (
+				"{}" ;
+				[ "id" ; AgentExports::id ; JSONString ] ;
+				[ "error" ; $saveError ; JSONNumber ] ;
+				[ "path" ; $xmlFmPath ; JSONString ]
+			) ;
+			Get ( ScriptName )
+		) ]
+	Else If [ not BE_FileExists ( $xmlNativePath ) ]
+		Set Field [ AgentExports::Status ; "failed" ]
+		Set Field [ AgentExports::finishedOn ; Get ( CurrentTimestamp ) ]
+		Set Field [ AgentExports::Error ; "The XML file was not found after export." ]
+		Commit Records/Requests [ With dialog: Off ]
+		Set Variable [ $response ; Response_AddError (
+			"AGENT_BUILD_FILE_MISSING" ;
+			"XML export path does not exist after Save a Copy as XML." ;
+			"$xmlNativePath" ;
+			JSONSetElement (
+				"{}" ;
+				[ "id" ; AgentExports::id ; JSONString ] ;
+				[ "path" ; $xmlNativePath ; JSONString ]
+			) ;
+			Get ( ScriptName )
+		) ]
+	Else
+		Set Field [ AgentExports::Payload ; BE_FileImport ( $xmlNativePath ) ]
+		Commit Records/Requests [ With dialog: Off ]
+		Set Variable [ $payloadError ; Get ( LastError ) ]
+
+		If [ $payloadError ≠ 0 ]
+			Set Field [ AgentExports::Status ; "failed" ]
+			Set Field [ AgentExports::finishedOn ; Get ( CurrentTimestamp ) ]
+			Set Field [ AgentExports::Error ; "Failed to import XML into AgentExports::Payload (error " & $payloadError & ")." ]
+			Commit Records/Requests [ With dialog: Off ]
+			Set Variable [ $response ; Response_AddError (
+				"AGENT_BUILD_IMPORT_FAILED" ;
+				"Failed to import XML into AgentExports::Payload." ;
+				"AgentExports::Payload" ;
+				JSONSetElement (
+					"{}" ;
+					[ "id" ; AgentExports::id ; JSONString ] ;
+					[ "error" ; $payloadError ; JSONNumber ]
+				) ;
+				Get ( ScriptName )
+			) ]
+		Else
+			Set Field [ AgentExports::Bytes ; GetContainerAttribute ( AgentExports::Payload ; "size" ) ]
+			Set Field [ AgentExports::Sha256 ; CryptDigest ( Base64EncodeRFC ( AgentExports::Payload ; 0 ) ; "SHA256" ) ]
+			Set Field [ AgentExports::Status ; "ready" ]
+			Set Field [ AgentExports::finishedOn ; Get ( CurrentTimestamp ) ]
+			Set Field [ AgentExports::Error ; "" ]
+			Commit Records/Requests [ With dialog: Off ]
+
+			Set Variable [ $deleteResult ; BE_FileDelete ( $xmlNativePath ) ]
+			Set Variable [ $response ; Response_SetData (
+				JSONSetElement (
+					"{}" ;
+					[ "id" ; AgentExports::id ; JSONString ] ;
+					[ "status" ; AgentExports::Status ; JSONString ] ;
+					[ "filename" ; AgentExports::Filename ; JSONString ] ;
+					[ "bytes" ; AgentExports::Bytes ; JSONNumber ] ;
+					[ "sha256" ; AgentExports::Sha256 ; JSONString ]
+				)
+			) ]
+		End If
+	End If
+End If
+
+If [ not IsEmpty ( $callbackUrl ) ]
+	Set Variable [ $callbackPayload ; JSONSetElement ( "{}" ;
+		[ "id" ; AgentExports::id ; JSONString ] ;
+		[ "status" ; AgentExports::Status ; JSONString ]
+	) ]
+	Insert from URL [ Verify SSL Certificates: Off ; With dialog: Off ; Target: $callbackResponse ;
+		$callbackUrl ;
+		cURL options: "-X POST -H \"Content-Type: application/json\" -d " & Quote ( $callbackPayload )
+	]
+End If
+
+Go to Layout [ original layout ]
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

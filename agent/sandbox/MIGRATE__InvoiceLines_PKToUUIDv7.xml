@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Backfill InvoiceLines::PrimaryKey with UUIDv7 values derived from CreationTimestamp. Run once, off-hours, zero users. See UUIDv7_Migration_Runbook.md.</Text>
+  </Step>
+
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="178" name="InvoiceLines"/>
+    <Animation value=""/>
+  </Step>
+
+  <Step enable="True" id="23" name="Show All Records"/>
+
+  <Step enable="True" id="39" name="Sort Records">
+    <NoInteract state="True"/>
+    <Restore state="True"/>
+    <SortList Maintain="True" value="True">
+      <Sort type="Ascending">
+        <PrimaryField>
+          <Field table="InvoiceLines" id="1" name="PrimaryKey"/>
+        </PrimaryField>
+      </Sort>
+    </SortList>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$total</Name>
+    <Value>
+      <Calculation><![CDATA[Count ( InvoiceLines::PrimaryKey )]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$errors</Name>
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$i</Name>
+    <Value>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Name>$newPK</Name>
+      <Value>
+        <Calculation><![CDATA[UUIDv7FromTimestamp ( InvoiceLines::CreationTimestamp )]]></Calculation>
+      </Value>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[$newPK]]></Calculation>
+      <Field table="InvoiceLines" id="1" name="PrimaryKey"/>
+    </Step>
+
+    <Step enable="True" id="89" name="# (comment)"/>
+
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$errors</Name>
+        <Value>
+          <Calculation><![CDATA[$errors + 1]]></Calculation>
+        </Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="89" name="# (comment)"/>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Name>$i</Name>
+      <Value>
+        <Calculation><![CDATA[$i + 1]]></Calculation>
+      </Value>
+    </Step>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["MIGRATE__InvoiceLines_PKToUUIDv7 — Done"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Processed: " & $total & ¶ & "Errors: " & $errors]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+    </Buttons>
+  </Step>
+
+</fmxmlsnippet>

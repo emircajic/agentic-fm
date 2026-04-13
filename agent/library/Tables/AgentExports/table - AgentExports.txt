@@ -1,0 +1,58 @@
+AgentExports
+
+Purpose
+- Private transport table for server-generated artifacts that need to be handed back to the local toolchain.
+- First use case: FileMaker XML export handoff for local `fmparse.sh` explosion.
+
+Current live table name
+- `AgentExports`
+
+Current live table occurrence
+- `AgentExports`
+
+Reliable fields to use in scripts right now
+- `id`
+- `Type`
+- `Solution`
+- `Status`
+- `Filename`
+- `Payload`
+- `Bytes`
+- `Sha256`
+- `requestedBy`
+- `requestedOn`
+- `startedOn`
+- `finishedOn`
+- `consumedOn`
+- `createdOn`
+- `createdBy`
+- `modifiedOn`
+- `modifiedBy`
+- `createdUTC`
+- `modifiedUTC`
+
+Fields present but currently typed wrong for the intended pipeline
+- `Error`
+- `Notes`
+- `RetentionTag`
+
+Those three fields exist as `Timestamp` in the live XML. Do not depend on them for text payloads until they are corrected in the file.
+
+Recommended status values
+- `pending`
+- `assembling`
+- `ready`
+- `failed`
+- `consumed`
+
+Recommended type values
+- `xml_export`
+
+Recommended first-pass lifecycle
+1. `AGENT__QueueXMLExport` creates a `pending` record.
+2. `AGENT__BuildXMLExport` loads the queued record, switches it to `assembling`, generates the XML, stores it in `Payload`, then sets `ready`.
+3. Local tooling downloads the container and optionally marks it `consumed`.
+
+Notes
+- `Payload` is already configured for external container storage.
+- The table follows the project's template fields, so scripts should use the live field names above rather than generic aliases from earlier planning notes.

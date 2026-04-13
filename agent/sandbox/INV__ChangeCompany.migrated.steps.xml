@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings_Get ( "invoices.currentCompany" ; "" )]]></Calculation>
+    </Value>
+    <Name>$sadasnjaKompanija</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$sadasnjaKompanija = "OD"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["DOO"]]></Calculation>
+    </Value>
+    <Name>$sadasnjaKompanija</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["OD"]]></Calculation>
+    </Value>
+    <Name>$sadasnjaKompanija</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__SetValue"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement (
+    "{}" ;
+    [ "key" ; "invoices.currentCompany" ; JSONString ] ;
+    [ "value" ; $sadasnjaKompanija ; JSONString ] ;
+    [ "valueType" ; JSONString ; JSONNumber ] ;
+    [ "reload" ; True ; JSONBoolean ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["Filtriraj Dokumente"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+</fmxmlsnippet>

@@ -1,0 +1,89 @@
+/*
+AGENT__QueueXMLExport
+
+Create one queued AgentExports record for later server-side XML assembly.
+
+Suggested script parameter JSON:
+{
+  "solution": "Autoklinika",
+  "type": "xml_export",
+  "filename": "Autoklinika.xml",
+  "requestedBy": "Admin",
+  "autoBuild": true
+}
+
+Response data:
+- `id`
+- `status`
+- `solution`
+- `type`
+- `filename`
+- `psos_requested`
+
+Notes:
+- Uses native `Perform Script on Server with Callback`.
+- Stores the queued job id in `$$AGENT.XML_EXPORT_ID` so the callback script can receive a stable identifier.
+*/
+
+Set Error Capture [ On ]
+Allow User Abort [ Off ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $param ; Get ( ScriptParameter ) ]
+Set Variable [ $solution ; Let ( [ v = JSONGetElement ( $param ; "solution" ) ] ; Case ( not IsEmpty ( v ) and Left ( v ; 1 ) ≠ "?" ; v ; Get ( FileName ) ) ) ]
+Set Variable [ $type ; Let ( [ v = JSONGetElement ( $param ; "type" ) ] ; Case ( not IsEmpty ( v ) and Left ( v ; 1 ) ≠ "?" ; v ; "xml_export" ) ) ]
+Set Variable [ $filename ; Let ( [ v = JSONGetElement ( $param ; "filename" ) ] ; Case ( not IsEmpty ( v ) and Left ( v ; 1 ) ≠ "?" ; v ; $solution & ".xml" ) ) ]
+Set Variable [ $requestedBy ; Let ( [ v = JSONGetElement ( $param ; "requestedBy" ) ] ; Case ( not IsEmpty ( v ) and Left ( v ; 1 ) ≠ "?" ; v ; Get ( AccountName ) ) ) ]
+Set Variable [ $autoBuild ; Let ( [ v = JSONGetElement ( $param ; "autoBuild" ) ] ; Case ( v = 0 or v = False ; 0 ; 1 ) ) ]
+
+Set Variable [ $originLayout ; Get ( LayoutName ) ]
+Freeze Window
+Go to Layout [ “AgentExports” (AgentExports) ; Animation: None ]
+New Record/Request
+
+If [ Get ( LastError ) ≠ 0 ]
+	Set Variable [ $response ; Response_AddError (
+		$response ;
+		"AGENT_QUEUE_CREATE_FAILED" ;
+		"Unable to create AgentExports queue record." ;
+		Get ( LastError )
+	) ]
+Else
+	Set Field [ AgentExports::Type ; $type ]
+	Set Field [ AgentExports::Solution ; $solution ]
+	Set Field [ AgentExports::Status ; "pending" ]
+	Set Field [ AgentExports::Filename ; $filename ]
+	Set Field [ AgentExports::requestedBy ; $requestedBy ]
+	Set Field [ AgentExports::requestedOn ; Get ( CurrentTimestamp ) ]
+	Commit Records/Requests [ With dialog: Off ]
+
+	If [ Get ( LastError ) ≠ 0 ]
+		Set Variable [ $response ; Response_AddError (
+			$response ;
+			"AGENT_QUEUE_COMMIT_FAILED" ;
+			"Unable to save AgentExports queue record." ;
+			Get ( LastError )
+		) ]
+	Else
+		Set Variable [ $response ; Response_SetData (
+			$response ;
+			JSONSetElement ( "{}" ;
+				[ "id" ; AgentExports::id ; JSONString ] ;
+				[ "status" ; AgentExports::Status ; JSONString ] ;
+				[ "solution" ; AgentExports::Solution ; JSONString ] ;
+				[ "type" ; AgentExports::Type ; JSONString ] ;
+				[ "filename" ; AgentExports::Filename ; JSONString ] ;
+				[ "psos_requested" ; $autoBuild ; JSONBoolean ]
+			)
+		) ]
+
+		If [ $autoBuild ]
+			Set Variable [ $$AGENT.XML_EXPORT_ID ; AgentExports::id ]
+			Perform Script on Server with Callback [ Continue ; Callback script: “AGENT__HandleXMLExportReady” ; Callback script parameter: $$AGENT.XML_EXPORT_ID ; Specified: From list ; “AGENT__BuildXMLExport” ; Parameter: JSONSetElement ( "{}" ; [ "id" ; AgentExports::id ; JSONString ] ) ]
+		End If
+	End If
+End If
+
+Go to Layout [ Layout Name by calculation: $originLayout ; Animation: None ]
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ Text Result: $response ]

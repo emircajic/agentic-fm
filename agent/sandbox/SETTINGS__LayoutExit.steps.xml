@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Persist a shared per-layout settings draft on layout exit.</Text>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( LayoutNumber )]]></Calculation>
+    </Value>
+    <Name>$layoutNumber</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case ( JSONGetElementType ( $$LAYOUT_SETTINGS ; "" ) = JSONObject ; $$LAYOUT_SETTINGS ; "{}" )]]></Calculation>
+    </Value>
+    <Name>$$LAYOUT_SETTINGS</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $$LAYOUT_SETTINGS ; $layoutNumber )]]></Calculation>
+    </Value>
+    <Name>$draft</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[( Left ( $layoutNumber ; 1 ) = "?" or IsEmpty ( $layoutNumber ) ) or JSONGetElementType ( $draft ; "" ) ≠ JSONObject]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "layoutNumber" ; $layoutNumber ; JSONString ] ;
+        [ "skipped" ; True ; JSONBoolean ] ;
+        [ "reason" ; "No layout draft was registered for this layout." ; JSONString ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__SyncScopeDraft"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement (
+    "{}" ;
+    [ "scope" ; "layouts" ; JSONString ] ;
+    [ "scopeId" ; $layoutNumber ; JSONString ] ;
+    [ "draft" ; $draft ; JSONObject ] ;
+    [ "reload" ; True ; JSONBoolean ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$syncResult</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[JSONGetElement ( $syncResult ; "status" ) = "fail"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_LAYOUT_EXIT_SYNC_FAILED" ;
+    "Failed while syncing layout draft on exit." ;
+    "SETTINGS__SyncScopeDraft" ;
+    $syncResult ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONDeleteElement ( $$LAYOUT_SETTINGS ; $layoutNumber )]]></Calculation>
+    </Value>
+    <Name>$$LAYOUT_SETTINGS</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "layoutNumber" ; $layoutNumber ; JSONString ] ;
+        [ "cleared" ; True ; JSONBoolean ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Finalize]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$response]]></Calculation>
+  </Step>
+</fmxmlsnippet>

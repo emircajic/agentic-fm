@@ -1,0 +1,19 @@
+/*
+Settings_Get ( key ; defaultValue )
+
+Read a setting from $$SETTINGS with a fallback.
+Use this for runtime reads inside calculations.
+*/
+
+Let (
+[
+    ~settings = GlobalSettings ( "" ) ;
+    ~type = JSONGetElementType ( ~settings ; key ) ;
+    ~missing = Left ( JSONGetElement ( ~settings ; key ) ; 1 ) = "?" or ~type = JSONNull
+];
+    If (
+        ~missing ;
+        defaultValue ;
+        JSONGetElement ( ~settings ; key )
+    )
+)

@@ -1,0 +1,68 @@
+# PURPOSE: Persist a shared per-layout settings draft on layout exit.
+#
+# BEHAVIOR:
+# - Looks up the current layout's draft from $$LAYOUT_SETTINGS
+# - Syncs it to committed settings through SETTINGS__SyncScopeDraft
+# - Clears the in-memory draft for that layout number
+#
+# SAFETY:
+# - If the exit trigger never fires, the next layout enter rebuilds draft state from
+#   committed settings, so stale draft data does not become authoritative.
+# - Multiple instances of the same layout share one draft object intentionally.
+#
+# PARAMETER:
+# none
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+Set Variable [ $layoutNumber ; Get ( LayoutNumber ) ]
+Set Variable [ $$LAYOUT_SETTINGS ; Case ( JSONGetElementType ( $$LAYOUT_SETTINGS ; "" ) = JSONObject ; $$LAYOUT_SETTINGS ; "{}" ) ]
+Set Variable [ $draft ; JSONGetElement ( $$LAYOUT_SETTINGS ; $layoutNumber ) ]
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" and ( Left ( $layoutNumber ; 1 ) = "?" or IsEmpty ( $layoutNumber ) ) ]
+	Set Variable [ $response ; Response_SetData (
+					    JSONSetElement (
+					        "{}" ;
+					        [ "skipped" ; True ; JSONBoolean ] ;
+					        [ "reason" ; "No layout draft was registered for this layout." ; JSONString ]
+					    )
+					) ]
+End If
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" and JSONGetElementType ( $draft ; "" ) = JSONObject ]
+	Perform Script [ "SETTINGS__SyncScopeDraft" ; Parameter: JSONSetElement (
+		"{}" ;
+		[ "scope" ; "layouts" ; JSONString ] ;
+		[ "scopeId" ; $layoutNumber ; JSONString ] ;
+		[ "draft" ; $draft ; JSONObject ] ;
+		[ "reload" ; True ; JSONBoolean ]
+	) ]
+	Set Variable [ $syncResult ; Get ( ScriptResult ) ]
+	
+	If [ JSONGetElement ( $syncResult ; "status" ) = "fail" ]
+		Set Variable [ $response ; Response_AddError (
+						    "SETTINGS_LAYOUT_EXIT_SYNC_FAILED" ;
+						    "Failed while syncing layout draft on exit." ;
+						    "SETTINGS__SyncScopeDraft" ;
+						    $syncResult ;
+						    Get ( ScriptName )
+						) ]
+	End If
+End If
+
+Set Variable [ $$LAYOUT_SETTINGS ; JSONDeleteElement ( $$LAYOUT_SETTINGS ; $layoutNumber ) ]
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" and JSONGetElementType ( $response ; "data" ) ≠ JSONObject ]
+	Set Variable [ $response ; Response_SetData (
+					    JSONSetElement (
+					        "{}" ;
+					        [ "layoutNumber" ; $layoutNumber ; JSONString ] ;
+					        [ "cleared" ; True ; JSONBoolean ]
+					    )
+					) ]
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

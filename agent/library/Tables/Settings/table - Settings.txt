@@ -1,0 +1,57 @@
+# TABLE: Settings
+#
+# PURPOSE:
+# Reusable key-value settings table for FileMaker solutions.
+#
+# PRIMARY DESIGN:
+# - one row per setting key
+# - `value` stores the raw persisted value
+# - `type` declares the intended FileMaker JSON constant for the setting
+# - `pairs` converts each row into one `JSONSetElement` tuple
+# - `FUNCTION` assembles the full committed settings object used by `SETTINGS__Load`
+#
+# PRIMARY KEY:
+# - `key`
+#
+# RECOMMENDED TABLE OCCURRENCE:
+# - `Settings`
+#
+# REQUIRED RESERVED KEYS:
+# - `_system.settings_version`
+#
+# NOTES:
+# - This design expects `FUNCTION` to evaluate into one JSON object string.
+# - Validation should live on the row via the `valid` field, not in multiple scripts.
+# - The `pairs` auto-enter should be stored, and `FUNCTION` should be unstored.
+
+Fields:
+- key: Text, unique, not empty. Machine-safe setting identifier.
+- createdOn: Timestamp, auto-enter CreationTimestamp.
+- createdBy: Text, auto-enter CreationAccountName.
+- modifiedOn: Timestamp, auto-enter ModificationTimestamp.
+- modifiedBy: Text, auto-enter ModificationAccountName.
+- createdUTC: Number, auto-enter `Get ( CurrentTimeUTCMilliseconds )`.
+- modifiedUTC: Number, auto-enter `Let ( ~trigger = GetField ( "" ) ; Get ( CurrentTimeUTCMilliseconds ) )`.
+- name: Text. Human-readable setting label.
+- value: Text. Persisted raw value.
+- type: Text. FileMaker JSON type constant name such as `JSONString`, `JSONBoolean`, `JSONObject`.
+- default: Text. Optional fallback when value is empty.
+- hidden: Number. Optional UI visibility flag.
+- pairs: Text, stored auto-enter. Converts the row into a `JSONSetElement` tuple.
+- summaryListOfPairs: Summary text. Collects row pairs for assembly.
+- LOAD: Global text. Optional helper for batch loading/import workflows.
+- recid: Calculated number = `Get ( RecordID )`.
+- description: Text. End-user or developer documentation.
+- section: Text. Optional grouping such as `app`, `invoices`, `ui`.
+- FUNCTION: Unstored calculation text. Full `JSONSetElement ( "{}" ; ... )` expression.
+- valid: Text. Validation expression template using `%value%`.
+
+Required layout / TO assumptions:
+- A layout named `Settings` based on TO `Settings`
+- The scripts in this package refer to the TO and layout by that name
+
+Recommended starter rows:
+- `_system.settings_version`
+- one or more `app.*` rows
+- optional `layouts.<layoutNumber>.*` rows for seeded layout defaults
+- optional `tables.<baseTableName>.*` rows for shared table defaults

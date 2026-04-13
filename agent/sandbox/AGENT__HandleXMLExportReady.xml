@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Script includeInMenu="False" SiriShortcutVisible="False" runFullAccess="False" id="178005" name="AGENT__HandleXMLExportReady">
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>PURPOSE: Client callback handler for PSOS XML export completion.</Text>
+    </Step>
+    <Step enable="True" id="86" name="Set Error Capture">
+      <Set state="True"/>
+    </Step>
+    <Step enable="True" id="85" name="Allow User Abort">
+      <Set state="False"/>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+      </Value>
+      <Name>$id</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+      </Value>
+      <Name>$serverResult</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[JSONGetElement ( $serverResult ; "data.status" )]]></Calculation>
+      </Value>
+      <Name>$status</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[IsEmpty ( $id )]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "AGENT_CALLBACK_ID_MISSING" ;
+    "Callback did not receive an AgentExports id." ;
+    "Get ( ScriptParameter )" ;
+    "{}" ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="69" name="Else If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElementType ( $serverResult ; "" ) ≠ JSONObject]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "AGENT_CALLBACK_RESULT_INVALID" ;
+    "Callback did not receive a valid JSON script result." ;
+    "Get ( ScriptResult )" ;
+    JSONSetElement ( "{}" ; [ "result" ; $serverResult ; JSONString ] ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="69" name="Else If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[JSONGetElement ( $serverResult ; "status" ) = "fail"]]></Calculation>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_AddError (
+    "AGENT_BUILD_FAILED" ;
+    "Server XML build failed." ;
+    "AGENT__BuildXMLExport" ;
+    $serverResult ;
+    Get ( ScriptName )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="69" name="Else">
+      <Restore state="False"/>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "id" ; $id ; JSONString ] ;
+        [ "status" ; $status ; JSONString ] ;
+        [ "serverResult" ; $serverResult ; JSONObject ]
+    )
+)]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="70" name="End If"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value>
+        <Calculation><![CDATA[Response_Finalize]]></Calculation>
+      </Value>
+      <Name>$response</Name>
+    </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[$response]]></Calculation>
+    </Step>
+  </Script>
+</fmxmlsnippet>

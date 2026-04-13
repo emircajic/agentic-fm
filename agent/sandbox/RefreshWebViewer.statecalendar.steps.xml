@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$pauza</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Settings_GetScopeObject ( "layouts" ; "184" ; "{}" )]]></Calculation>
+    </Value>
+    <Name>$layoutSettings</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case ( JSONGetElementType ( Globals::StateCalendar ; "" ) = JSONObject ; Globals::StateCalendar ; "{}" )]]></Calculation>
+    </Value>
+    <Name>$state</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let (
+[
+    stateValue = JSONGetElement ( $state ; "currentDate" )
+] ;
+    Case (
+        not IsEmpty ( stateValue ) and Left ( stateValue ; 1 ) ≠ "?" ;
+        stateValue ;
+        Settings_Get ( "layouts.184.currentDate" ; date.format ( Get ( CurrentDate ) ; "yyyy-mm-dd" ) )
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$currentDate</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let (
+[
+    stateValue = JSONGetElement ( $state ; "currentView" )
+] ;
+    Case (
+        not IsEmpty ( stateValue ) and Left ( stateValue ; 1 ) ≠ "?" ;
+        stateValue ;
+        Settings_Get ( "layouts.184.currentView" ; "weekly" )
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$currentView</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let (
+[
+    stateValue = JSONGetElement ( $state ; "displayType" )
+] ;
+    Case (
+        not IsEmpty ( stateValue ) and Left ( stateValue ; 1 ) ≠ "?" ;
+        stateValue ;
+        Settings_Get ( "layouts.184.displayType" ; "timeline" )
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$displayType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+    [ "currentDate" ; $currentDate ; JSONString ] ;
+    [ "currentView" ; $currentView ; JSONString ] ;
+    [ "displayType" ; $displayType ; JSONString ] ;
+    [ "workingDays" ; JSONGetElement ( $layoutSettings ; "workingDays" ) ; JSONString ] ;
+    [ "workStartHour" ; JSONGetElement ( $layoutSettings ; "workStartHour" ) ; JSONString ] ;
+    [ "workEndHour" ; JSONGetElement ( $layoutSettings ; "workEndHour" ) ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$opcije</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <List>
+      <Script id="502" name="LoadServiceOrdersJSON"/>
+    </List>
+    <Calculation><![CDATA[$opcije]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$podaci</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $pauza )]]></Calculation>
+  </Step>
+  <Step enable="True" id="62" name="Pause/Resume Script">
+    <Duration>
+      <Calculation><![CDATA[$pauza]]></Calculation>
+    </Duration>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <Name>
+      <Calculation><![CDATA["vw_pocetna"]]></Calculation>
+    </Name>
+    <Function>
+      <Calculation><![CDATA["updateViewerState"]]></Calculation>
+    </Function>
+    <Parameter>
+      <Calculation><![CDATA[$podaci]]></Calculation>
+    </Parameter>
+  </Step>
+</fmxmlsnippet>

@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Purpose: save the service order sort setting through the new Settings API, then sort the current found set.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$sort</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $sort )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["SETTINGS__SetValue"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement (
+    "{}" ;
+    [ "key" ; "app.sort.serviceorders" ; JSONString ] ;
+    [ "value" ; $sort ; JSONString ] ;
+    [ "valueType" ; JSONString ; JSONNumber ] ;
+    [ "reload" ; True ; JSONBoolean ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Settings_Get ( "app.sort.serviceorders" ; "" ) = "status"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Sort by Status, then Date.</Text>
+  </Step>
+  <Step enable="True" id="27" name="Sort Records">
+    <NoInteract state="True"/>
+    <Restore state="True"/>
+  </Step>
+  <Step enable="True" id="121" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Settings_Get ( "app.sort.serviceorders" ; "" ) = "assigned"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Sort by Assigned To, then Date.</Text>
+  </Step>
+  <Step enable="True" id="27" name="Sort Records">
+    <NoInteract state="True"/>
+    <Restore state="True"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( SystemPlatform ) ≠ 4]]></Calculation>
+  </Step>
+  <Step enable="True" id="84" name="Scroll Window">
+    <Direction value="Home"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+</fmxmlsnippet>

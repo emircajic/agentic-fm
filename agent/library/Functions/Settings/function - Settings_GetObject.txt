@@ -1,0 +1,24 @@
+/*
+Settings_GetObject ( key ; defaultObject )
+
+Return an object branch from $$SETTINGS.
+Always returns a JSON object string.
+*/
+
+Let (
+[
+    ~settings = GlobalSettings ( "" ) ;
+    ~value = JSONGetElement ( ~settings ; key ) ;
+    ~type = JSONGetElementType ( ~settings ; key ) ;
+    ~fallback =
+        Case (
+            JSONGetElementType ( defaultObject ; "" ) = JSONObject ; defaultObject ;
+            "{}"
+        )
+];
+    If (
+        ~type = JSONObject ;
+        ~value ;
+        ~fallback
+    )
+)

@@ -1,0 +1,21 @@
+/*
+LayoutSetting_Get ( key ; defaultValue )
+
+Read a setting from the current layout draft in $$LAYOUT_SETTINGS.
+Falls back to defaultValue when the draft or key is missing.
+*/
+
+Let (
+[
+    ~layoutNumber = Get ( LayoutNumber ) ;
+    ~drafts = Case ( JSONGetElementType ( $$LAYOUT_SETTINGS ; "" ) = JSONObject ; $$LAYOUT_SETTINGS ; "{}" ) ;
+    ~draft = JSONGetElement ( ~drafts ; ~layoutNumber ) ;
+    ~type = JSONGetElementType ( ~draft ; key ) ;
+    ~missing = Left ( JSONGetElement ( ~draft ; key ) ; 1 ) = "?" or ~type = JSONNull
+];
+    If (
+        JSONGetElementType ( ~draft ; "" ) ≠ JSONObject or ~missing ;
+        defaultValue ;
+        JSONGetElement ( ~draft ; key )
+    )
+)

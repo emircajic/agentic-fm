@@ -1,0 +1,7 @@
+/*
+Settings_IsLoaded ( )
+
+True when $$SETTINGS contains a valid JSON object.
+*/
+
+JSONGetElementType ( GlobalSettings ( "" ) ; "" ) = JSONObject

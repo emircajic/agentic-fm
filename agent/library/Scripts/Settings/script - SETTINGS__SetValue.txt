@@ -1,0 +1,138 @@
+# PURPOSE: Authoritative native write API for a single setting row.
+#
+# PARAMETER:
+# Supported formats:
+# 1. JSON object
+#    {
+#      "key": "layouts.184.currentView",
+#      "value": "weekly",
+#      "valueType": "JSONString",
+#      "reload": true
+#    }
+# 2. Legacy text
+#    layouts.184.currentView|weekly
+#
+# TYPE RULE:
+# - `Settings::type` is authoritative.
+# - `valueType` is optional and may be provided only as an assertion.
+# - If `valueType` is provided and does not match the stored row type, the script fails.
+# - This script mutates values only; it does not redefine a setting's type.
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $input ; Get ( ScriptParameter ) ]
+Set Variable [ $isJSONInput ; Left ( Trim ( $input ) ; 1 ) = "{" ]
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+
+Set Variable [ $key ; Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "key" ) ;
+    GetValue ( Substitute ( $input ; "|" ; Char ( 13 ) ) ; 1 )
+) ]
+Set Variable [ $value ; Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "value" ) ;
+    GetValue ( Substitute ( $input ; "|" ; Char ( 13 ) ) ; 2 )
+) ]
+Set Variable [ $valueType ; Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "valueType" ) ;
+    ""
+) ]
+Set Variable [ $storedType ; "" ]
+Set Variable [ $storedTypeConstant ; JSONString ]
+Set Variable [ $reload ; Case (
+    $isJSONInput ;
+    JSONGetElement ( $input ; "reload" ) ;
+    False
+) ]
+
+If [ IsEmpty ( $key ) ]
+    Set Variable [ $response ; Response_AddError (
+        "SETTINGS_KEY_MISSING" ;
+        "Settings key is required." ;
+        "Settings::key" ;
+        "{}" ;
+        Get ( ScriptName )
+    ) ]
+End If
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+    Go to Layout [ "Settings" (Settings) ; Animation: None ]
+    Enter Find Mode [ Pause: Off ]
+    Set Field [ Settings::key ; "=" & $key ]
+    Perform Find
+
+    If [ Get ( FoundCount ) ≠ 1 ]
+        Set Variable [ $response ; Response_AddError (
+            "SETTINGS_KEY_NOT_FOUND" ;
+            "Expected exactly one settings row." ;
+            "Settings::key" ;
+            JSONSetElement ( "{}" ; [ "key" ; $key ; JSONString ] ) ;
+            Get ( ScriptName )
+        ) ]
+    Else
+        Set Variable [ $storedType ; Settings::type ]
+        Set Variable [ $storedTypeConstant ; Case (
+            $storedType = "JSONNumber" ; JSONNumber ;
+            $storedType = "JSONBoolean" ; JSONBoolean ;
+            $storedType = "JSONObject" ; JSONObject ;
+            $storedType = "JSONArray" ; JSONArray ;
+            $storedType = "JSONRaw" ; JSONRaw ;
+            $storedType = "JSONNull" ; JSONNull ;
+            JSONString
+        ) ]
+
+        If [ not IsEmpty ( $valueType ) and $valueType ≠ $storedType ]
+            Set Variable [ $response ; Response_AddError (
+                "SETTINGS_TYPE_MISMATCH" ;
+                "Provided valueType does not match the setting row type." ;
+                "Settings::type" ;
+                JSONSetElement ( "{}" ;
+                    [ "key" ; $key ; JSONString ] ;
+                    [ "providedType" ; $valueType ; JSONString ] ;
+                    [ "storedType" ; $storedType ; JSONString ]
+                ) ;
+                Get ( ScriptName )
+            ) ]
+        Else
+        Set Field [ Settings::value ; $value ]
+        Commit Records/Requests [ With dialog: Off ]
+
+        If [ Get ( LastError ) ≠ 0 ]
+            Set Variable [ $response ; Response_AddError (
+                "SETTINGS_COMMIT_FAILED" ;
+                "Failed to commit settings change." ;
+                "Settings::value" ;
+                JSONSetElement ( "{}" ; [ "key" ; $key ; JSONString ] ) ;
+                Get ( ScriptName )
+            ) ]
+        Else
+            Enter Find Mode [ Pause: Off ]
+            Set Field [ Settings::key ; "=_system.settings_version" ]
+            Perform Find
+            If [ Get ( FoundCount ) = 1 ]
+                Set Field [ Settings::value ; Get ( CurrentTimeUTCMilliseconds ) ]
+                Commit Records/Requests [ With dialog: Off ]
+            End If
+
+            If [ GetAsBoolean ( $reload ) ]
+                Perform Script [ "SETTINGS__Load" ]
+            End If
+
+            Set Variable [ $response ; Response_SetData (
+                JSONSetElement ( "{}" ;
+                    [ "key" ; $key ; JSONString ] ;
+                    [ "value" ; $value ; $storedTypeConstant ] ;
+                    [ "valueType" ; $storedType ; JSONString ] ;
+                    [ "reload" ; GetAsBoolean ( $reload ) ; JSONBoolean ]
+                )
+            ) ]
+        End If
+        End If
+    End If
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

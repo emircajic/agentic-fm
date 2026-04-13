@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>========================================</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>	Purpose:</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		Runs when the file opens using the "OnFirstWindowOpen" file-level script trigger</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		Sets device- and platform-specific customizations and populates global fields  </Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>========================================</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Script id="588" name="Load Settings"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="93" name="Početna"/>
+  </Step>
+  <!-- TODO: manual conversion required for step "New Window" -->
+  <Step enable="True" id="122" name="New Window"/>
+  <!-- TODO: manual conversion required for step "Go to Record/Request/Page" -->
+  <Step enable="True" id="16" name="Go to Record/Request/Page"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>The Logo Global appears on many layouts, but the logo itself is stored in a non-global field for consistency across users</Text>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Admin::Logo]]></Calculation>
+    <Field table="Admin" id="25" name="Logo Global"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Admin::Company Name]]></Calculation>
+    <Field table="Admin" id="51" name="Company Name Global"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["init"]]></Calculation>
+    <Script id="498" name="PocetnaWebViewer"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetSetting ( "app.statusbarHidden" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$hideStatusBarFlag</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>TIP: Modify sort defaults by changing the values below; the value must match one specified in the Sort script</Text>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[GetSetting ( "app.sort.item" )]]></Calculation>
+    <Field table="Admin" id="46" name="Item Sort Global"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[GetSetting ( "app.sort.serviceorders" )]]></Calculation>
+    <Field table="Admin" id="47" name="Service Orders Sort Global"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="121" name="Close Window">
+    <LimitToWindowsOfCurrentFile state="True"/>
+    <Window value="ByName"/>
+    <Name>
+      <Calculation><![CDATA[]]></Calculation>
+    </Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Set the current System Platform to a local variable</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( SystemPlatform )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$platform</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>	Get ( SystemPlatform )</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		1 for Intel-based Macs</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		2 for Windows</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		3 for iOS</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		4 for FileMaker WebDirect</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>		5 for Linux</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Each platform has specific menubar and toolbar settings</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$platform = 4]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>WebDirect settings</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Menubars and Toolbars are always hidden in this case</Text>
+  </Step>
+  <!-- TODO: manual conversion required for step "Show/Hide Menubar" -->
+  <Step enable="True" id="166" name="Show/Hide Menubar"/>
+  <!-- TODO: manual conversion required for step "Show/Hide Toolbars" -->
+  <Step enable="True" id="29" name="Show/Hide Toolbars"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$platform < 3]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MacOS or Windows settings</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Resize the window to the appropriate size</Text>
+  </Step>
+  <!-- TODO: manual conversion required for step "Move/Resize Window" -->
+  <Step enable="False" id="119" name="Move/Resize Window"/>
+  <!-- TODO: manual conversion required for step "Adjust Window" -->
+  <Step enable="True" id="31" name="Adjust Window"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Hide toolbars for regular users, unlock for admins</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Script id="421" name="Hide Toolbars"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$platform = 3]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>iOS settings</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Menubars and Toolbars are always hidden in this case</Text>
+  </Step>
+  <!-- TODO: manual conversion required for step "Show/Hide Menubar" -->
+  <Step enable="True" id="166" name="Show/Hide Menubar"/>
+  <!-- TODO: manual conversion required for step "Show/Hide Toolbars" -->
+  <Step enable="True" id="29" name="Show/Hide Toolbars"/>
+  <!-- TODO: manual conversion required for step "Set Zoom Level" -->
+  <Step enable="True" id="97" name="Set Zoom Level"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>iPhones have a different starting point than all other devices</Text>
+  </Step>
+  <Step enable="False" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( Device ) = 4]]></Calculation>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>iPhone-only</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Script id="158" name="Load Staff List"/>
+  </Step>
+  <Step enable="False" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>All other devices</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Script id="9" name="Load Dashboard"/>
+  </Step>
+  <Step enable="False" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+</fmxmlsnippet>

@@ -1,0 +1,84 @@
+# PURPOSE: Batch settings writer for migrations and seeding.
+#
+# PARAMETER:
+# {
+#   "items": [
+#     { "key": "invoices.series", "value": "A", "valueType": JSONString },
+#     { "key": "layouts.184.currentView", "value": "weekly", "valueType": JSONString }
+#   ]
+# }
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $input ; Get ( ScriptParameter ) ]
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+
+If [ JSONGetElementType ( $input ; "items" ) ≠ JSONArray ]
+    Set Variable [ $response ; Response_AddError (
+        "SETTINGS_ITEMS_MISSING" ;
+        "Script parameter must contain an items array." ;
+        "items" ;
+        "{}" ;
+        Get ( ScriptName )
+    ) ]
+End If
+
+Set Variable [ $items ; JSONGetElement ( $input ; "items" ) ]
+Set Variable [ $count ; ValueCount ( JSONListKeys ( $items ; "" ) ) ]
+Set Variable [ $i ; 0 ]
+Set Variable [ $processed ; 0 ]
+
+Loop
+    Exit Loop If [ $i ≥ $count or JSONGetElement ( $response ; "status" ) = "fail" ]
+    Set Variable [ $row ; JSONGetElement ( $items ; "[" & $i & "]" ) ]
+    Set Variable [ $row ; JSONSetElement ( $row ; "reload" ; False ; JSONBoolean ) ]
+    Perform Script [ "SETTINGS__SetValue" ; Parameter: $row ]
+    Set Variable [ $rowResult ; Get ( ScriptResult ) ]
+    
+    If [ JSONGetElement ( $rowResult ; "status" ) = "fail" ]
+        Set Variable [ $response ; Response_AddError (
+            "SETTINGS_BULK_ITEM_FAILED" ;
+            "One item in the batch failed." ;
+            "items[" & $i & "]" ;
+            JSONSetElement (
+                "{}" ;
+                [ "index" ; $i ; JSONNumber ] ;
+                [ "item" ; $row ; JSONObject ] ;
+                [ "result" ; $rowResult ; JSONObject ]
+            ) ;
+            Get ( ScriptName )
+        ) ]
+    Else
+        Set Variable [ $processed ; $processed + 1 ]
+    End If
+    
+    Set Variable [ $i ; $i + 1 ]
+End Loop
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+    Perform Script [ "SETTINGS__Load" ]
+    Set Variable [ $loadResult ; Get ( ScriptResult ) ]
+    
+    If [ JSONGetElement ( $loadResult ; "status" ) = "fail" ]
+        Set Variable [ $response ; Response_AddError (
+            "SETTINGS_BULK_RELOAD_FAILED" ;
+            "The batch completed, but reloading settings failed." ;
+            "SETTINGS__Load" ;
+            $loadResult ;
+            Get ( ScriptName )
+        ) ]
+    Else
+        Set Variable [ $response ; Response_SetData (
+            JSONSetElement (
+                "{}" ;
+                [ "processed" ; $processed ; JSONNumber ] ;
+                [ "settings_version" ; $$SETTINGS_VERSION ; JSONString ] ;
+                [ "settings" ; $$SETTINGS ; JSONObject ]
+            )
+        ) ]
+    End If
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

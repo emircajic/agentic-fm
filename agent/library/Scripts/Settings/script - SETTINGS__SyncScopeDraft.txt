@@ -1,0 +1,122 @@
+# PURPOSE: Synchronize a scope draft object back to committed settings keys.
+#
+# PARAMETER:
+# {
+#   "scope": "layouts",
+#   "scopeId": "184",
+#   "draft": "{...}",
+#   "reload": true
+# }
+
+Set Error Capture [ ON ]
+Allow User Abort [ OFF ]
+
+Set Variable [ $input ; Get ( ScriptParameter ) ]
+Set Variable [ $response ; Response_Init ( "{}" ) ]
+
+Set Variable [ $scope ; JSONGetElement ( $input ; "scope" ) ]
+Set Variable [ $scopeId ; JSONGetElement ( $input ; "scopeId" ) ]
+Set Variable [ $draft ; JSONGetElement ( $input ; "draft" ) ]
+Set Variable [ $reload ; Let (
+				[
+				    ~type = JSONGetElementType ( $input ; "reload" ) ;
+				    ~raw = JSONGetElement ( $input ; "reload" )
+				] ;
+				    If ( ~type = JSONBoolean ; GetAsBoolean ( ~raw ) ; True )
+				) ]
+
+If [ IsEmpty ( $scope ) or IsEmpty ( $scopeId ) ]
+	Set Variable [ $response ; Response_AddError (
+					    "SETTINGS_SCOPE_MISSING" ;
+					    "Both scope and scopeId are required." ;
+					    "scope" ;
+					    "{}" ;
+					    Get ( ScriptName )
+					) ]
+End If
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" and JSONGetElementType ( $draft ; "" ) ≠ JSONObject ]
+	Set Variable [ $response ; Response_AddError (
+					    "SETTINGS_DRAFT_INVALID" ;
+					    "Draft must be a JSON object." ;
+					    "draft" ;
+					    "{}" ;
+					    Get ( ScriptName )
+					) ]
+End If
+
+If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+	Set Variable [ $prefix ; $scope & "." & $scopeId ]
+	Set Variable [ $committed ; Settings_GetObject ( $prefix ; "{}" ) ]
+	Set Variable [ $keys ; JSONListKeys ( $draft ; "" ) ]
+	Set Variable [ $i ; 1 ]
+	Set Variable [ $processed ; 0 ]
+	
+	Loop [ Flush: Always ]
+		Exit Loop If [ $i > ValueCount ( $keys ) or JSONGetElement ( $response ; "status" ) = "fail" ]
+		Set Variable [ $childKey ; GetValue ( $keys ; $i ) ]
+		Set Variable [ $fullKey ; $prefix & "." & $childKey ]
+		Set Variable [ $draftValue ; JSONGetElement ( $draft ; $childKey ) ]
+		Set Variable [ $committedValue ; JSONGetElement ( $committed ; $childKey ) ]
+		
+		If [ JSONFormatElements ( JSONSetElement ( "{}" ; "v" ; $draftValue ; JSONRaw ) ) ≠ JSONFormatElements ( JSONSetElement ( "{}" ; "v" ; $committedValue ; JSONRaw ) ) ]
+			Perform Script [ "SETTINGS__SetValue" ; Parameter: JSONSetElement (
+				"{}" ;
+				[ "key" ; $fullKey ; JSONString ] ;
+				[ "value" ; $draftValue ; JSONString ] ;
+				[ "valueType" ; JSONGetElementType ( $draft ; $childKey ) ; JSONNumber ] ;
+				[ "reload" ; False ; JSONBoolean ]
+			) ]
+			Set Variable [ $writeResult ; Get ( ScriptResult ) ]
+			
+			If [ JSONGetElement ( $writeResult ; "status" ) = "fail" ]
+				Set Variable [ $response ; Response_AddError (
+								    "SETTINGS_SCOPE_SYNC_FAILED" ;
+								    "Failed while syncing scope draft." ;
+								    $fullKey ;
+								    JSONSetElement (
+								        "{}" ;
+								        [ "key" ; $fullKey ; JSONString ] ;
+								        [ "result" ; $writeResult ; JSONObject ]
+								    ) ;
+								    Get ( ScriptName )
+								) ]
+			Else
+				Set Variable [ $processed ; $processed + 1 ]
+			End If
+		End If
+		
+		Set Variable [ $i ; $i + 1 ]
+	End Loop
+	
+	If [ JSONGetElement ( $response ; "status" ) ≠ "fail" and $reload ]
+		Perform Script [ "SETTINGS__Load" ]
+		Set Variable [ $loadResult ; Get ( ScriptResult ) ]
+		
+		If [ JSONGetElement ( $loadResult ; "status" ) = "fail" ]
+			Set Variable [ $response ; Response_AddError (
+							    "SETTINGS_SCOPE_RELOAD_FAILED" ;
+							    "Scope sync succeeded, but settings reload failed." ;
+							    "SETTINGS__Load" ;
+							    $loadResult ;
+							    Get ( ScriptName )
+							) ]
+		End If
+	End If
+	
+	If [ JSONGetElement ( $response ; "status" ) ≠ "fail" ]
+		Set Variable [ $response ; Response_SetData (
+						    JSONSetElement (
+						        "{}" ;
+						        [ "scope" ; $scope ; JSONString ] ;
+						        [ "scopeId" ; $scopeId ; JSONString ] ;
+						        [ "prefix" ; $prefix ; JSONString ] ;
+						        [ "processed" ; $processed ; JSONNumber ] ;
+						        [ "reload" ; $reload ; JSONBoolean ]
+						    )
+						) ]
+	End If
+End If
+
+Set Variable [ $response ; Response_Finalize ]
+Exit Script [ $response ]

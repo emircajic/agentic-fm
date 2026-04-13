@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Rebuild $$SETTINGS from the Settings table and persist the current cache version.</Text>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="210" name="Settings"/>
+    <Animation value=""/>
+  </Step>
+  <Step enable="True" id="23" name="Show All Records"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Evaluate ( Settings::FUNCTION )]]></Calculation>
+    </Value>
+    <Name>$settingsJSON</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[JSONGetElementType ( $settingsJSON ; "" ) ≠ JSONObject]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError (
+    "SETTINGS_LOAD_INVALID_JSON" ;
+    "Settings::FUNCTION did not evaluate to a JSON object." ;
+    "Settings::FUNCTION" ;
+    JSONSetElement (
+        "{}" ;
+        [ "result" ; $settingsJSON ; JSONString ]
+    ) ;
+    Get ( ScriptName )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$settingsJSON]]></Calculation>
+    </Value>
+    <Name>$$SETTINGS</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $$SETTINGS ; "_system.settings_version" )]]></Calculation>
+    </Value>
+    <Name>$$SETTINGS_VERSION</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData (
+    JSONSetElement (
+        "{}" ;
+        [ "settings_version" ; $$SETTINGS_VERSION ; JSONString ] ;
+        [ "settings" ; $$SETTINGS ; JSONObject ]
+    )
+)]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="OriginalLayout"/>
+    <Animation value=""/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Finalize]]></Calculation>
+    </Value>
+    <Name>$response</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$response]]></Calculation>
+  </Step>
+</fmxmlsnippet>
