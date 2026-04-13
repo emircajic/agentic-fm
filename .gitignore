@@ -21,7 +21,7 @@ PROJECT.md
 *_PRIVATE.md
 Prompt.md
 .cursorignore
-agent/library/
+# agent/library/ — intentionally tracked; contains reusable fmxmlsnippet code
 agent/config/removals.json
 agent/config/automation.json
 agent/scripts/companion_server_ext.py
