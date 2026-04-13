@@ -1,0 +1,47 @@
+/**
+ * Response_Absorb ( subResponse )
+ *
+ * PARAMETERS:
+ *   @subResponse (JSONObject) The Response envelope returned by a sub-script call.
+ *
+ * RETURNS:
+ *   (JSONObject) The updated $response (for chaining, though the side effect is the point).
+ *
+ * SIDE EFFECT:
+ *   Merges all messages (error, warning, info) from subResponse into the current $response.
+ *   Does NOT change $response.status — that is derived by Response_Finalize.
+ *
+ * DEPENDENCIES:
+ *   JSONMergeArrays ( array1 ; array2 )
+ *
+ * USAGE:
+ *   Perform Script [ "SomeWorker" ; Parameter: $p ]
+ *   Set Variable [ $r ; Get ( ScriptResult ) ]
+ *   Set Variable [ $void ; Response_Absorb ( $r ) ]
+ *   If [ not Response_IsOk ( $r ) ]
+ *       Exit Script [ Response_Finalize ]
+ *   End If
+ *
+ * NOTES:
+ *   Use Response_Absorb when collecting messages from multiple steps before deciding to fail.
+ *   For simple fail-fast chains, pass the sub-result straight through:
+ *       Exit Script [ $r ]
+ */
+
+Let ( [
+	~srcErrors   = JSONGetElement ( subResponse ; "messages.error" ) ;
+	~srcWarnings = JSONGetElement ( subResponse ; "messages.warning" ) ;
+	~srcInfos    = JSONGetElement ( subResponse ; "messages.info" ) ;
+
+	~dstErrors   = JSONGetElement ( $response ; "messages.error" ) ;
+	~dstWarnings = JSONGetElement ( $response ; "messages.warning" ) ;
+	~dstInfos    = JSONGetElement ( $response ; "messages.info" ) ;
+
+	$response = JSONSetElement ( $response ;
+		[ "messages.error"   ; JSONMergeArrays ( ~dstErrors   ; ~srcErrors )   ; JSONArray ] ;
+		[ "messages.warning" ; JSONMergeArrays ( ~dstWarnings ; ~srcWarnings ) ; JSONArray ] ;
+		[ "messages.info"    ; JSONMergeArrays ( ~dstInfos    ; ~srcInfos )    ; JSONArray ]
+	)
+] ;
+	$response
+)

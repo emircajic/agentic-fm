@@ -1,0 +1,110 @@
+/**
+ * Params.parse ( raw ; schema )
+ *
+ * PARAMETERS:
+ *   @raw    (Text) The raw script parameter — JSON object, pipe-delimited values,
+ *                  or key=value pairs separated by semicolons.
+ *   @schema (Text) Pipe-delimited key names, required for pipe format.
+ *                  Example: "companyID|datumOd|datumDo"
+ *                  Ignored when raw is JSON. May be "" for JSON-only scripts.
+ *
+ * RETURNS:
+ *   (JSONObject) The normalized parameter JSON — all values as strings.
+ *
+ * SIDE EFFECTS (local script variables set):
+ *   $<key>    — one variable per key in the parameter (e.g. $companyID, $datumOd)
+ *   $params   — the full normalized JSON object
+ *   $traceID  — the trace ID for this invocation chain:
+ *                 received from caller if present, otherwise a new UUID (root call)
+ *   $isRoot   — True if this script generated the traceID (top of the call chain)
+ *                 False if traceID was passed in (sub-script in a chain)
+ *
+ * DEPENDENCIES:
+ *   jsonToVars ( JSON ; scope )
+ *
+ * USAGE (mandatory first line of every script):
+ *   Set Variable [ $void ; Params.parse ( Get ( ScriptParameter ) ; "key1|key2|key3" ) ]
+ *
+ * FORMAT DETECTION:
+ *   JSON       — raw starts with "{"
+ *   Pipe       — raw contains "|" and is not JSON; schema maps positional values to keys
+ *   Key=Value  — fallback; pairs separated by ";", key and value separated by "="
+ *
+ * NOTES:
+ *   All pipe and key=value values are stored as JSON strings.
+ *   traceID is always present in the normalized JSON and forwarded to sub-scripts.
+ *   jsonToVars will also set $traceID from the JSON — this is intentional and safe
+ *   because the value in the JSON matches what $traceID was already set to.
+ */
+
+Let ( [
+	// ── 1. Detect format ─────────────────────────────────────────────────────
+	~trimmed = Trim ( raw ) ;
+	~isJSON  = Left ( ~trimmed ; 1 ) = "{" ;
+	~hasPipe = not ~isJSON and Position ( ~trimmed ; "|" ; 1 ; 1 ) > 0 ;
+
+	// ── 2. Parse pipe format (positional, mapped by schema) ──────────────────
+	~fromPipe = While ( [
+		~keys  = Substitute ( schema ; "|" ; ¶ ) ;
+		~vals  = Substitute ( ~trimmed ; "|" ; ¶ ) ;
+		~n     = ValueCount ( ~keys ) ;
+		~i     = 0 ;
+		~out   = "{}"
+	] ;
+		~i < ~n ;
+	[
+		~i   = ~i + 1 ;
+		~k   = Trim ( GetValue ( ~keys ; ~i ) ) ;
+		~v   = Trim ( GetValue ( ~vals ; ~i ) ) ;
+		~out = If ( not IsEmpty ( ~k ) ;
+			JSONSetElement ( ~out ; ~k ; ~v ; JSONString ) ;
+			~out
+		)
+	] ;
+		~out
+	) ;
+
+	// ── 3. Parse key=value format (fallback) ──────────────────────────────────
+	~fromKV = While ( [
+		~pairs = Substitute ( ~trimmed ; ";" ; ¶ ) ;
+		~count = ValueCount ( ~pairs ) ;
+		~i     = 0 ;
+		~out   = "{}"
+	] ;
+		~i < ~count ;
+	[
+		~i    = ~i + 1 ;
+		~pair = Trim ( GetValue ( ~pairs ; ~i ) ) ;
+		~eq   = Position ( ~pair ; "=" ; 1 ; 1 ) ;
+		~k    = Trim ( Left ( ~pair ; ~eq - 1 ) ) ;
+		~v    = Trim ( Middle ( ~pair ; ~eq + 1 ; Length ( ~pair ) ) ) ;
+		~out  = If ( ~eq > 0 and not IsEmpty ( ~k ) ;
+			JSONSetElement ( ~out ; ~k ; ~v ; JSONString ) ;
+			~out
+		)
+	] ;
+		~out
+	) ;
+
+	// ── 4. Pick the normalized JSON ───────────────────────────────────────────
+	~json = Case (
+		~isJSON  ; ~trimmed ;
+		~hasPipe ; ~fromPipe ;
+		~fromKV
+	) ;
+
+	// ── 5. Trace ID: receive or generate ──────────────────────────────────────
+	~incoming = JSONGetElement ( ~json ; "traceID" ) ;
+
+	$isRoot  = IsEmpty ( ~incoming ) ;
+	$traceID = If ( not IsEmpty ( ~incoming ) ; ~incoming ; Get ( UUID ) ) ;
+
+	// Stamp traceID into the normalized JSON so it is always present
+	~json = JSONSetElement ( ~json ; "traceID" ; $traceID ; JSONString ) ;
+
+	// ── 6. Expose normalized params and unpack all keys as $variables ─────────
+	$params = ~json ;
+	~void   = jsonToVars ( ~json ; "local" )
+] ;
+	~json
+)

@@ -1,0 +1,53 @@
+/**
+ * Log.add ( level ; messagecode ; message ; contextJSON )
+ *
+ * PARAMETERS:
+ *   @level       (Text)       Severity: "error", "warning", "info", "trace"
+ *   @messagecode        (Text)       Machine-readable identifier, e.g. "RECORD_NOT_FOUND"
+ *   @message     (Text)       Human-readable description of what happened
+ *   @contextJSON (JSONObject) Any relevant runtime state at this point; pass "{}" if none
+ *
+ * RETURNS:
+ *   (JSONArray) The updated $$~LOG (for inspection; the side effect is the point).
+ *
+ * SIDE EFFECT:
+ *   Appends one structured entry to $$~LOG.
+ *   Each entry is tagged with $traceID (set by Params.parse) so entries from concurrent
+ *   sessions remain distinguishable and can be flushed selectively.
+ *
+ * DEPENDENCIES:
+ *   Params.parse must have run in this script (sets $traceID).
+ *
+ * USAGE:
+ *   Set Variable [ $void ; Log.add ( "info" ; "FIND_COMPLETE" ; "Found " & Get(FoundCount) & " records" ; "{}" ) ]
+ *   Set Variable [ $void ; Log.add ( "error" ; "RECORD_LOCKED" ; "Could not commit" ; JSONSetElement("{}";"recordID";$id;JSONString) ) ]
+ *
+ * PERFORMANCE:
+ *   Pure in-memory append — zero I/O cost. Safe to call inside loops.
+ *   Persistence is handled separately by UTIL__FlushLog, called once by the root orchestrator on exit.
+ *
+ * SEVERITY GATE:
+ *   Entries with level "trace" are only useful during active debugging.
+ *   UTIL__FlushLog writes all levels to the log table, but "trace" entries can be
+ *   filtered out by setting $$~LOG_TRACE = 0 before the orchestrator runs.
+ */
+
+Let ( [
+	~entry = JSONSetElement ( "{}" ;
+		[ "ts"      ; GetAsText ( Get ( CurrentTimestamp ) ) ; JSONString ] ;
+		[ "traceID" ; $traceID                               ; JSONString ] ;
+		[ "script"  ; Get ( ScriptName )                     ; JSONString ] ;
+		[ "level"   ; level                                  ; JSONString ] ;
+		[ "code"    ; messagecode                            ; JSONString ] ;
+		[ "msg"     ; message                                ; JSONString ] ;
+		[ "ctx"     ; If ( IsEmpty ( contextJSON ) ; "{}" ; contextJSON ) ; JSONObject ]
+	) ;
+
+	$$~LOG = If (
+		IsEmpty ( $$~LOG ) or $$~LOG = "" ;
+		JSONSetElement ( "[]" ; "[0]" ; ~entry ; JSONObject ) ;
+		JSONSetElement ( $$~LOG ; "[+]" ; ~entry ; JSONObject )
+	)
+] ;
+	$$~LOG
+)

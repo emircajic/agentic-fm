@@ -1,0 +1,16 @@
+/**
+ * Response_GetStatus ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Text) The status string: "success", "fail", or "partial_success".
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Prefer Response_IsOk() for binary branching.
+ *   Use this when you need to distinguish partial_success from fail.
+ */
+
+JSONGetElement ( response ; "status" )

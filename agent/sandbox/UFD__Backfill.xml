@@ -1,0 +1,394 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Group all unattached Primke by supplier + company + month, create a UFD header
+for each group, and attach the Primke to it. One-shot backfill — safe to re-run
+(UFD__AttachPrimke skips already-linked Primke).</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: none
+RETURNS: data.groupsCreated (number) | data.primkeAttached (number)</Text>
+		<Field table="" id="0" name="$README"/>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groupsCreated</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$primkeAttached</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_BACKFILL_START" ; "Starting UFD backfill" ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Query all unattached Primke ───────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rows</Name>
+		<Value><Calculation><![CDATA[ExecuteSQL (
+	"SELECT PrimaryKey, ForeignKeyDobavljacID, ForeignKeyCompanyID, DatumPrimitka
+	 FROM Primke
+	 WHERE ( ForeignKeyUlaznaFakturaID IS NULL OR ForeignKeyUlaznaFakturaID = '' )
+	 ORDER BY ForeignKeyDobavljacID, ForeignKeyCompanyID, DatumPrimitka" ;
+	"|" ; "¶"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $rows ) or Left ( $rows ; 1 ) = "?"]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "groupsCreated"  ; 0 ; JSONNumber ] ;
+	[ "primkeAttached" ; 0 ; JSONNumber ]
+) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_BACKFILL_DONE" ; "No unattached Primke found" ; "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="780" name="UTIL__FlushLog"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Build $groups array — each element: {dobavljacID, companyID, yearMonth, primkaIDs[]} ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groups</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rowCount</Name>
+		<Value><Calculation><![CDATA[ValueCount ( $rows )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastDobavljacID</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastCompanyID</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastYearMonth</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$row</Name>
+		<Value><Calculation><![CDATA[Substitute ( GetValue ( $rows ; $i ) ; "|" ; Char ( 13 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$pkID</Name>
+		<Value><Calculation><![CDATA[GetValue ( $row ; 1 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$dobavljacID</Name>
+		<Value><Calculation><![CDATA[GetValue ( $row ; 2 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyID</Name>
+		<Value><Calculation><![CDATA[GetValue ( $row ; 3 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datum</Name>
+		<Value><Calculation><![CDATA[GetAsDate ( GetValue ( $row ; 4 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$yearMonth</Name>
+		<Value><Calculation><![CDATA[Right ( "0000" & Year ( $datum ) ; 4 ) & "-" & Right ( "00" & Month ( $datum ) ; 2 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$dobavljacID = $lastDobavljacID and $companyID = $lastCompanyID and $yearMonth = $lastYearMonth]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Same group — append primkaID to last element's primkaIDs array</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastIdx</Name>
+		<Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $groups ; "" ) ) - 1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$currentIDs</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $groups ; "[" & $lastIdx & "].primkaIDs" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groups</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $groups ; "[" & $lastIdx & "].primkaIDs" ; JSONSetElement ( $currentIDs ; "[+]" ; $pkID ; JSONString ) ; JSONArray )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="69" name="Else">
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>New group — append a new element to $groups</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groups</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $groups ; "[+]" ;
+	JSONSetElement ( "{}" ;
+		[ "dobavljacID" ; $dobavljacID ; JSONString ] ;
+		[ "companyID"   ; $companyID   ; JSONString ] ;
+		[ "yearMonth"   ; $yearMonth   ; JSONString ] ;
+		[ "primkaIDs"   ; JSONSetElement ( "[]" ; "[0]" ; $pkID ; JSONString ) ; JSONArray ]
+	) ; JSONObject )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastDobavljacID</Name>
+		<Value><Calculation><![CDATA[$dobavljacID]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastCompanyID</Name>
+		<Value><Calculation><![CDATA[$companyID]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastYearMonth</Name>
+		<Value><Calculation><![CDATA[$yearMonth]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Loop groups — create UFD + attach Primke ──────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groupCount</Name>
+		<Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $groups ; "" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$g</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$g >= $groupCount]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$gDobavljacID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $groups ; "[" & $g & "].dobavljacID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$gCompanyID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $groups ; "[" & $g & "].companyID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$gYearMonth</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $groups ; "[" & $g & "].yearMonth" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$gPrimkaIDs</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $groups ; "[" & $g & "].primkaIDs" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="677" name="UFD__Create"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "dobavljacID" ; $gDobavljacID ; JSONString ] ;
+	[ "companyID"   ; $gCompanyID   ; JSONString ] ;
+	[ "napomena"    ; "Backfill " & $gYearMonth ; JSONString ] ;
+	[ "traceID"     ; $traceID      ; JSONString ]
+)]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not Response_HasErrors ( $r )]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ufdID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $r ; "data.ulaznaFakturaID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="678" name="UFD__AttachPrimke"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ulaznaFakturaID" ; $ufdID      ; JSONString ] ;
+	[ "primkaIDs"       ; $gPrimkaIDs ; JSONArray  ] ;
+	[ "traceID"         ; $traceID    ; JSONString ]
+)]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$primkeAttached</Name>
+		<Value><Calculation><![CDATA[$primkeAttached + JSONGetElement ( $r ; "data.attachedCount" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$groupsCreated</Name>
+		<Value><Calculation><![CDATA[$groupsCreated + 1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_BACKFILL_GROUP" ;
+	"Backfill " & $gYearMonth & " dobavljac " & $gDobavljacID & " → UFD " & $ufdID & " attached " & JSONGetElement ( $r ; "data.attachedCount" ) & " primke" ;
+	"{}"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="69" name="Else">
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddWarning ( "UFD_CREATE_FAILED" ;
+	"Could not create UFD for " & $gDobavljacID & " " & $gYearMonth ;
+	"" ;
+	JSONSetElement ( "{}" ;
+		[ "dobavljacID" ; $gDobavljacID ; JSONString ] ;
+		[ "yearMonth"   ; $gYearMonth   ; JSONString ]
+	) ;
+	""
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "error" ; "UFD_CREATE_FAILED" ; "Backfill create failed for " & $gDobavljacID & " " & $gYearMonth ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$g</Name>
+		<Value><Calculation><![CDATA[$g + 1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Result ────────────────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "groupsCreated"  ; $groupsCreated  ; JSONNumber ] ;
+	[ "primkeAttached" ; $primkeAttached ; JSONNumber ]
+) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_BACKFILL_DONE" ;
+	"Created " & $groupsCreated & " UFDs, attached " & $primkeAttached & " Primke" ;
+	"{}"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="780" name="UTIL__FlushLog"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

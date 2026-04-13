@@ -1,0 +1,14 @@
+/**
+ * Response_HasWarnings ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Boolean) True if the response contains one or more warning messages.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ */
+
+not IsEmpty ( JSONListKeys ( response ; "messages.warning" ) )

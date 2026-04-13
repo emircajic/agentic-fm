@@ -1,0 +1,18 @@
+/**
+ * Response_GetWarningCount ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Number) The number of warning messages in the response.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ */
+
+Let ( [
+	~keys = JSONListKeys ( response ; "messages.warning" )
+] ;
+	If ( IsEmpty ( ~keys ) ; 0 ; ValueCount ( ~keys ) )
+)

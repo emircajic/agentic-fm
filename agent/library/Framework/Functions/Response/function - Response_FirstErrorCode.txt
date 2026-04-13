@@ -1,0 +1,17 @@
+/**
+ * Response_FirstErrorCode ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Text) The machine-readable code of the first error message.
+ *   Returns "" if there are no errors.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Use this when an orchestrator needs to branch on a specific error type
+ *   from a sub-script, e.g. Case( Response_FirstErrorCode($r) = "RECORD_LOCKED"; ... )
+ */
+
+JSONGetElement ( response ; "messages.error[0].code" )

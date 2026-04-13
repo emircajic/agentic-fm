@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Add sequential redniBroj values to each row in a JSON array.</Text>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Expects JSON: { "rows": [] }</Text>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Returns JSON: { "status": "success", "rows": [], "errors": [] }</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "rows" )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $rows )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "rows" ; "[]" ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ValueCount ( JSONListKeys ( $rows ; "" ) )]]></Calculation>
+    </Value>
+    <Name>$count</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $count]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ;
+	"[" & $i & "].redniBroj" ; $i + 1 ; JSONNumber
+)]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+</fmxmlsnippet>

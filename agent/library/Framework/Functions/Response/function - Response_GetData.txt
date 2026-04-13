@@ -1,0 +1,16 @@
+/**
+ * Response_GetData ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (JSONObject) The data payload from the response.
+ *   Returns "{}" if the response has errors (data is wiped by Response_Finalize on fail).
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Always check Response_IsOk() before using the returned data.
+ */
+
+JSONGetElement ( response ; "data" )

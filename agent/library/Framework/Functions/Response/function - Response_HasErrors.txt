@@ -1,0 +1,15 @@
+/**
+ * Response_HasErrors ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Boolean) True if the response contains one or more error messages.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Equivalent to: Response_GetErrorCount(response) > 0
+ */
+
+not IsEmpty ( JSONListKeys ( response ; "messages.error" ) )

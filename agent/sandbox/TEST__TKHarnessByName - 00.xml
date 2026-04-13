@@ -1,0 +1,343 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Test trgovačka knjiga scripts using Perform Script by name.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[]]></Calculation>
+    </Value>
+    <Name>$companyID</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[]]></Calculation>
+    </Value>
+    <Name>$datumOd</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[]]></Calculation>
+    </Value>
+    <Name>$datumDo</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[jsonToVars ( Get ( ScriptParameter ) ; "local" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$$log</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[]]></Calculation>
+    </Value>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$count</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Validate harness input</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $companyID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Validate harness input" ; JSONString ] ;
+	[ "severity" ; "error" ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "errors" ; JSONSetElement ( "[]" ; "[+]" ; "Nedostaje companyID" ; JSONString ) ; JSONArray ]
+	) ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["TK Test Result"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONFormatElements ( $$log )]]></Calculation>
+    </Message>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$log]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $datumOd )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Validate harness input" ; JSONString ] ;
+	[ "severity" ; "error" ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "errors" ; JSONSetElement ( "[]" ; "[+]" ; "Nedostaje datumOd" ; JSONString ) ; JSONArray ]
+	) ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["TK Test Result"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONFormatElements ( $$log )]]></Calculation>
+    </Message>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$log]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $datumDo )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Validate harness input" ; JSONString ] ;
+	[ "severity" ; "error" ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "errors" ; JSONSetElement ( "[]" ; "[+]" ; "Nedostaje datumDo" ; JSONString ) ; JSONArray ]
+	) ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["TK Test Result"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONFormatElements ( $$log )]]></Calculation>
+    </Message>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$log]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// 1. Get donos</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TK__GetDonos"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "companyID" ; $companyID ; JSONString ] ;
+	[ "datumOd" ; $datumOd ; JSONString ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Get donos" ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; $result ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// 2. Get zaduženje</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TK__GetZaduzenje"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "companyID" ; $companyID ; JSONString ] ;
+	[ "datumOd" ; $datumOd ; JSONString ] ;
+	[ "datumDo" ; $datumDo ; JSONString ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Get zaduzenje" ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; $result ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// 3. Get razduženje</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TK__GetRazduzenje"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "companyID" ; $companyID ; JSONString ] ;
+	[ "datumOd" ; $datumOd ; JSONString ] ;
+	[ "datumDo" ; $datumDo ; JSONString ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Get razduzenje" ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; $result ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// 4. Build ledger</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TK__BuildLedger"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "companyID" ; $companyID ; JSONString ] ;
+	[ "datumOd" ; $datumOd ; JSONString ] ;
+	[ "datumDo" ; $datumDo ; JSONString ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $result ; "rows" )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ValueCount ( JSONListKeys ( $rows ; "" ) )]]></Calculation>
+    </Value>
+    <Name>$count</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Build ledger" ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; $result ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// 5. Assertions</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$count > 0]]></Calculation>
+    </Value>
+    <Name>$okHasRows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $rows ; "[0].tip" ) = "Donos"]]></Calculation>
+    </Value>
+    <Name>$okDonosFirst</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $rows ; "[0].redniBroj" ) ) = 1]]></Calculation>
+    </Value>
+    <Name>$okRedniBroj</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+	$count ≤ 1 ; 1 ;
+	JSONGetElement ( $rows ; "[0].sortDatum" ) ≤ JSONGetElement ( $rows ; "[1].sortDatum" )
+)]]></Calculation>
+    </Value>
+    <Name>$okSorted</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA["TEST__Log"]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Ledger assertions" ; JSONString ] ;
+	[ "severity" ; Case ( $okHasRows and $okDonosFirst and $okRedniBroj and $okSorted ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "rowCount" ; $count ; JSONNumber ] ;
+		[ "okHasRows" ; $okHasRows ; JSONBoolean ] ;
+		[ "okDonosFirst" ; $okDonosFirst ; JSONBoolean ] ;
+		[ "okRedniBrojStartsAt1" ; $okRedniBroj ; JSONBoolean ] ;
+		[ "okSortedBasic" ; $okSorted ; JSONBoolean ]
+	) ; JSONObject ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["TK Test Result"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONFormatElements ( $$log )]]></Calculation>
+    </Message>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$log]]></Calculation>
+  </Step>
+</fmxmlsnippet>

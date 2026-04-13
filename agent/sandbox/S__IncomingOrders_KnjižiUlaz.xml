@@ -1,0 +1,217 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Post KretanjeRobe ULAZ entries for a Primka (one entry per StavkePrimke line).
+DISABLED — KretanjeRobe flow is being rebuilt. Re-enable once the new flow is in place.</Text>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── GUARD: disabled until KretanjeRobe flow is rebuilt ────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ok"   ; 0 ; JSONBoolean ] ;
+	[ "note" ; "KnjižiUlaz is disabled — KretanjeRobe flow is being rebuilt" ; JSONString ]
+)]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Original logic below — restore when KretanjeRobe flow is ready ────────</Text>
+	</Step>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[UFD__Primke::Knjizeno = 1]]></Calculation>
+	</Step>
+	<Step enable="False" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; [ "ok" ; 1 ; JSONBoolean ] ; [ "note" ; "Already posted" ; JSONString ] )]]></Calculation>
+	</Step>
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$dokID</Name>
+		<Value><Calculation><![CDATA[UFD__Primke::PrimaryKey]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$dokDatum</Name>
+		<Value><Calculation><![CDATA[GetAsText ( UFD__Primke::DatumPrimitka )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $dokID ) or IsEmpty ( $dokDatum )]]></Calculation>
+	</Step>
+	<Step enable="False" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ok" ; 0 ; JSONBoolean ] ;
+	[ "error" ; "Missing document id/date" ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$sqlLines</Name>
+		<Value><Calculation><![CDATA["SELECT PrimaryKey, ForeignKeyArtikalID, Kolicina, NabavnaCijenaStavke, ProdajnaCijena FROM StavkePrimke WHERE ForeignKeyFakturaID = ?"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$lines</Name>
+		<Value><Calculation><![CDATA[ExecuteSQL ( $sqlLines ; "|" ; "¶" ; $dokID )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $lines )]]></Calculation>
+	</Step>
+	<Step enable="False" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ok" ; 0 ; JSONBoolean ] ;
+	[ "error" ; "No lines found" ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$posted</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$fail</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$rowCount</Name>
+		<Value><Calculation><![CDATA[ValueCount ( $lines )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+
+	<Step enable="False" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$row</Name>
+		<Value><Calculation><![CDATA[GetValue ( $lines ; $i )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$rowP</Name>
+		<Value><Calculation><![CDATA[Substitute ( $row ; "|" ; Char ( 13 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$lineID</Name>
+		<Value><Calculation><![CDATA[GetValue ( $rowP ; 1 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$artikalID</Name>
+		<Value><Calculation><![CDATA[GetValue ( $rowP ; 2 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$qty</Name>
+		<Value><Calculation><![CDATA[GetValue ( $rowP ; 3 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$unitCost</Name>
+		<Value><Calculation><![CDATA[GetValue ( $rowP ; 4 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$unitPrice</Name>
+		<Value><Calculation><![CDATA[GetValue ( $rowP ; 5 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $lineID ) or IsEmpty ( $artikalID ) or $qty = 0]]></Calculation>
+	</Step>
+	<Step enable="False" id="69" name="Else">
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$j</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ArtikalID"        ; $artikalID    ; JSONString ] ;
+	[ "Datum"            ; $dokDatum     ; JSONString ] ;
+	[ "Tip"              ; "ULAZ"        ; JSONString ] ;
+	[ "Kolicina"         ; Abs ( $qty )  ; JSONNumber ] ;
+	[ "UnitCostSnapshot" ; $unitCost     ; JSONNumber ] ;
+	[ "UnitRetailSnapshot" ; $unitPrice  ; JSONNumber ] ;
+	[ "DokumentTip"      ; "StavkeUlazneFakture" ; JSONString ] ;
+	[ "DokumentID"       ; $dokID        ; JSONString ] ;
+	[ "DokumentStavkaID" ; $lineID       ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="25" name="Perform Script">
+		<Script id="657" name="S__Knjiženje"/>
+		<Calculation><![CDATA[$j]]></Calculation>
+	</Step>
+
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$res</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[JSONGetElement ( $res ; "ok" ) = 1]]></Calculation>
+	</Step>
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$posted</Name>
+		<Value><Calculation><![CDATA[$posted + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="False" id="69" name="Else">
+	</Step>
+	<Step enable="False" id="141" name="Set Variable">
+		<Name>$fail</Name>
+		<Value><Calculation><![CDATA[$fail + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="73" name="End Loop"/>
+
+	<Step enable="False" id="68" name="If">
+		<Calculation><![CDATA[$fail = 0]]></Calculation>
+	</Step>
+	<Step enable="False" id="75" name="Commit Records/Requests">
+		<NoInteract state="True"/>
+		<Option state="False"/>
+		<ESSForceCommit state="False"/>
+	</Step>
+	<Step enable="False" id="70" name="End If"/>
+
+	<Step enable="False" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ok"     ; If ( $fail = 0 ; 1 ; 0 ) ; JSONBoolean ] ;
+	[ "posted" ; $posted ; JSONNumber ] ;
+	[ "failed" ; $fail   ; JSONNumber ]
+)]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

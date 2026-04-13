@@ -1,0 +1,15 @@
+/**
+ * Response_IsOk ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Boolean) True if status = "success", False otherwise.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Use this after Get(ScriptResult) to branch on success/fail.
+ */
+
+JSONGetElement ( response ; "status" ) = "success"

@@ -1,0 +1,15 @@
+/**
+ * Response_GetInfos ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (JSONArray) The info message array from messages.info.
+ *   Each element: { code, text, field, context, script, timestamp }
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ */
+
+JSONGetElement ( response ; "messages.info" )

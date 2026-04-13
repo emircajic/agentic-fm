@@ -1,0 +1,258 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Return daily deposit ledger rows for a company and date range.</Text>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Expects JSON: { "companyID": &lt;text&gt;, "datumOd": &lt;date&gt;, "datumDo": &lt;date&gt; }</Text>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Returns JSON: { "status": "success|fail", "rows": [], "errors": [] }</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "companyID" )]]></Calculation>
+    </Value>
+    <Name>$companyID</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "datumOd" )]]></Calculation>
+    </Value>
+    <Name>$datumOd</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $param ; "datumDo" )]]></Calculation>
+    </Value>
+    <Name>$datumDo</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $$SETTINGS ; "polozi.pologUkljucujeKartice" )]]></Calculation>
+    </Value>
+    <Name>$ukljuciKartice</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[False]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $companyID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje companyID" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $datumOd )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje datumOd" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $datumDo )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje datumDo" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not $exit and GetAsDate ( $datumOd ) > GetAsDate ( $datumDo )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "datumOd ne može biti veći od datumDo" ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$exit]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="243" name="DP__DnevniPolog"/>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$companyID]]></Calculation>
+    <Field table="DnevniPolog" id="14" name="ForeignKeyCompanyID"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[GetAsDate ( $datumOd ) & "..." & GetAsDate ( $datumDo )]]></Calculation>
+    <Field table="DnevniPolog" id="7" name="DatumPologa"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["Zaključen"]]></Calculation>
+    <Field table="DnevniPolog" id="9" name="Status"/>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( LastError )]]></Calculation>
+    </Value>
+    <Name>$findError</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$findError = 401 or Get ( FoundCount ) = 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$findError ≠ 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Perform Find failed: " & $findError ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( $ukljuciKartice ; GetAsNumber ( DnevniPolog::UkupnoGotovina ) + GetAsNumber ( DnevniPolog::UkupnoKartice ) ; GetAsNumber ( DnevniPolog::UkupnoGotovina ) )]]></Calculation>
+    </Value>
+    <Name>$iznosPologa</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "datum" ; DnevniPolog::DatumPologa ; JSONString ] ;
+	[ "opis" ; "Dnevni polog " & DnevniPolog::BrojPologa ; JSONString ] ;
+	[ "brojDokumenta" ; DnevniPolog::BrojPologa ; JSONString ] ;
+	[ "zaduzenje" ; 0 ; JSONNumber ] ;
+	[ "razduzenje" ; $iznosPologa ; JSONNumber ] ;
+	[ "tip" ; "DnevniPolog" ; JSONString ] ;
+	[ "sortDatum" ; DnevniPolog::DatumPologa ; JSONString ] ;
+	[ "sortOrder" ; 2 ; JSONNumber ] ;
+	[ "documentID" ; DnevniPolog::PrimaryKey ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$row</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; $row ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="Next"/>
+    <Exit state="True"/>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+</fmxmlsnippet>

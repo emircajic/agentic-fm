@@ -1,0 +1,280 @@
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Create InvoiceLines records on the refund invoice by copying all lines from the original invoice, including ForeignKeyStavkaUlazneFakture (batch link required by INV__PostStockMovements).
+Returns JSON: { "status": "success", "count": N }</Text>
+  </Step>
+
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMETERS:&#xD;  originalInvoiceID — PrimaryKey of the source Račun&#xD;  refundInvoiceID   — PrimaryKey of the Reklamacija record to populate&#xD;&#xD;RETURNS:&#xD;  { "status": "success|fail", "count": N }</Text>
+    <Field>$README</Field>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$p</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$originalID</Name>
+    <Value><Calculation><![CDATA[JSONGetElement ( $p ; "originalInvoiceID" )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$refundID</Name>
+    <Value><Calculation><![CDATA[JSONGetElement ( $p ; "refundInvoiceID" )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$count</Name>
+    <Value><Calculation><![CDATA[0]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $originalID ) or IsEmpty ( $refundID )]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "error" ; "Missing originalInvoiceID or refundInvoiceID" ; JSONString ] ;
+	[ "count" ; 0 ; JSONNumber ]
+)]]></Calculation>
+    </Step>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="79" name="Freeze Window"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$returnLayout</Name>
+    <Value><Calculation><![CDATA[Get ( LayoutName )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout">
+      <Layout id="179" name="Dev Invoices"/>
+    </LayoutDestination>
+    <Animation value="None"/>
+  </Step>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="17" name="Enter Find Mode">
+    <Pause state="False"/>
+  </Step>
+
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$originalID]]></Calculation>
+    <Field table="Invoices" id="1" name="PrimaryKey"/>
+  </Step>
+
+  <Step enable="True" id="22" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( LastError ) ≠ 0 or Get ( FoundCount ) = 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "error" ; "Original invoice not found: " & $originalID ; JSONString ] ;
+	[ "count" ; 0 ; JSONNumber ]
+)]]></Calculation>
+    </Step>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="74" name="Go to Related Record">
+    <Option state="True"/>
+    <Table id="0" name="InvoiceLines"/>
+    <LayoutDestination value="SelectedLayout">
+      <Layout id="225" name="Dev InvoiceLines"/>
+    </LayoutDestination>
+    <Animation value="None"/>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( LastError ) ≠ 0 or Get ( FoundCount ) = 0]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "error" ; "Original invoice has no lines" ; JSONString ] ;
+	[ "count" ; 0 ; JSONNumber ]
+)]]></Calculation>
+    </Step>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$lines</Name>
+    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Name>$lines</Name>
+      <Value><Calculation><![CDATA[JSONSetElement ( $lines ; "[+]" ;
+	JSONSetElement ( "{}" ;
+		[ "sifra"      ; InvoiceLines::Šifra                        ; JSONString ] ;
+		[ "naziv"      ; InvoiceLines::Description                   ; JSONString ] ;
+		[ "jm"         ; InvoiceLines::JM                            ; JSONString ] ;
+		[ "cijena"     ; InvoiceLines::Rate                          ; JSONNumber ] ;
+		[ "kolicina"   ; InvoiceLines::Qty                           ; JSONNumber ] ;
+		[ "rabat"      ; InvoiceLines::Discount                      ; JSONNumber ] ;
+		[ "vrstaStavke" ; InvoiceLines::VrstaStavke                  ; JSONString ] ;
+		[ "artikalID"  ; InvoiceLines::ForeignKeyArtikal             ; JSONString ] ;
+		[ "batchID"    ; InvoiceLines::ForeignKeyStavkaUlazneFakture ; JSONString ]
+	) ;
+	JSONObject
+)]]></Calculation></Value>
+    </Step>
+
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="Next"/>
+      <Exit state="True"/>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$total</Name>
+    <Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $lines ; "" ) )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$i</Name>
+    <Value><Calculation><![CDATA[0]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+
+    <Step enable="True" id="72" name="Exit Loop If">
+      <Calculation><![CDATA[$i >= $total]]></Calculation>
+    </Step>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Name>$line</Name>
+      <Value><Calculation><![CDATA[JSONGetElement ( $lines ; "[" & $i & "]" )]]></Calculation></Value>
+    </Step>
+
+    <Step enable="True" id="28" name="New Record/Request"/>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[$refundID]]></Calculation>
+      <Field table="InvoiceLines" id="6" name="ForeignKeyInvoiceID"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "sifra" )]]></Calculation>
+      <Field table="InvoiceLines" id="13" name="Šifra"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "naziv" )]]></Calculation>
+      <Field table="InvoiceLines" id="7" name="Description"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "jm" )]]></Calculation>
+      <Field table="InvoiceLines" id="17" name="JM"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "cijena" )]]></Calculation>
+      <Field table="InvoiceLines" id="9" name="Rate"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "kolicina" )]]></Calculation>
+      <Field table="InvoiceLines" id="8" name="Qty"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "rabat" )]]></Calculation>
+      <Field table="InvoiceLines" id="11" name="Discount"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "vrstaStavke" )]]></Calculation>
+      <Field table="InvoiceLines" id="22" name="VrstaStavke"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "artikalID" )]]></Calculation>
+      <Field table="InvoiceLines" id="16" name="ForeignKeyArtikal"/>
+    </Step>
+
+    <Step enable="True" id="76" name="Set Field">
+      <Calculation><![CDATA[JSONGetElement ( $line ; "batchID" )]]></Calculation>
+      <Field table="InvoiceLines" id="20" name="ForeignKeyStavkaUlazneFakture"/>
+    </Step>
+
+    <Step enable="True" id="75" name="Commit Records/Requests">
+      <NoInteract state="True"/>
+    </Step>
+
+    <Step enable="True" id="68" name="If">
+      <Calculation><![CDATA[Get ( LastError ) = 0]]></Calculation>
+    </Step>
+
+      <Step enable="True" id="141" name="Set Variable">
+        <Name>$count</Name>
+        <Value><Calculation><![CDATA[$count + 1]]></Calculation></Value>
+      </Step>
+
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Name>$i</Name>
+      <Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+    </Step>
+
+  <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="LayoutNameByCalculation">
+      <Layout id="0" name=""/>
+      <Calculation><![CDATA[$returnLayout]]></Calculation>
+    </LayoutDestination>
+    <Animation value="None"/>
+  </Step>
+
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "count" ; $count ; JSONNumber ]
+)]]></Calculation>
+  </Step>
+
+</fmxmlsnippet>

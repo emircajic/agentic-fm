@@ -1,0 +1,17 @@
+/**
+ * Response_FirstError ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (Text) The human-readable text of the first error message.
+ *   Returns "" if there are no errors.
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Convenience accessor for UI scripts that display a single error message.
+ *   Use Response_GetErrors() when you need to iterate all errors.
+ */
+
+JSONGetElement ( response ; "messages.error[0].text" )

@@ -3,7 +3,7 @@ xml_exports/
 agent/xml_parsed/
 agent/context/
 agent/CONTEXT.json
-agent/sandbox/
+# agent/sandbox/ — intentionally tracked; contains deliverable scripts
 .private/
 .venv/
 .cursor/in-development/

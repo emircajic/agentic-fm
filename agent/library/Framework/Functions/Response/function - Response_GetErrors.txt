@@ -1,0 +1,16 @@
+/**
+ * Response_GetErrors ( response )
+ *
+ * PARAMETERS:
+ *   @response (JSONObject) A Response envelope returned by a sub-script.
+ *
+ * RETURNS:
+ *   (JSONArray) The error message array from messages.error.
+ *   Each element: { code, text, field, context, script, timestamp }
+ *
+ * NOTES:
+ *   Pure reader — does not touch $response.
+ *   Use Response_FirstError() to get the first error text without iterating.
+ */
+
+JSONGetElement ( response ; "messages.error" )

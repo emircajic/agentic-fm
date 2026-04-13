@@ -1,0 +1,91 @@
+# PURPOSE: Write $$~LOG entries for the current $traceID to the log table via the
+#          FileMaker Data API, then remove those entries from $$~LOG.
+#          Called once by the root orchestrator on exit — success or fail.
+#
+# Expects:  { "traceID": <text> }
+#           Passed automatically when the orchestrator calls:
+#               Perform Script [ "UTIL__FlushLog" ; Parameter: JSONSetElement("{}";"traceID";$traceID;JSONString) ]
+#
+# Returns:  Response envelope (status only — no meaningful data payload)
+#
+# IMPORTANT — solution-specific wiring required:
+#   1. Create a table: UTIL__ScriptLog
+#      Fields: TraceID (text), LogJSON (text/longtext), SessionID (text),
+#              RootScript (text), CreatedAt (timestamp), RowCount (number)
+#   2. Create a layout: UTIL__ScriptLog (base TO: UTIL__ScriptLog)
+#   3. Replace $authToken below with your solution's active Data API token mechanism.
+#      In solutions using PSoS Execute Data API, obtain the token from $$DATA_API_TOKEN
+#      or call your token-refresh script first.
+
+Allow User Abort [ OFF ]
+Set Error Capture [ ON ]
+Set Variable [ $void ; Params.parse ( Get ( ScriptParameter ) ; "traceID" ) ]
+Set Variable [ $void ; Response_Init ( "{}" ) ]
+
+# Nothing to flush
+If [ IsEmpty ( $traceID ) or IsEmpty ( $$~LOG ) or $$~LOG = "[]" ]
+	Exit Script [ Response_Finalize ]
+End If
+
+# ── 1. Partition $$~LOG into batch (this trace) and remaining (other traces) ──
+Set Variable [ $count     ; ValueCount ( JSONListKeys ( $$~LOG ; "" ) ) ]
+Set Variable [ $batch     ; "[]" ]
+Set Variable [ $remaining ; "[]" ]
+Set Variable [ $i         ; 0 ]
+
+Loop [ Flush: Always ]
+	Exit Loop If [ $i ≥ $count ]
+	Set Variable [ $entry ; JSONGetElement ( $$~LOG ; "[" & $i & "]" ) ]
+	If [ JSONGetElement ( $entry ; "traceID" ) = $traceID ]
+		Set Variable [ $batch     ; JSONSetElement ( $batch     ; "[+]" ; $entry ; JSONObject ) ]
+	Else
+		Set Variable [ $remaining ; JSONSetElement ( $remaining ; "[+]" ; $entry ; JSONObject ) ]
+	End If
+	Set Variable [ $i ; $i + 1 ]
+End Loop
+
+# Replace $$~LOG — entries for other active traces are preserved
+Set Variable [ $$~LOG ; $remaining ]
+
+# Nothing matched this trace (already flushed or never logged)
+If [ $batch = "[]" or IsEmpty ( JSONListKeys ( $batch ; "" ) ) ]
+	Exit Script [ Response_Finalize ]
+End If
+
+# ── 2. Build the Data API payload (one record per flush = one row per trace) ──
+Set Variable [ $rowCount ; ValueCount ( JSONListKeys ( $batch ; "" ) ) ]
+Set Variable [ $fieldData ; JSONSetElement ( "{}" ;
+	[ "TraceID"    ; $traceID                                     ; JSONString ] ;
+	[ "LogJSON"    ; $batch                                       ; JSONString ] ;
+	[ "SessionID"  ; Get ( PersistentID )                         ; JSONString ] ;
+	[ "RootScript" ; JSONGetElement ( $batch ; "[0].script" )     ; JSONString ] ;
+	[ "CreatedAt"  ; GetAsText ( Get ( CurrentTimestamp ) )       ; JSONString ] ;
+	[ "RowCount"   ; $rowCount                                    ; JSONNumber ]
+) ]
+Set Variable [ $payload ; JSONSetElement ( "{}" ; "fieldData" ; $fieldData ; JSONObject ) ]
+
+# ── 3. POST to Data API ────────────────────────────────────────────────────────
+# ⚠ Replace $$DATA_API_TOKEN with your solution's token variable or obtain it here.
+Set Variable [ $authToken ; $$DATA_API_TOKEN ]
+Set Variable [ $url ; "https://localhost/fmi/data/v2/databases/" & Get ( FileName ) & "/layouts/UTIL__ScriptLog/records" ]
+Set Variable [ $curlOptions ;
+	"-X POST " &
+	"-H \"Content-Type: application/json\" " &
+	"-H \"Authorization: Bearer " & $authToken & "\" " &
+	"--data-binary @$payload " &
+	"--silent --show-error"
+]
+
+Insert from URL [ Verify SSL Certificates: OFF ; With dialog: OFF ; Target: $apiResponse ; URL: $url ; $curlOptions ]
+Set Variable [ $fmError ; Get ( LastError ) ]
+
+If [ $fmError ≠ 0 ]
+	Set Variable [ $void ; Response_AddWarning ( "LOG_FLUSH_FAILED" ; "Data API call failed (FM error " & $fmError & ") — log entries discarded" ; "" ; "{}" ; "" ) ]
+	Exit Script [ Response_Finalize ]
+End If
+
+If [ JSONGetElement ( $apiResponse ; "messages[0].code" ) ≠ "0" ]
+	Set Variable [ $void ; Response_AddWarning ( "LOG_FLUSH_REJECTED" ; "Data API rejected log write: " & JSONGetElement ( $apiResponse ; "messages[0].message" ) ; "" ; "{}" ; "" ) ]
+End If
+
+Exit Script [ Response_Finalize ]

@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Test JSONSortLedgerRows with sample ledger data and log the assertions.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$$log</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$sorted</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Unsorted sample data</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; JSONSetElement ( "{}" ;
+	[ "datum" ; "2026-03-08" ; JSONString ] ;
+	[ "opis" ; "Račun 102-01" ; JSONString ] ;
+	[ "brojDokumenta" ; "102-01" ; JSONString ] ;
+	[ "zaduzenje" ; 0 ; JSONNumber ] ;
+	[ "razduzenje" ; 430 ; JSONNumber ] ;
+	[ "tip" ; "Invoice" ; JSONString ] ;
+	[ "sortDatum" ; "2026-03-08" ; JSONString ] ;
+	[ "sortOrder" ; 2 ; JSONNumber ] ;
+	[ "documentID" ; "B" ; JSONString ]
+) ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; JSONSetElement ( "{}" ;
+	[ "datum" ; "2026-03-05" ; JSONString ] ;
+	[ "opis" ; "Kalkulacija MP K-15" ; JSONString ] ;
+	[ "brojDokumenta" ; "K-15" ; JSONString ] ;
+	[ "zaduzenje" ; 1250 ; JSONNumber ] ;
+	[ "razduzenje" ; 0 ; JSONNumber ] ;
+	[ "tip" ; "KalkulacijaMP" ; JSONString ] ;
+	[ "sortDatum" ; "2026-03-05" ; JSONString ] ;
+	[ "sortOrder" ; 1 ; JSONNumber ] ;
+	[ "documentID" ; "A" ; JSONString ]
+) ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; JSONSetElement ( "{}" ;
+	[ "datum" ; "2026-03-01" ; JSONString ] ;
+	[ "opis" ; "DONOS" ; JSONString ] ;
+	[ "brojDokumenta" ; "" ; JSONString ] ;
+	[ "zaduzenje" ; 0 ; JSONNumber ] ;
+	[ "razduzenje" ; 0 ; JSONNumber ] ;
+	[ "donos" ; 8450 ; JSONNumber ] ;
+	[ "tip" ; "Donos" ; JSONString ] ;
+	[ "sortDatum" ; "2026-03-01" ; JSONString ] ;
+	[ "sortOrder" ; 0 ; JSONNumber ] ;
+	[ "documentID" ; "" ; JSONString ]
+) ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; JSONSetElement ( "{}" ;
+	[ "datum" ; "2026-03-05" ; JSONString ] ;
+	[ "opis" ; "Račun 099-01" ; JSONString ] ;
+	[ "brojDokumenta" ; "099-01" ; JSONString ] ;
+	[ "zaduzenje" ; 0 ; JSONNumber ] ;
+	[ "razduzenje" ; 300 ; JSONNumber ] ;
+	[ "tip" ; "Invoice" ; JSONString ] ;
+	[ "sortDatum" ; "2026-03-05" ; JSONString ] ;
+	[ "sortOrder" ; 2 ; JSONNumber ] ;
+	[ "documentID" ; "C" ; JSONString ]
+) ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; JSONSetElement ( "{}" ;
+	[ "datum" ; "2026-03-05" ; JSONString ] ;
+	[ "opis" ; "Kalkulacija MP K-16" ; JSONString ] ;
+	[ "brojDokumenta" ; "K-16" ; JSONString ] ;
+	[ "zaduzenje" ; 980 ; JSONNumber ] ;
+	[ "razduzenje" ; 0 ; JSONNumber ] ;
+	[ "tip" ; "KalkulacijaMP" ; JSONString ] ;
+	[ "sortDatum" ; "2026-03-05" ; JSONString ] ;
+	[ "sortOrder" ; 1 ; JSONNumber ] ;
+	[ "documentID" ; "D" ; JSONString ]
+) ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Unsorted sample rows" ; JSONString ] ;
+	[ "severity" ; "info" ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "rows" ; $rows ; JSONArray ]
+	) ; JSONObject ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Run custom function</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSortLedgerRows ( $rows )]]></Calculation>
+    </Value>
+    <Name>$sorted</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Sorted rows" ; JSONString ] ;
+	[ "severity" ; "info" ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "rows" ; $sorted ; JSONArray ]
+	) ; JSONObject ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>// Assertions</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $sorted ; "[0].tip" ) = "Donos"]]></Calculation>
+    </Value>
+    <Name>$ok1</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $sorted ; "[1].brojDokumenta" ) = "K-15"]]></Calculation>
+    </Value>
+    <Name>$ok2</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $sorted ; "[2].brojDokumenta" ) = "K-16"]]></Calculation>
+    </Value>
+    <Name>$ok3</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $sorted ; "[3].brojDokumenta" ) = "099-01"]]></Calculation>
+    </Value>
+    <Name>$ok4</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $sorted ; "[4].brojDokumenta" ) = "102-01"]]></Calculation>
+    </Value>
+    <Name>$ok5</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$ok1 and $ok2 and $ok3 and $ok4 and $ok5]]></Calculation>
+    </Value>
+    <Name>$pass</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test" ; "Assertions" ; JSONString ] ;
+	[ "severity" ; Case ( $pass ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result" ; JSONSetElement ( "{}" ;
+		[ "ok1_donos_first" ; $ok1 ; JSONBoolean ] ;
+		[ "ok2_k15_second" ; $ok2 ; JSONBoolean ] ;
+		[ "ok3_k16_third" ; $ok3 ; JSONBoolean ] ;
+		[ "ok4_invoice_fourth" ; $ok4 ; JSONBoolean ] ;
+		[ "ok5_invoice_fifth" ; $ok5 ; JSONBoolean ] ;
+		[ "pass" ; $pass ; JSONBoolean ]
+	) ; JSONObject ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["JSONSortLedgerRows Test"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONFormatElements ( $$log )]]></Calculation>
+    </Message>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$log]]></Calculation>
+  </Step>
+</fmxmlsnippet>
