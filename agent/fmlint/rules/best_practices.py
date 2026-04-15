@@ -360,3 +360,148 @@ class NoTernary(LintRule):
                 ))
 
         return diags
+
+
+# ---------------------------------------------------------------------------
+# B006 — record-lock-unchecked
+# ---------------------------------------------------------------------------
+
+@rule
+class RecordLockUnchecked(LintRule):
+    """Set Error Capture [On] is present with record-modifying steps but no
+    Get(LastError) check.  In multi-user environments, steps like Set Field
+    implicitly acquire a write lock that can fail with error 301 (record
+    locked by another user).  With error capture on and no error check, the
+    failure is completely silent — data is never written and the script
+    continues as though it succeeded.
+    """
+
+    rule_id = "B006"
+    name = "record-lock-unchecked"
+    category = "best_practices"
+    default_severity = Severity.WARNING
+    formats = {"xml", "hr"}
+    tier = 1
+
+    _LAST_ERROR_PATTERNS = ("Get ( LastError", "Get(LastError")
+
+    # Steps that implicitly or explicitly open a record for editing.
+    # Insert steps that modify field data also acquire a lock.
+    _RECORD_MODIFYING_STEPS = frozenset({
+        "Set Field",
+        "Set Field By Name",
+        "Insert Calculated Result",
+        "Insert Current Date",
+        "Insert Current Time",
+        "Insert Current User Name",
+        "Insert from Index",
+        "Insert Text",
+        "Replace Field Contents",
+    })
+
+    def check_xml(self, parse_result, catalog, context, config):
+        if not parse_result.ok:
+            return []
+
+        sev = self.severity(config)
+        steps = parse_result.steps
+
+        has_error_capture_on = False
+        has_last_error_check = False
+        first_modify_line = 0
+        has_record_modify = False
+
+        for idx, step in enumerate(steps):
+            name = step.get("name", "")
+
+            # Detect Set Error Capture [On]
+            if name == "Set Error Capture":
+                state_el = step.find("State")
+                if state_el is not None and state_el.get("state") == "False":
+                    continue
+                has_error_capture_on = True
+
+            # Detect record-modifying steps
+            if name in self._RECORD_MODIFYING_STEPS:
+                if not has_record_modify:
+                    first_modify_line = idx + 1
+                has_record_modify = True
+
+            # Detect Get(LastError) in any calculation
+            for calc in step.iter("Calculation"):
+                if calc.text and any(
+                    p in calc.text for p in self._LAST_ERROR_PATTERNS
+                ):
+                    has_last_error_check = True
+
+        if has_error_capture_on and has_record_modify and not has_last_error_check:
+            return [Diagnostic(
+                rule_id=self.rule_id,
+                severity=sev,
+                message=(
+                    "Set Error Capture [On] is enabled and record-modifying "
+                    "steps are present (e.g. Set Field) but no Get(LastError) "
+                    "check was found. In multi-user environments, these steps "
+                    "can fail silently with error 301 (record locked) or "
+                    "error 306 (modification ID mismatch), causing data loss "
+                    "with no indication to the user or calling script."
+                ),
+                line=first_modify_line,
+                fix_hint=(
+                    "Add a Get ( LastError ) check immediately after each "
+                    "record-modifying step. See agent/docs/knowledge/"
+                    "record-locking.md for the recommended pattern."
+                ),
+            )]
+
+        return []
+
+    def check_hr(self, lines, catalog, context, config):
+        sev = self.severity(config)
+
+        has_error_capture_on = False
+        has_last_error_check = False
+        first_modify_line = 0
+        has_record_modify = False
+
+        for ln in lines:
+            # Detect Set Error Capture [On]
+            if ln.step_name == "Set Error Capture":
+                bracket = ln.bracket_content or ""
+                if "Off" in bracket:
+                    continue
+                has_error_capture_on = True
+
+            # Detect record-modifying steps
+            if ln.step_name in self._RECORD_MODIFYING_STEPS:
+                if not has_record_modify:
+                    first_modify_line = ln.line_number
+                has_record_modify = True
+
+            # Detect Get(LastError) in any content
+            content = ln.bracket_content or ""
+            raw = ln.raw or ""
+            if any(p in content or p in raw for p in self._LAST_ERROR_PATTERNS):
+                has_last_error_check = True
+
+        if has_error_capture_on and has_record_modify and not has_last_error_check:
+            return [Diagnostic(
+                rule_id=self.rule_id,
+                severity=sev,
+                message=(
+                    "Set Error Capture [On] is enabled and record-modifying "
+                    "steps are present (e.g. Set Field) but no Get(LastError) "
+                    "check was found. In multi-user environments, these steps "
+                    "can fail silently with error 301 (record locked) or "
+                    "error 306 (modification ID mismatch), causing data loss "
+                    "with no indication to the user or calling script."
+                ),
+                line=first_modify_line,
+                fix_hint=(
+                    "Add a Get ( LastError ) check immediately after each "
+                    "record-modifying step. See agent/docs/knowledge/"
+                    "record-locking.md for the recommended pattern."
+                ),
+            )]
+
+        return []

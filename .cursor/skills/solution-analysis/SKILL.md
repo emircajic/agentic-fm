@@ -1,7 +1,7 @@
 ---
 name: solution-analysis
 description: Analyze a FileMaker solution and produce a structured profile covering data model, business logic, UI layer, integrations, and health metrics. Uses on-disk pre-processing to handle solutions of any size without sending raw XML through the agent. Use when the developer says "analyze solution", "solution overview", "solution analysis", "solution profile", "solution spec", "what does this solution do", "solution summary", or wants a high-level understanding of an entire FileMaker solution.
-compatibility: Requires Python 3. Optionally networkx, pandas, matplotlib, jinja2 for extended analysis.
+compatibility: Requires Python 3. Optionally networkx, pandas, matplotlib, jinja2 (via venv) for extended analysis.
 ---
 
 # Solution Analysis
@@ -112,18 +112,32 @@ The analysis script supports optional Python libraries that enable deeper analys
 python3 agent/scripts/analyze.py --list-extensions
 ```
 
-If the developer wants extended analysis, guide them to install:
-
-```bash
-pip3 install -r .cursor/skills/solution-analysis/assets/requirements-analyze.txt
-```
-
 Extended features include:
 
 - **networkx**: Anchor-buoy topology detection with confidence scores, script community detection, cycle detection, bridge relationship identification
 - **pandas**: Statistical profiling, outlier detection, table health scorecards
 - **matplotlib**: Embedded visualizations in the markdown report
 - **jinja2**: Customizable report templates
+
+If any are missing and the developer wants extended analysis, guide them through setup:
+
+> **Extended analysis requires additional Python dependencies.**
+>
+> Core analysis works without them — install only if you want topology detection, statistical profiling, visualizations, or templated reports.
+>
+> **Option A: venv in the project folder (recommended)**
+> ```bash
+> python3 -m venv agent/.venv
+> source agent/.venv/bin/activate
+> pip install -r .cursor/skills/solution-analysis/assets/requirements-analyze.txt
+> ```
+>
+> Once set up, run the analysis with the venv active, or prefix with `agent/.venv/bin/python3`:
+> ```bash
+> agent/.venv/bin/python3 agent/scripts/analyze.py -s "{solution}" --ensure-prerequisites
+> ```
+
+If the developer declines, proceed with the core analysis — all six profile sections are still generated, just without the extended metrics.
 
 ## Performance contract
 

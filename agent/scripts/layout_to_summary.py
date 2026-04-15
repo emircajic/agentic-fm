@@ -86,14 +86,172 @@ def parse_field(obj_el):
     return result
 
 
-def parse_style(obj_el):
-    """Extract the LocalCSS class name if present."""
-    css = obj_el.find("LocalCSS")
-    if css is not None:
-        name = css.get("name", "")
-        if name:
-            return name
+def _rgba_to_hex(rgba_str):
+    """Convert 'rgba(R%, G%, B%, A)' to '#RRGGBB' or '#RRGGBBAA'.
+
+    Handles both percentage values (0-100%) and 0-255 integer values.
+    Returns None if parsing fails.
+    """
+    import re
+    m = re.match(r'rgba?\(\s*([^,]+),\s*([^,]+),\s*([^,]+)(?:,\s*([^)]+))?\)', rgba_str.strip())
+    if not m:
+        return None
+    try:
+        vals = []
+        for i in range(3):
+            v = m.group(i + 1).strip()
+            if v.endswith('%'):
+                vals.append(int(float(v.rstrip('%')) * 255 / 100))
+            else:
+                vals.append(int(float(v)))
+        alpha = float(m.group(4).strip()) if m.group(4) else 1.0
+        if alpha < 1.0:
+            return "#{:02X}{:02X}{:02X}{:02X}".format(vals[0], vals[1], vals[2], int(alpha * 255))
+        return "#{:02X}{:02X}{:02X}".format(vals[0], vals[1], vals[2])
+    except (ValueError, TypeError):
+        return None
+
+
+def _extract_css_visuals(css_text):
+    """Extract key visual CSS properties from a LocalCSS CDATA block.
+
+    Returns a dict with only the properties that carry visual information:
+    background-color, color (text), border-radius, font-size, font-family,
+    background-image (gradients). Skips empty/zero values.
+    """
+    import re
+    if not css_text:
+        return {}
+
+    visuals = {}
+
+    # Background color
+    m = re.search(r'background-color:\s*(rgba?\([^)]+\))', css_text)
+    if m:
+        hex_val = _rgba_to_hex(m.group(1))
+        if hex_val and hex_val not in ("#000000FF", "#00000000"):
+            # Skip fully transparent (not useful) but keep others
+            if not hex_val.endswith("00"):  # skip alpha=0
+                visuals["bgColor"] = hex_val
+
+    # Background gradient
+    m = re.search(r'background-image:\s*-webkit-gradient\([^)]+from\((rgba?\([^)]+\))\)[^)]*to\((rgba?\([^)]+\))\)', css_text)
+    if m:
+        from_hex = _rgba_to_hex(m.group(1))
+        to_hex = _rgba_to_hex(m.group(2))
+        if from_hex and to_hex:
+            visuals["bgGradient"] = [from_hex, to_hex]
+
+    # Text color (avoid matching background-color)
+    for cm in re.finditer(r'(?<!background-)color:\s*(rgba?\([^)]+\))', css_text):
+        hex_val = _rgba_to_hex(cm.group(1))
+        if hex_val and hex_val not in ("#00000000",):
+            visuals["textColor"] = hex_val
+            break
+
+    # Border radius
+    m = re.search(r'border-(?:top-left-)?radius:\s*([0-9.]+(?:pt|px|em))', css_text)
+    if m and float(re.match(r'[0-9.]+', m.group(1)).group()) > 0:
+        visuals["borderRadius"] = m.group(1)
+
+    # Font size
+    m = re.search(r'font-size:\s*([0-9.]+(?:pt|px|em))', css_text)
+    if m:
+        visuals["fontSize"] = m.group(1)
+
+    # FM font family
+    m = re.search(r'-fm-font-family\(([^,)]+)', css_text)
+    if m:
+        visuals["fontFamily"] = m.group(1)
+
+    return visuals
+
+
+def _describe_icon_svg(icon_el):
+    """Extract a brief description from an IconData element's SVG content.
+
+    Decodes the base64 SVG and extracts the shape types to produce a compact
+    description like 'svg:24x24 path+rect+polygon' (the SVG primitives used).
+    Returns None if no SVG data found.
+    """
+    import base64
+    import re
+    if icon_el is None:
+        return None
+
+    binary = icon_el.find("BinaryData")
+    if binary is None:
+        return None
+
+    for stream in binary.iter("Stream"):
+        if stream.get("name", "").strip() == "SVG" and stream.get("type") == "Base64":
+            try:
+                svg_text = base64.b64decode(stream.text.strip()).decode("utf-8", errors="replace")
+            except Exception:
+                return None
+
+            # Extract viewBox dimensions
+            vb = re.search(r'viewBox="([^"]+)"', svg_text)
+            size = ""
+            if vb:
+                parts = vb.group(1).split()
+                if len(parts) == 4:
+                    size = f"{parts[2]}x{parts[3]}"
+
+            # Extract shape primitives used
+            shapes = set(re.findall(r'<(path|rect|circle|ellipse|polygon|polyline|line)\b', svg_text))
+            if shapes:
+                return f"svg:{size} {'+'.join(sorted(shapes))}" if size else f"svg:{'+'.join(sorted(shapes))}"
+            return f"svg:{size}" if size else "svg"
+
     return None
+
+
+def parse_style(obj_el):
+    """Extract the LocalCSS class name, display name, and key visual properties.
+
+    Returns a dict with 'class', optionally 'displayName', and optionally
+    'visuals' (extracted CSS properties like bgColor, textColor, fontSize).
+    Returns just the class string when only the class name is available.
+    """
+    css = obj_el.find("LocalCSS")
+    if css is None:
+        return None
+    name = css.get("name", "")
+    display_name = css.get("displayName", "")
+    if not name and not display_name:
+        return None
+
+    # Extract visual CSS properties from the CDATA content
+    css_text = css.text or ""
+    visuals = _extract_css_visuals(css_text)
+
+    # Also check for anonymous inline CSS blocks (children without names)
+    # These appear on child elements like buttons/segments
+    for child_css in obj_el.iter("LocalCSS"):
+        if child_css is not css:
+            child_text = child_css.text or ""
+            child_visuals = _extract_css_visuals(child_text)
+            # Only add if the main block didn't already have it
+            for k, v in child_visuals.items():
+                if k not in visuals:
+                    visuals[k] = v
+
+    if not name and not display_name and not visuals:
+        return None
+
+    # Return minimal format when only class name is available
+    if name and not display_name and not visuals:
+        return name
+
+    result = {}
+    if name:
+        result["class"] = name
+    if display_name:
+        result["displayName"] = display_name
+    if visuals:
+        result["visuals"] = visuals
+    return result if result else name
 
 
 def parse_text_content(obj_el):
@@ -125,12 +283,15 @@ def parse_button(obj_el):
         if text:
             result["label"] = text
 
-    # Has icon?
+    # Has icon? Extract SVG description if available.
     icon = btn.find("IconData")
     if icon is not None:
         icon_type = icon.get("type", "0")
         if icon_type != "0":
             result["hasIcon"] = True
+            icon_desc = _describe_icon_svg(icon)
+            if icon_desc:
+                result["iconDesc"] = icon_desc
 
     # Script action
     action = btn.find("action")
@@ -251,20 +412,31 @@ def parse_layout_object(obj_el):
     """Parse a single LayoutObject element into a compact dict."""
     obj_type = obj_el.get("type", "Unknown")
     obj_name = obj_el.get("name", "")
+    obj_key = obj_el.get("key", "")
 
     summary = {"type": obj_type}
     if obj_name:
         summary["name"] = obj_name
+    if obj_key:
+        summary["key"] = int(obj_key)
 
     # Bounds
     bounds = parse_bounds(obj_el)
     if bounds:
         summary["bounds"] = bounds
 
-    # Style
+    # Style — may be a string (class only) or dict (class + displayName + visuals)
     style = parse_style(obj_el)
     if style:
-        summary["style"] = style
+        if isinstance(style, dict):
+            if style.get("class"):
+                summary["style"] = style["class"]
+            if style.get("displayName"):
+                summary["styleName"] = style["displayName"]
+            if style.get("visuals"):
+                summary["visuals"] = style["visuals"]
+        else:
+            summary["style"] = style
 
     # Type-specific content
     if obj_type in ("Edit Box", "Drop-down List", "Drop-down Calendar",
@@ -325,8 +497,11 @@ def parse_part(part_el):
     css = defn.find("LocalCSS")
     if css is not None:
         name = css.get("name", "")
+        display_name = css.get("displayName", "")
         if name:
             result["style"] = name
+        if display_name:
+            result["styleName"] = display_name
 
     # Objects in this part
     obj_list = part_el.find("ObjectList")

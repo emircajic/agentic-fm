@@ -62,6 +62,7 @@ Generated files (per solution under agent/context/{solution}/):
   scripts.index            Script names, IDs, and folder paths
   table_occurrences.index  Table occurrence to base table mapping
   value_lists.index        Value list names, sources, and values
+  custom_functions.index   Custom functions with classification (constant/functional/solution_specific/utility)
 
 Dependencies:
   xmllint must be available (ships with macOS).
@@ -380,7 +381,85 @@ for SOLUTION in "${SOLUTIONS[@]}"; do
     vl_lines=$(( $(wc -l < "$SOLUTION_CONTEXT_DIR/value_lists.index") - 1 ))
     msg "  value_lists.index: $vl_lines value lists"
 
-    solution_total=$(( field_lines + rel_lines + layout_lines + script_lines + to_lines + vl_lines ))
+    # ---------------------------------------------------------------------------
+    # 7. custom_functions.index
+    #
+    # Classification rules (evaluated in order, first match wins):
+    #   utility          – body contains embedded non-FM code (JS/CSS/SVG/HTML)
+    #   solution_specific – body contains a TO::Field reference (\w+::\w+)
+    #   constant         – zero parameters AND no block-level keywords
+    #                      (Let/While/Case/If/For)
+    #   functional       – everything else
+    # ---------------------------------------------------------------------------
+    {
+        echo "# FunctionName|FunctionID|Parameters|Access|Display|Category"
+
+        STUB_DIR="$XML_PARSED_DIR/custom_function_stubs/$SOLUTION"
+        SANITIZED_DIR="$XML_PARSED_DIR/custom_functions_sanitized/$SOLUTION"
+
+        if [[ -d "$STUB_DIR" ]]; then
+        find "$STUB_DIR" -name '*.xml' -type f 2>/dev/null | sort | while IFS= read -r file; do
+            cf_name=$(xval 'string(/CustomFunction/@name)' "$file")
+            cf_id=$(xval 'string(/CustomFunction/@id)' "$file")
+            cf_access=$(xval 'string(/CustomFunction/@access)' "$file")
+            cf_display=$(xval 'string(/CustomFunction/Display)' "$file")
+
+            # Extract parameter names from stub
+            param_count=$(xval 'string(/CustomFunction/ObjectList/@membercount)' "$file")
+            params=""
+            if [[ -n "$param_count" && "$param_count" != "0" ]]; then
+                for ((p=1; p<=param_count; p++)); do
+                    pname=$(xval "string(/CustomFunction/ObjectList/Parameter[$p]/@name)" "$file")
+                    if [[ -n "$params" ]]; then
+                        params="${params},${pname}"
+                    else
+                        params="$pname"
+                    fi
+                done
+            fi
+
+            # Classify using the sanitized body
+            category="functional"
+            txt_file="$SANITIZED_DIR/${cf_name} - ID ${cf_id}.txt"
+
+            if [[ -f "$txt_file" ]]; then
+                body=$(<"$txt_file")
+                body_size=${#body}
+
+                # 1. Utility: embedded JS/CSS/SVG/HTML
+                is_utility=0
+                if echo "$body" | grep -qE '<svg|<path |<html|<div |<style'; then
+                    is_utility=1
+                elif [[ "$body_size" -gt 2000 ]] \
+                     && echo "$body" | grep -qE 'function[[:space:]]*\(' \
+                     && echo "$body" | grep -qEw 'var|const|let|return'; then
+                    is_utility=1
+                elif echo "$body" | grep -qE '\{margin:|\{padding:|\{display:|\{font-|\{line-height:'; then
+                    is_utility=1
+                fi
+
+                if [[ "$is_utility" -eq 1 ]]; then
+                    category="utility"
+                # 2. Solution-specific: TO::Field reference
+                elif echo "$body" | grep -qE '[A-Za-z_][A-Za-z0-9_ ]*::[A-Za-z_]'; then
+                    category="solution_specific"
+                # 3. Constant: zero params + no block keywords
+                elif [[ -z "$param_count" || "$param_count" == "0" ]]; then
+                    if ! echo "$body" | grep -qiE '\bLet[[:space:]]*\(|\bWhile[[:space:]]*\(|\bCase[[:space:]]*\(|\bIf[[:space:]]*\(|\bFor[[:space:]]*\('; then
+                        category="constant"
+                    fi
+                fi
+            fi
+
+            echo "${cf_name}|${cf_id}|${params}|${cf_access}|${cf_display}|${category}"
+        done
+        fi
+    } > "$SOLUTION_CONTEXT_DIR/custom_functions.index"
+
+    cf_lines=$(( $(wc -l < "$SOLUTION_CONTEXT_DIR/custom_functions.index") - 1 ))
+    msg "  custom_functions.index: $cf_lines custom functions"
+
+    solution_total=$(( field_lines + rel_lines + layout_lines + script_lines + to_lines + vl_lines + cf_lines ))
     total_all_lines=$(( total_all_lines + solution_total ))
 
 done
@@ -393,4 +472,4 @@ total_size=$(du -sh "$CONTEXT_DIR" 2>/dev/null | cut -f1)
 echo ""
 msg "Done!"
 msg "  Output: agent/context/ ($total_all_lines total entries, ${total_size})"
-msg "  Files per solution: fields.index, relationships.index, layouts.index, scripts.index, table_occurrences.index, value_lists.index"
+msg "  Files per solution: fields.index, relationships.index, layouts.index, scripts.index, table_occurrences.index, value_lists.index, custom_functions.index"

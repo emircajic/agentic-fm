@@ -71,7 +71,7 @@ _KNOWN_PREFIXES = {
     "N": range(1, 8),     # N001–N007
     "D": range(1, 4),     # D001–D003
     "R": range(1, 10),    # R001–R009
-    "B": range(1, 6),     # B001–B005
+    "B": range(1, 7),     # B001–B006
     "C": range(1, 7),     # C001–C006
 }
 

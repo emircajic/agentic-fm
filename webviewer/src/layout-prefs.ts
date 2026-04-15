@@ -12,6 +12,7 @@ export interface LayoutPrefs {
   showXmlPreview: boolean;
   showChat: boolean;
   showLibrary: boolean;
+  showIconBrowser: boolean;
   editorPct: number;     // editor column vs chat panel horizontal split (%)
   editorXmlPct: number; // editor vs xml preview vertical split (%)
   libraryWidth: number;  // library panel width (px)
@@ -21,6 +22,7 @@ export const DEFAULT_PREFS: LayoutPrefs = {
   showXmlPreview: false,
   showChat: false,
   showLibrary: false,
+  showIconBrowser: false,
   editorPct: 50,
   editorXmlPct: 60,
   libraryWidth: 224, // equivalent to Tailwind w-56

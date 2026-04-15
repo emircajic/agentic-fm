@@ -1,0 +1,1437 @@
+{
+  "version": "22.0.4",
+  "functions": [
+    {
+      "name": "Abs",
+      "prototype": "Abs ( number )"
+    },
+    {
+      "name": "Acos",
+      "prototype": "Acos ( number )"
+    },
+    {
+      "name": "AddEmbeddings",
+      "prototype": "AddEmbeddings ( v1 ; v2 )"
+    },
+    {
+      "name": "Asin",
+      "prototype": "Asin ( number )"
+    },
+    {
+      "name": "Atan",
+      "prototype": "Atan ( number )"
+    },
+    {
+      "name": "Average",
+      "prototype": "Average ( field {; field...} )"
+    },
+    {
+      "name": "Base64Decode",
+      "prototype": "Base64Decode ( text {; fileNameWithExtension } )"
+    },
+    {
+      "name": "Base64Encode",
+      "prototype": "Base64Encode ( data )"
+    },
+    {
+      "name": "Base64EncodeRFC",
+      "prototype": "Base64EncodeRFC ( RFCNumber ; data )"
+    },
+    {
+      "name": "BaseTableIDs",
+      "prototype": "BaseTableIDs ( fileName )"
+    },
+    {
+      "name": "BaseTableNames",
+      "prototype": "BaseTableNames ( fileName )"
+    },
+    {
+      "name": "Case",
+      "prototype": "Case ( test1 ; result1 {; test2 ; result2 ; ... ; defaultResult } )"
+    },
+    {
+      "name": "Ceiling",
+      "prototype": "Ceiling ( number )"
+    },
+    {
+      "name": "Char",
+      "prototype": "Char ( number )"
+    },
+    {
+      "name": "Choose",
+      "prototype": "Choose ( test ; result0 {; result1 ; result2...} )"
+    },
+    {
+      "name": "Code",
+      "prototype": "Code ( text )"
+    },
+    {
+      "name": "Combination",
+      "prototype": "Combination ( setSize ; numberOfChoices )"
+    },
+    {
+      "name": "ConvertFromFileMakerPath",
+      "prototype": "ConvertFromFileMakerPath ( filemakerPath ; format )"
+    },
+    {
+      "name": "ConvertToFileMakerPath",
+      "prototype": "ConvertToFileMakerPath ( standardPath ; format )"
+    },
+    {
+      "name": "Cos",
+      "prototype": "Cos ( angleInRadians )"
+    },
+    {
+      "name": "CosineSimilarity",
+      "prototype": "CosineSimilarity ( v1 ; v2 )"
+    },
+    {
+      "name": "Count",
+      "prototype": "Count ( field {; field...} )"
+    },
+    {
+      "name": "CryptAuthCode",
+      "prototype": "CryptAuthCode ( data ; algorithm ; key )"
+    },
+    {
+      "name": "CryptDecrypt",
+      "prototype": "CryptDecrypt ( container ; key )"
+    },
+    {
+      "name": "CryptDecryptBase64",
+      "prototype": "CryptDecryptBase64 ( text ; key )"
+    },
+    {
+      "name": "CryptDigest",
+      "prototype": "CryptDigest ( data ; algorithm )"
+    },
+    {
+      "name": "CryptEncrypt",
+      "prototype": "CryptEncrypt ( data ; key )"
+    },
+    {
+      "name": "CryptEncryptBase64",
+      "prototype": "CryptEncryptBase64 ( data ; key )"
+    },
+    {
+      "name": "CryptGenerateSignature",
+      "prototype": "CryptGenerateSignature ( data ; algorithm ; privateRSAKey ; keyPassword )"
+    },
+    {
+      "name": "CryptVerifySignature",
+      "prototype": "CryptVerifySignature ( data ; algorithm ; publicRSAKey ; signature )"
+    },
+    {
+      "name": "DatabaseNames",
+      "prototype": "DatabaseNames"
+    },
+    {
+      "name": "Date",
+      "prototype": "Date ( month ; day ; year )"
+    },
+    {
+      "name": "Day",
+      "prototype": "Day ( date )"
+    },
+    {
+      "name": "DayName",
+      "prototype": "DayName ( date )"
+    },
+    {
+      "name": "DayNameJ",
+      "prototype": "DayNameJ ( date )"
+    },
+    {
+      "name": "DayOfWeek",
+      "prototype": "DayOfWeek ( date )"
+    },
+    {
+      "name": "DayOfYear",
+      "prototype": "DayOfYear ( date )"
+    },
+    {
+      "name": "Degrees",
+      "prototype": "Degrees ( angleInRadians )"
+    },
+    {
+      "name": "Div",
+      "prototype": "Div ( number ; divisor )"
+    },
+    {
+      "name": "Evaluate",
+      "prototype": "Evaluate ( expression {; [field1 ; field2 ;...]} )"
+    },
+    {
+      "name": "EvaluationError",
+      "prototype": "EvaluationError ( expression )"
+    },
+    {
+      "name": "Exact",
+      "prototype": "Exact ( originalText ; comparisonText )"
+    },
+    {
+      "name": "ExecuteSQL",
+      "prototype": "ExecuteSQL ( sqlQuery ; fieldSeparator ; rowSeparator { ; arguments... } )"
+    },
+    {
+      "name": "ExecuteSQLe",
+      "prototype": "ExecuteSQLe ( sqlQuery ; fieldSeparator ; rowSeparator { ; arguments... } )"
+    },
+    {
+      "name": "Exp",
+      "prototype": "Exp ( number )"
+    },
+    {
+      "name": "Extend",
+      "prototype": "Extend ( non-repeatingField )"
+    },
+    {
+      "name": "Factorial",
+      "prototype": "Factorial ( number {; numberOfFactors } )"
+    },
+    {
+      "name": "FieldBounds",
+      "prototype": "FieldBounds ( fileName ; layoutName ; fieldName )"
+    },
+    {
+      "name": "FieldComment",
+      "prototype": "FieldComment ( fileName ; fieldName )"
+    },
+    {
+      "name": "FieldIDs",
+      "prototype": "FieldIDs ( fileName ; layoutName )"
+    },
+    {
+      "name": "FieldNames",
+      "prototype": "FieldNames ( fileName ; layoutName )"
+    },
+    {
+      "name": "FieldRepetitions",
+      "prototype": "FieldRepetitions ( fileName ; layoutName ; fieldName )"
+    },
+    {
+      "name": "FieldStyle",
+      "prototype": "FieldStyle ( fileName ; layoutName ; fieldName )"
+    },
+    {
+      "name": "FieldType",
+      "prototype": "FieldType ( fileName ; fieldName )"
+    },
+    {
+      "name": "Filter",
+      "prototype": "Filter ( textToFilter ; filterText )"
+    },
+    {
+      "name": "FilterValues",
+      "prototype": "FilterValues ( textToFilter ; filterValues )"
+    },
+    {
+      "name": "Floor",
+      "prototype": "Floor ( number )"
+    },
+    {
+      "name": "Furigana",
+      "prototype": "Furigana ( text {; option } )"
+    },
+    {
+      "name": "FV",
+      "prototype": "FV ( payment ; interestRate ; periods )"
+    },
+    {
+      "name": "Get(AccountExtendedPrivileges)",
+      "prototype": "Get ( AccountExtendedPrivileges )"
+    },
+    {
+      "name": "Get(AccountGroupName)",
+      "prototype": "Get ( AccountGroupName )"
+    },
+    {
+      "name": "Get(AccountName)",
+      "prototype": "Get ( AccountName )"
+    },
+    {
+      "name": "Get(AccountPrivilegeSetName)",
+      "prototype": "Get ( AccountPrivilegeSetName )"
+    },
+    {
+      "name": "Get(AccountType)",
+      "prototype": "Get ( AccountType )"
+    },
+    {
+      "name": "Get(ActiveFieldContents)",
+      "prototype": "Get ( ActiveFieldContents )"
+    },
+    {
+      "name": "Get(ActiveFieldName)",
+      "prototype": "Get ( ActiveFieldName )"
+    },
+    {
+      "name": "Get(ActiveFieldTableName)",
+      "prototype": "Get ( ActiveFieldTableName )"
+    },
+    {
+      "name": "Get(ActiveLayoutObjectName)",
+      "prototype": "Get ( ActiveLayoutObjectName )"
+    },
+    {
+      "name": "Get(ActiveModifierKeys)",
+      "prototype": "Get ( ActiveModifierKeys )"
+    },
+    {
+      "name": "Get(ActivePortalRowNumber)",
+      "prototype": "Get ( ActivePortalRowNumber )"
+    },
+    {
+      "name": "Get(ActiveRecordNumber)",
+      "prototype": "Get ( ActiveRecordNumber )"
+    },
+    {
+      "name": "Get(ActiveRepetitionNumber)",
+      "prototype": "Get ( ActiveRepetitionNumber )"
+    },
+    {
+      "name": "Get(ActiveSelectionSize)",
+      "prototype": "Get ( ActiveSelectionSize )"
+    },
+    {
+      "name": "Get(ActiveSelectionStart)",
+      "prototype": "Get ( ActiveSelectionStart )"
+    },
+    {
+      "name": "Get(AllowAbortState)",
+      "prototype": "Get ( AllowAbortState )"
+    },
+    {
+      "name": "Get(AllowFormattingBarState)",
+      "prototype": "Get ( AllowFormattingBarState )"
+    },
+    {
+      "name": "Get(ApplicationArchitecture)",
+      "prototype": "Get ( ApplicationArchitecture )"
+    },
+    {
+      "name": "Get(ApplicationLanguage)",
+      "prototype": "Get ( ApplicationLanguage )"
+    },
+    {
+      "name": "Get(ApplicationVersion)",
+      "prototype": "Get ( ApplicationVersion )"
+    },
+    {
+      "name": "Get(CacheFileName)",
+      "prototype": "Get ( CacheFileName )"
+    },
+    {
+      "name": "Get(CacheFilePath)",
+      "prototype": "Get ( CacheFilePath )"
+    },
+    {
+      "name": "Get(CalculationRepetitionNumber)",
+      "prototype": "Get ( CalculationRepetitionNumber )"
+    },
+    {
+      "name": "Get(ConnectionAttributes)",
+      "prototype": "Get ( ConnectionAttributes )"
+    },
+    {
+      "name": "Get(ConnectionState)",
+      "prototype": "Get ( ConnectionState )"
+    },
+    {
+      "name": "Get(CurrentDate)",
+      "prototype": "Get ( CurrentDate )"
+    },
+    {
+      "name": "Get(CurrentExtendedPrivileges)",
+      "prototype": "Get ( CurrentExtendedPrivileges )"
+    },
+    {
+      "name": "Get(CurrentHostTimestamp)",
+      "prototype": "Get ( CurrentHostTimestamp )"
+    },
+    {
+      "name": "Get(CurrentPrivilegeSetName)",
+      "prototype": "Get ( CurrentPrivilegeSetName )"
+    },
+    {
+      "name": "Get(CurrentTime)",
+      "prototype": "Get ( CurrentTime )"
+    },
+    {
+      "name": "Get(CurrentTimestamp)",
+      "prototype": "Get ( CurrentTimestamp )"
+    },
+    {
+      "name": "Get(CurrentTimeUTCMicroseconds)",
+      "prototype": "Get ( CurrentTimeUTCMicroseconds )"
+    },
+    {
+      "name": "Get(CurrentTimeUTCMilliseconds)",
+      "prototype": "Get ( CurrentTimeUTCMilliseconds )"
+    },
+    {
+      "name": "Get(CustomMenuSetName)",
+      "prototype": "Get ( CustomMenuSetName )"
+    },
+    {
+      "name": "Get(DesktopPath)",
+      "prototype": "Get ( DesktopPath )"
+    },
+    {
+      "name": "Get(Device)",
+      "prototype": "Get ( Device )"
+    },
+    {
+      "name": "Get(DocumentsPath)",
+      "prototype": "Get ( DocumentsPath )"
+    },
+    {
+      "name": "Get(DocumentsPathListing)",
+      "prototype": "Get ( DocumentsPathListing )"
+    },
+    {
+      "name": "Get(EncryptionState)",
+      "prototype": "Get ( EncryptionState )"
+    },
+    {
+      "name": "Get(ErrorCaptureState)",
+      "prototype": "Get ( ErrorCaptureState )"
+    },
+    {
+      "name": "Get(FileLocaleElements)",
+      "prototype": "Get ( FileLocaleElements )"
+    },
+    {
+      "name": "Get(FileMakerPath)",
+      "prototype": "Get ( FileMakerPath )"
+    },
+    {
+      "name": "Get(FileName)",
+      "prototype": "Get ( FileName )"
+    },
+    {
+      "name": "Get(FilePath)",
+      "prototype": "Get ( FilePath )"
+    },
+    {
+      "name": "Get(FileSize)",
+      "prototype": "Get ( FileSize )"
+    },
+    {
+      "name": "Get(FoundCount)",
+      "prototype": "Get ( FoundCount )"
+    },
+    {
+      "name": "Get(HighContrastState)",
+      "prototype": "Get ( HighContrastState )"
+    },
+    {
+      "name": "Get(HostApplicationVersion)",
+      "prototype": "Get ( HostApplicationVersion )"
+    },
+    {
+      "name": "Get(HostIPAddress)",
+      "prototype": "Get ( HostIPAddress )"
+    },
+    {
+      "name": "Get(HostName)",
+      "prototype": "Get ( HostName )"
+    },
+    {
+      "name": "Get(InstalledFMPlugins)",
+      "prototype": "Get ( InstalledFMPlugins )"
+    },
+    {
+      "name": "Get(InstalledFMPluginsAsJSON)",
+      "prototype": "Get ( InstalledFMPluginsAsJSON )"
+    },
+    {
+      "name": "Get(LastError)",
+      "prototype": "Get ( LastError )"
+    },
+    {
+      "name": "Get(LastErrorDetail)",
+      "prototype": "Get ( LastErrorDetail )"
+    },
+    {
+      "name": "Get(LastErrorLocation)",
+      "prototype": "Get ( LastErrorLocation )"
+    },
+    {
+      "name": "Get(LastMessageChoice)",
+      "prototype": "Get ( LastMessageChoice )"
+    },
+    {
+      "name": "Get(LastStepTokensUsed)",
+      "prototype": "Get ( LastStepTokensUsed )"
+    },
+    {
+      "name": "Get(LayoutAccess)",
+      "prototype": "Get ( LayoutAccess )"
+    },
+    {
+      "name": "Get(LayoutCount)",
+      "prototype": "Get ( LayoutCount )"
+    },
+    {
+      "name": "Get(LayoutName)",
+      "prototype": "Get ( LayoutName )"
+    },
+    {
+      "name": "Get(LayoutNumber)",
+      "prototype": "Get ( LayoutNumber )"
+    },
+    {
+      "name": "Get(LayoutTableName)",
+      "prototype": "Get ( LayoutTableName )"
+    },
+    {
+      "name": "Get(LayoutViewState)",
+      "prototype": "Get ( LayoutViewState )"
+    },
+    {
+      "name": "Get(MenubarState)",
+      "prototype": "Get ( MenubarState )"
+    },
+    {
+      "name": "Get(ModifiedFields)",
+      "prototype": "Get ( ModifiedFields )"
+    },
+    {
+      "name": "Get(MultiUserState)",
+      "prototype": "Get ( MultiUserState )"
+    },
+    {
+      "name": "Get(NetworkProtocol)",
+      "prototype": "Get ( NetworkProtocol )"
+    },
+    {
+      "name": "Get(NetworkType)",
+      "prototype": "Get ( NetworkType )"
+    },
+    {
+      "name": "Get(OpenDataFileInfo)",
+      "prototype": "Get ( OpenDataFileInfo )"
+    },
+    {
+      "name": "Get(PageCount)",
+      "prototype": "Get ( PageCount )"
+    },
+    {
+      "name": "Get(PageNumber)",
+      "prototype": "Get ( PageNumber )"
+    },
+    {
+      "name": "Get(PersistentID)",
+      "prototype": "Get ( PersistentID )"
+    },
+    {
+      "name": "Get(PreferencesPath)",
+      "prototype": "Get ( PreferencesPath )"
+    },
+    {
+      "name": "Get(PrinterName)",
+      "prototype": "Get ( PrinterName )"
+    },
+    {
+      "name": "Get(QuickFindText)",
+      "prototype": "Get ( QuickFindText )"
+    },
+    {
+      "name": "Get(RecordAccess)",
+      "prototype": "Get ( RecordAccess )"
+    },
+    {
+      "name": "Get(RecordID)",
+      "prototype": "Get ( RecordID )"
+    },
+    {
+      "name": "Get(RecordModificationCount)",
+      "prototype": "Get ( RecordModificationCount )"
+    },
+    {
+      "name": "Get(RecordNumber)",
+      "prototype": "Get ( RecordNumber )"
+    },
+    {
+      "name": "Get(RecordOpenCount)",
+      "prototype": "Get ( RecordOpenCount )"
+    },
+    {
+      "name": "Get(RecordOpenState)",
+      "prototype": "Get ( RecordOpenState )"
+    },
+    {
+      "name": "Get(RegionMonitorEvents)",
+      "prototype": "Get ( RegionMonitorEvents )"
+    },
+    {
+      "name": "Get(RequestCount)",
+      "prototype": "Get ( RequestCount )"
+    },
+    {
+      "name": "Get(RequestOmitState)",
+      "prototype": "Get ( RequestOmitState )"
+    },
+    {
+      "name": "Get(RevertTransactionOnErrorState)",
+      "prototype": "Get ( RevertTransactionOnErrorState )"
+    },
+    {
+      "name": "Get(ScreenDepth)",
+      "prototype": "Get ( ScreenDepth )"
+    },
+    {
+      "name": "Get(ScreenHeight)",
+      "prototype": "Get ( ScreenHeight )"
+    },
+    {
+      "name": "Get(ScreenScaleFactor)",
+      "prototype": "Get ( ScreenScaleFactor )"
+    },
+    {
+      "name": "Get(ScreenWidth)",
+      "prototype": "Get ( ScreenWidth )"
+    },
+    {
+      "name": "Get(ScriptAnimationState)",
+      "prototype": "Get ( ScriptAnimationState )"
+    },
+    {
+      "name": "Get(ScriptName)",
+      "prototype": "Get ( ScriptName )"
+    },
+    {
+      "name": "Get(ScriptParameter)",
+      "prototype": "Get ( ScriptParameter )"
+    },
+    {
+      "name": "Get(ScriptResult)",
+      "prototype": "Get ( ScriptResult )"
+    },
+    {
+      "name": "Get(SessionIdentifier)",
+      "prototype": "Get ( SessionIdentifier )"
+    },
+    {
+      "name": "Get(SortState)",
+      "prototype": "Get ( SortState )"
+    },
+    {
+      "name": "Get(StatusAreaState)",
+      "prototype": "Get ( StatusAreaState )"
+    },
+    {
+      "name": "Get(SystemAppearance)",
+      "prototype": "Get ( SystemAppearance )"
+    },
+    {
+      "name": "Get(SystemDrive)",
+      "prototype": "Get ( SystemDrive )"
+    },
+    {
+      "name": "Get(SystemIPAddress)",
+      "prototype": "Get ( SystemIPAddress )"
+    },
+    {
+      "name": "Get(SystemLanguage)",
+      "prototype": "Get ( SystemLanguage )"
+    },
+    {
+      "name": "Get(SystemLocaleElements)",
+      "prototype": "Get ( SystemLocaleElements )"
+    },
+    {
+      "name": "Get(SystemNICAddress)",
+      "prototype": "Get ( SystemNICAddress )"
+    },
+    {
+      "name": "Get(SystemPlatform)",
+      "prototype": "Get ( SystemPlatform )"
+    },
+    {
+      "name": "Get(SystemStorageAvailable)",
+      "prototype": "Get ( SystemStorageAvailable )"
+    },
+    {
+      "name": "Get(SystemVersion)",
+      "prototype": "Get ( SystemVersion )"
+    },
+    {
+      "name": "Get(TemporaryPath)",
+      "prototype": "Get ( TemporaryPath )"
+    },
+    {
+      "name": "Get(TextRulerVisible)",
+      "prototype": "Get ( TextRulerVisible )"
+    },
+    {
+      "name": "Get(TotalRecordCount)",
+      "prototype": "Get ( TotalRecordCount )"
+    },
+    {
+      "name": "Get(TouchKeyboardState)",
+      "prototype": "Get ( TouchKeyboardState )"
+    },
+    {
+      "name": "Get(TransactionOpenState)",
+      "prototype": "Get ( TransactionOpenState )"
+    },
+    {
+      "name": "Get(TriggerCurrentPanel)",
+      "prototype": "Get ( TriggerCurrentPanel )"
+    },
+    {
+      "name": "Get(TriggerExternalEvent)",
+      "prototype": "Get ( TriggerExternalEvent )"
+    },
+    {
+      "name": "Get(TriggerGestureInfo)",
+      "prototype": "Get ( TriggerGestureInfo )"
+    },
+    {
+      "name": "Get(TriggerKeystroke)",
+      "prototype": "Get ( TriggerKeystroke )"
+    },
+    {
+      "name": "Get(TriggerModifierKeys)",
+      "prototype": "Get ( TriggerModifierKeys )"
+    },
+    {
+      "name": "Get(TriggerTargetPanel)",
+      "prototype": "Get ( TriggerTargetPanel )"
+    },
+    {
+      "name": "Get(UserCount)",
+      "prototype": "Get ( UserCount )"
+    },
+    {
+      "name": "Get(UserName)",
+      "prototype": "Get ( UserName )"
+    },
+    {
+      "name": "Get(UseSystemFormatsState)",
+      "prototype": "Get ( UseSystemFormatsState )"
+    },
+    {
+      "name": "Get(UUID)",
+      "prototype": "Get ( UUID )"
+    },
+    {
+      "name": "Get(UUIDNumber)",
+      "prototype": "Get ( UUIDNumber )"
+    },
+    {
+      "name": "Get(WindowContentHeight)",
+      "prototype": "Get ( WindowContentHeight )"
+    },
+    {
+      "name": "Get(WindowContentWidth)",
+      "prototype": "Get ( WindowContentWidth )"
+    },
+    {
+      "name": "Get(WindowDesktopHeight)",
+      "prototype": "Get ( WindowDesktopHeight )"
+    },
+    {
+      "name": "Get(WindowDesktopWidth)",
+      "prototype": "Get ( WindowDesktopWidth )"
+    },
+    {
+      "name": "Get(WindowHeight)",
+      "prototype": "Get ( WindowHeight )"
+    },
+    {
+      "name": "Get(WindowLeft)",
+      "prototype": "Get ( WindowLeft )"
+    },
+    {
+      "name": "Get(WindowMode)",
+      "prototype": "Get ( WindowMode )"
+    },
+    {
+      "name": "Get(WindowName)",
+      "prototype": "Get ( WindowName )"
+    },
+    {
+      "name": "Get(WindowOrientation)",
+      "prototype": "Get ( WindowOrientation )"
+    },
+    {
+      "name": "Get(WindowStyle)",
+      "prototype": "Get ( WindowStyle )"
+    },
+    {
+      "name": "Get(WindowTop)",
+      "prototype": "Get ( WindowTop )"
+    },
+    {
+      "name": "Get(WindowVisible)",
+      "prototype": "Get ( WindowVisible )"
+    },
+    {
+      "name": "Get(WindowWidth)",
+      "prototype": "Get ( WindowWidth )"
+    },
+    {
+      "name": "Get(WindowZoomLevel)",
+      "prototype": "Get ( WindowZoomLevel )"
+    },
+    {
+      "name": "GetAddonInfo",
+      "prototype": "GetAddonInfo ( addonID )"
+    },
+    {
+      "name": "GetAsBoolean",
+      "prototype": "GetAsBoolean ( data )"
+    },
+    {
+      "name": "GetAsCSS",
+      "prototype": "GetAsCSS ( text )"
+    },
+    {
+      "name": "GetAsDate",
+      "prototype": "GetAsDate ( text )"
+    },
+    {
+      "name": "GetAsNumber",
+      "prototype": "GetAsNumber ( text )"
+    },
+    {
+      "name": "GetAsSVG",
+      "prototype": "GetAsSVG ( text )"
+    },
+    {
+      "name": "GetAsText",
+      "prototype": "GetAsText ( data )"
+    },
+    {
+      "name": "GetAsTime",
+      "prototype": "GetAsTime ( text )"
+    },
+    {
+      "name": "GetAsTimestamp",
+      "prototype": "GetAsTimestamp ( text )"
+    },
+    {
+      "name": "GetAsURLEncoded",
+      "prototype": "GetAsURLEncoded ( text )"
+    },
+    {
+      "name": "GetAVPlayerAttribute",
+      "prototype": "GetAVPlayerAttribute ( attributeName )"
+    },
+    {
+      "name": "GetBaseTableName",
+      "prototype": "GetBaseTableName ( field )"
+    },
+    {
+      "name": "GetContainerAttribute",
+      "prototype": "GetContainerAttribute ( field ; attributeName )"
+    },
+    {
+      "name": "GetEmbedding",
+      "prototype": "GetEmbedding ( account ; model ; input )"
+    },
+    {
+      "name": "GetEmbeddingAsFile",
+      "prototype": "GetEmbeddingAsFile ( text {; fileNameWithExtension } )"
+    },
+    {
+      "name": "GetEmbeddingAsText",
+      "prototype": "GetEmbeddingAsText ( data )"
+    },
+    {
+      "name": "GetField",
+      "prototype": "GetField ( fieldName )"
+    },
+    {
+      "name": "GetFieldName",
+      "prototype": "GetFieldName ( field )"
+    },
+    {
+      "name": "GetFieldsOnLayout",
+      "prototype": "GetFieldsOnLayout ( layoutName )"
+    },
+    {
+      "name": "GetHeight",
+      "prototype": "GetHeight ( field )"
+    },
+    {
+      "name": "GetLayoutObjectAttribute",
+      "prototype": "GetLayoutObjectAttribute ( objectName ; attributeName {; repetitionNumber ; portalRowNumber } )"
+    },
+    {
+      "name": "GetLayoutObjectOwnerInfo",
+      "prototype": "GetLayoutObjectOwnerInfo ( objectID )"
+    },
+    {
+      "name": "GetLiveText",
+      "prototype": "GetLiveText ( container ; language )"
+    },
+    {
+      "name": "GetLiveTextAsJSON",
+      "prototype": "GetLiveTextAsJSON ( container ; language )"
+    },
+    {
+      "name": "GetModelAttributes",
+      "prototype": "GetModelAttributes ( modelName )"
+    },
+    {
+      "name": "GetNextSerialValue",
+      "prototype": "GetNextSerialValue ( fileName ; fieldName )"
+    },
+    {
+      "name": "GetNthRecord",
+      "prototype": "GetNthRecord ( field ; recordNumber )"
+    },
+    {
+      "name": "GetRAGSpaceInfo",
+      "prototype": "GetRAGSpaceInfo ( ragAccountName {; spaceID } )"
+    },
+    {
+      "name": "GetRecordIDsFromFoundSet",
+      "prototype": "GetRecordIDsFromFoundSet ( type )"
+    },
+    {
+      "name": "GetRepetition",
+      "prototype": "GetRepetition ( repeatingField ; number )"
+    },
+    {
+      "name": "GetSensor",
+      "prototype": "GetSensor ( sensorName {; option1 ; option2 } )"
+    },
+    {
+      "name": "GetSummary",
+      "prototype": "GetSummary ( summaryField ; breakField )"
+    },
+    {
+      "name": "GetTableDDL",
+      "prototype": "GetTableDDL ( tableOccurrenceNames ; ignoreError )"
+    },
+    {
+      "name": "GetTextFromPDF",
+      "prototype": "GetTextFromPDF ( container )"
+    },
+    {
+      "name": "GetThumbnail",
+      "prototype": "GetThumbnail ( field ; width ; height )"
+    },
+    {
+      "name": "GetTokenCount",
+      "prototype": "GetTokenCount ( text )"
+    },
+    {
+      "name": "GetValue",
+      "prototype": "GetValue ( listOfValues ; valueNumber )"
+    },
+    {
+      "name": "GetWidth",
+      "prototype": "GetWidth ( field )"
+    },
+    {
+      "name": "HexDecode",
+      "prototype": "HexDecode ( data {; fileNameWithExtension } )"
+    },
+    {
+      "name": "HexEncode",
+      "prototype": "HexEncode ( data )"
+    },
+    {
+      "name": "Hiragana",
+      "prototype": "Hiragana ( text )"
+    },
+    {
+      "name": "Hour",
+      "prototype": "Hour ( time )"
+    },
+    {
+      "name": "If",
+      "prototype": "If ( test ; result1 {; result2 } )"
+    },
+    {
+      "name": "Int",
+      "prototype": "Int ( number )"
+    },
+    {
+      "name": "IsEmpty",
+      "prototype": "IsEmpty ( field )"
+    },
+    {
+      "name": "IsValid",
+      "prototype": "IsValid ( field )"
+    },
+    {
+      "name": "IsValidExpression",
+      "prototype": "IsValidExpression ( expression )"
+    },
+    {
+      "name": "JSONDeleteElement",
+      "prototype": "JSONDeleteElement ( json ; keyOrIndexOrPath )"
+    },
+    {
+      "name": "JSONFormatElements",
+      "prototype": "JSONFormatElements ( json )"
+    },
+    {
+      "name": "JSONGetElement",
+      "prototype": "JSONGetElement ( json ; keyOrIndexOrPath )"
+    },
+    {
+      "name": "JSONGetElementType",
+      "prototype": "JSONGetElementType ( json ; keyOrIndexOrPath )"
+    },
+    {
+      "name": "JSONListKeys",
+      "prototype": "JSONListKeys ( json ; keyOrIndexOrPath )"
+    },
+    {
+      "name": "JSONListValues",
+      "prototype": "JSONListValues ( json ; keyOrIndexOrPath )"
+    },
+    {
+      "name": "JSONMakeArray",
+      "prototype": "JSONMakeArray ( listOfValues ; separator ; type )"
+    },
+    {
+      "name": "JSONParse",
+      "prototype": "JSONParse ( json )"
+    },
+    {
+      "name": "JSONParsedState",
+      "prototype": "JSONParsedState ( json )"
+    },
+    {
+      "name": "JSONSetElement",
+      "prototype": "JSONSetElement ( json ; keyOrIndexOrPath ; value ; type )"
+    },
+    {
+      "name": "KanaHankaku",
+      "prototype": "KanaHankaku ( text )"
+    },
+    {
+      "name": "KanaZenkaku",
+      "prototype": "KanaZenkaku ( text )"
+    },
+    {
+      "name": "KanjiNumeral",
+      "prototype": "KanjiNumeral ( text )"
+    },
+    {
+      "name": "Katakana",
+      "prototype": "Katakana ( text )"
+    },
+    {
+      "name": "Last",
+      "prototype": "Last ( repeatingField )"
+    },
+    {
+      "name": "LayoutIDs",
+      "prototype": "LayoutIDs ( fileName )"
+    },
+    {
+      "name": "LayoutNames",
+      "prototype": "LayoutNames ( fileName )"
+    },
+    {
+      "name": "LayoutObjectNames",
+      "prototype": "LayoutObjectNames ( fileName ; layoutName )"
+    },
+    {
+      "name": "LayoutObjectUUID",
+      "prototype": "LayoutObjectUUID"
+    },
+    {
+      "name": "Left",
+      "prototype": "Left ( text ; numberOfCharacters )"
+    },
+    {
+      "name": "LeftValues",
+      "prototype": "LeftValues ( text ; numberOfValues )"
+    },
+    {
+      "name": "LeftWords",
+      "prototype": "LeftWords ( text ; numberOfWords )"
+    },
+    {
+      "name": "Length",
+      "prototype": "Length ( text )"
+    },
+    {
+      "name": "Let",
+      "prototype": "Let ( {[} var1 = expression1 {; var2 = expression2...]} ; calculation )"
+    },
+    {
+      "name": "Lg",
+      "prototype": "Lg ( number )"
+    },
+    {
+      "name": "List",
+      "prototype": "List ( field {; field...} )"
+    },
+    {
+      "name": "Ln",
+      "prototype": "Ln ( number )"
+    },
+    {
+      "name": "Location",
+      "prototype": "Location ( accuracy {; timeout } )"
+    },
+    {
+      "name": "LocationValues",
+      "prototype": "LocationValues ( accuracy {; timeout } )"
+    },
+    {
+      "name": "Log",
+      "prototype": "Log ( number )"
+    },
+    {
+      "name": "Lookup",
+      "prototype": "Lookup ( sourceField {; failExpression } )"
+    },
+    {
+      "name": "LookupNext",
+      "prototype": "LookupNext ( sourceField ; lower/higherFlag )"
+    },
+    {
+      "name": "Lower",
+      "prototype": "Lower ( text )"
+    },
+    {
+      "name": "Max",
+      "prototype": "Max ( field {; field...} )"
+    },
+    {
+      "name": "Middle",
+      "prototype": "Middle ( text ; start ; numberOfCharacters )"
+    },
+    {
+      "name": "MiddleValues",
+      "prototype": "MiddleValues ( text ; startingValue ; numberOfValues )"
+    },
+    {
+      "name": "MiddleWords",
+      "prototype": "MiddleWords ( text ; startingWord ; numberOfWords )"
+    },
+    {
+      "name": "Min",
+      "prototype": "Min ( field {; field...} )"
+    },
+    {
+      "name": "Minute",
+      "prototype": "Minute ( time )"
+    },
+    {
+      "name": "Mod",
+      "prototype": "Mod ( number ; divisor )"
+    },
+    {
+      "name": "Month",
+      "prototype": "Month ( date )"
+    },
+    {
+      "name": "MonthName",
+      "prototype": "MonthName ( date )"
+    },
+    {
+      "name": "MonthNameJ",
+      "prototype": "MonthNameJ ( date )"
+    },
+    {
+      "name": "NormalizeEmbedding",
+      "prototype": "NormalizeEmbedding ( data { ; dimension } )"
+    },
+    {
+      "name": "NPV",
+      "prototype": "NPV ( payment ; interestRate )"
+    },
+    {
+      "name": "NumToJText",
+      "prototype": "NumToJText ( number ; separator ; characterType )"
+    },
+    {
+      "name": "PatternCount",
+      "prototype": "PatternCount ( text ; searchString )"
+    },
+    {
+      "name": "Pi",
+      "prototype": "Pi"
+    },
+    {
+      "name": "PMT",
+      "prototype": "PMT ( principal ; interestRate ; term )"
+    },
+    {
+      "name": "Position",
+      "prototype": "Position ( text ; searchString ; start ; occurrence )"
+    },
+    {
+      "name": "PredictFromModel",
+      "prototype": "PredictFromModel ( modelName ; v1 )"
+    },
+    {
+      "name": "Proper",
+      "prototype": "Proper ( text )"
+    },
+    {
+      "name": "PV",
+      "prototype": "PV ( payment ; interestRate ; periods )"
+    },
+    {
+      "name": "Quote",
+      "prototype": "Quote ( text )"
+    },
+    {
+      "name": "Radians",
+      "prototype": "Radians ( angleInDegrees )"
+    },
+    {
+      "name": "RangeBeacons",
+      "prototype": "RangeBeacons ( UUID {; timeout ; major ; minor } )"
+    },
+    {
+      "name": "ReadQRCode",
+      "prototype": "ReadQRCode ( container )"
+    },
+    {
+      "name": "RelationInfo",
+      "prototype": "RelationInfo ( fileName ; tableName )"
+    },
+    {
+      "name": "Replace",
+      "prototype": "Replace ( text ; start ; numberOfCharacters ; replacementText )"
+    },
+    {
+      "name": "RGB",
+      "prototype": "RGB ( red ; green ; blue )"
+    },
+    {
+      "name": "Right",
+      "prototype": "Right ( text ; numberOfCharacters )"
+    },
+    {
+      "name": "RightValues",
+      "prototype": "RightValues ( text ; numberOfValues )"
+    },
+    {
+      "name": "RightWords",
+      "prototype": "RightWords ( text ; numberOfWords )"
+    },
+    {
+      "name": "RomanHankaku",
+      "prototype": "RomanHankaku ( text )"
+    },
+    {
+      "name": "RomanZenkaku",
+      "prototype": "RomanZenkaku ( text )"
+    },
+    {
+      "name": "Round",
+      "prototype": "Round ( number ; precision )"
+    },
+    {
+      "name": "ScriptIDs",
+      "prototype": "ScriptIDs ( fileName )"
+    },
+    {
+      "name": "ScriptNames",
+      "prototype": "ScriptNames ( fileName )"
+    },
+    {
+      "name": "Seconds",
+      "prototype": "Seconds ( time )"
+    },
+    {
+      "name": "Self",
+      "prototype": "Self"
+    },
+    {
+      "name": "SerialIncrement",
+      "prototype": "SerialIncrement ( text ; incrementBy )"
+    },
+    {
+      "name": "SetPrecision",
+      "prototype": "SetPrecision ( expression ; precision )"
+    },
+    {
+      "name": "SetRecursion",
+      "prototype": "SetRecursion ( expression ; maxIterations )"
+    },
+    {
+      "name": "Sign",
+      "prototype": "Sign ( number )"
+    },
+    {
+      "name": "Sin",
+      "prototype": "Sin ( angleInRadians )"
+    },
+    {
+      "name": "SortValues",
+      "prototype": "SortValues ( values {; datatype ; locale } )"
+    },
+    {
+      "name": "Sqrt",
+      "prototype": "Sqrt ( number )"
+    },
+    {
+      "name": "StDev",
+      "prototype": "StDev ( field {; field...} )"
+    },
+    {
+      "name": "StDevP",
+      "prototype": "StDevP ( field {; field...} )"
+    },
+    {
+      "name": "Substitute",
+      "prototype": "Substitute ( text ; searchString ; replaceString )"
+    },
+    {
+      "name": "SubtractEmbeddings",
+      "prototype": "SubtractEmbeddings ( v1 ; v2 )"
+    },
+    {
+      "name": "Sum",
+      "prototype": "Sum ( field {; field...} )"
+    },
+    {
+      "name": "TableIDs",
+      "prototype": "TableIDs ( fileName )"
+    },
+    {
+      "name": "TableNames",
+      "prototype": "TableNames ( fileName )"
+    },
+    {
+      "name": "Tan",
+      "prototype": "Tan ( angleInRadians )"
+    },
+    {
+      "name": "TextColor",
+      "prototype": "TextColor ( text ; RGB ( red ; green ; blue ) )"
+    },
+    {
+      "name": "TextColorRemove",
+      "prototype": "TextColorRemove ( text {; RGB ( red ; green ; blue )} )"
+    },
+    {
+      "name": "TextDecode",
+      "prototype": "TextDecode ( container ; encoding )"
+    },
+    {
+      "name": "TextEncode",
+      "prototype": "TextEncode ( text ; encoding ; lineEndings )"
+    },
+    {
+      "name": "TextFont",
+      "prototype": "TextFont ( text ; fontName )"
+    },
+    {
+      "name": "TextFontRemove",
+      "prototype": "TextFontRemove ( text {; fontToRemove } )"
+    },
+    {
+      "name": "TextFormatRemove",
+      "prototype": "TextFormatRemove ( text )"
+    },
+    {
+      "name": "TextSize",
+      "prototype": "TextSize ( text ; fontSize )"
+    },
+    {
+      "name": "TextSizeRemove",
+      "prototype": "TextSizeRemove ( text {; sizeToRemove } )"
+    },
+    {
+      "name": "TextStyleAdd",
+      "prototype": "TextStyleAdd ( text ; styles )"
+    },
+    {
+      "name": "TextStyleRemove",
+      "prototype": "TextStyleRemove ( text ; styles )"
+    },
+    {
+      "name": "Time",
+      "prototype": "Time ( hours ; minutes ; seconds )"
+    },
+    {
+      "name": "Timestamp",
+      "prototype": "Timestamp ( date ; time )"
+    },
+    {
+      "name": "Trim",
+      "prototype": "Trim ( text )"
+    },
+    {
+      "name": "TrimAll",
+      "prototype": "TrimAll ( text ; trimSpaces ; trimType )"
+    },
+    {
+      "name": "Truncate",
+      "prototype": "Truncate ( number ; precision )"
+    },
+    {
+      "name": "UniqueValues",
+      "prototype": "UniqueValues ( values {; datatype ; locale } )"
+    },
+    {
+      "name": "Upper",
+      "prototype": "Upper ( text )"
+    },
+    {
+      "name": "ValueCount",
+      "prototype": "ValueCount ( text )"
+    },
+    {
+      "name": "ValueListIDs",
+      "prototype": "ValueListIDs ( fileName )"
+    },
+    {
+      "name": "ValueListItems",
+      "prototype": "ValueListItems ( fileName ; valueList )"
+    },
+    {
+      "name": "ValueListNames",
+      "prototype": "ValueListNames ( fileName )"
+    },
+    {
+      "name": "Variance",
+      "prototype": "Variance ( field {; field...} )"
+    },
+    {
+      "name": "VarianceP",
+      "prototype": "VarianceP ( field {; field...} )"
+    },
+    {
+      "name": "VerifyContainer",
+      "prototype": "VerifyContainer ( field )"
+    },
+    {
+      "name": "WeekOfYear",
+      "prototype": "WeekOfYear ( date )"
+    },
+    {
+      "name": "WeekOfYearFiscal",
+      "prototype": "WeekOfYearFiscal ( date ; startingDay )"
+    },
+    {
+      "name": "While",
+      "prototype": "While ( [ initialVariable ] ; condition ; [ logic ] ; result )"
+    },
+    {
+      "name": "WindowNames",
+      "prototype": "WindowNames {( fileName )}"
+    },
+    {
+      "name": "WordCount",
+      "prototype": "WordCount ( text )"
+    },
+    {
+      "name": "Year",
+      "prototype": "Year ( date )"
+    },
+    {
+      "name": "YearName",
+      "prototype": "YearName ( date ; format )"
+    }
+  ]
+}

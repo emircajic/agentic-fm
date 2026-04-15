@@ -231,6 +231,13 @@ def load_value_lists_index(solution_dir):
     )
 
 
+def load_custom_functions_index(solution_dir):
+    return _parse_index(
+        solution_dir / "custom_functions.index",
+        ["name", "id", "parameters", "access", "display", "category"],
+    )
+
+
 def load_xref_index(solution_dir):
     return _parse_index(
         solution_dir / "xref.index",
@@ -1420,12 +1427,14 @@ def analyze_custom_functions(solution_name):
     if not cf_dir.exists():
         return {"total": 0, "note": "no custom functions directory found"}
 
+    stub_dir = XML_PARSED_DIR / "custom_function_stubs" / solution_name
+
     cf_files = sorted(cf_dir.glob("*.txt"))
     functions = {}
     all_cf_names = set()
 
     # First pass: collect names and read all content
-    cf_data = []  # (name, id, text) — single pass I/O
+    cf_data = []  # (name, id, text, param_count) — single pass I/O
     for cf_path in cf_files:
         name = cf_path.stem.rsplit(" - ID ", 1)[0]
         all_cf_names.add(name)
@@ -1438,16 +1447,33 @@ def analyze_custom_functions(solution_name):
                 text = f.read()
         except (OSError, UnicodeDecodeError):
             continue
-        cf_data.append((name, cf_id, text))
 
-    for name, cf_id, text in cf_data:
-        # Count parameters (look for function signature pattern)
-        param_match = re.match(r'^(\w+)\s*\((.*?)\)', text, re.DOTALL)
+        # Read param count from stub XML (ObjectList/@membercount)
         param_count = 0
-        if param_match:
-            params = param_match.group(2).strip()
-            if params:
-                param_count = len([p.strip() for p in params.split(";") if p.strip()])
+        stub_path = stub_dir / f"{cf_path.stem}.xml"
+        if stub_path.exists():
+            try:
+                stub_text = stub_path.read_text(encoding="utf-8")
+                mc_match = re.search(r'membercount="(\d+)"', stub_text)
+                if mc_match:
+                    param_count = int(mc_match.group(1))
+            except (OSError, UnicodeDecodeError):
+                pass
+
+        cf_data.append((name, cf_id, text, param_count))
+
+    # Patterns for classification
+    _FIELD_REF_RE = re.compile(r'[A-Za-z_][A-Za-z0-9_ ]*::[A-Za-z_]')
+    _UTILITY_MARKUP_RE = re.compile(r'<svg|<path |<html|<div |<style')
+    _UTILITY_JS_FUNC_RE = re.compile(r'function\s*\(')
+    _UTILITY_JS_KW_RE = re.compile(r'\bvar\b|\bconst\b|\blet\b|\breturn\b')
+    _UTILITY_CSS_RE = re.compile(r'\{margin:|\{padding:|\{display:|\{font-|\{line-height:')
+    _BLOCK_KW_RE = re.compile(
+        r'\bLet\s*\(|\bWhile\s*\(|\bCase\s*\(|\bIf\s*\(|\bFor\s*\(',
+        re.IGNORECASE,
+    )
+
+    for name, cf_id, text, param_count in cf_data:
 
         # Find references to other custom functions (substring match)
         deps = sorted(
@@ -1462,18 +1488,46 @@ def analyze_custom_functions(solution_name):
             "param_count": param_count,
             "line_count": line_count,
             "dependencies": deps,
+            "text": text,
         }
 
-    # Classify: constants vs functional vs solution-specific
-    # (Simple heuristic: 1-line with no params = constant)
-    categories = {"constant": [], "functional": [], "solution_specific": []}
+    # Classify using four categories (evaluated in order, first match wins):
+    #   1. utility          – embedded non-FM code (JS/CSS/SVG/HTML)
+    #   2. solution_specific – contains TO::Field references
+    #   3. constant         – zero params + no block-level keywords
+    #   4. functional       – everything else
+    categories = {
+        "constant": [], "functional": [],
+        "solution_specific": [], "utility": [],
+    }
     for name, info in functions.items():
-        if info["line_count"] <= 2 and info["param_count"] == 0:
-            categories["constant"].append(name)
-        elif info["dependencies"]:
+        text = info["text"]
+        body_size = len(text)
+
+        # 1. Utility: embedded JS/CSS/SVG/HTML
+        is_utility = bool(
+            _UTILITY_MARKUP_RE.search(text)
+            or (body_size > 2000
+                and _UTILITY_JS_FUNC_RE.search(text)
+                and _UTILITY_JS_KW_RE.search(text))
+            or _UTILITY_CSS_RE.search(text)
+        )
+
+        if is_utility:
+            categories["utility"].append(name)
+        # 2. Solution-specific: TO::Field reference
+        elif _FIELD_REF_RE.search(text):
             categories["solution_specific"].append(name)
+        # 3. Constant: zero params + no block keywords
+        elif info["param_count"] == 0 and not _BLOCK_KW_RE.search(text):
+            categories["constant"].append(name)
+        # 4. Functional: everything else
         else:
             categories["functional"].append(name)
+
+    # Drop text from output to keep return value lightweight
+    for info in functions.values():
+        del info["text"]
 
     return {
         "total": len(functions),
@@ -2881,6 +2935,7 @@ def format_markdown(profile):
         lines.append(f"- **Constants:** {cats.get('constant', 0)}")
         lines.append(f"- **Functional:** {cats.get('functional', 0)}")
         lines.append(f"- **Solution-specific:** {cats.get('solution_specific', 0)}")
+        lines.append(f"- **Utility:** {cats.get('utility', 0)}")
     lines.append("")
 
     if cf.get("dependency_chains"):

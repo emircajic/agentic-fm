@@ -190,25 +190,53 @@ Fix any errors before proceeding.
 
 Show the developer what changed. Present a before/after comparison of the human-readable script — not the raw XML.
 
-### Webviewer output (if available)
+### Generate HR text for both versions
 
-Check if the webviewer is reachable:
-
-```bash
-curl -s --max-time 2 -o /dev/null -w "%{http_code}" {webviewer_url}
-```
-
-If available, push a diff payload to the webviewer for side-by-side Monaco rendering:
+Use `snippet_to_hr.py` to convert the refactored fmxmlsnippet to HR:
 
 ```bash
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"type": "diff", "before": "<original HR script>", "content": "<refactored HR script>"}' \
-  {companion_url}/webviewer/push
+python3 agent/scripts/snippet_to_hr.py agent/sandbox/{ScriptName}.xml --raw
 ```
+
+The original HR is already available in `agent/xml_parsed/scripts_sanitized/`.
 
 ### Terminal output (always)
 
-Regardless of webviewer availability, present a concise summary in the terminal listing each change with the relevant line numbers (from the human-readable version).
+Present a concise summary in the terminal listing each change with the relevant line numbers (from the human-readable version).
+
+### Webviewer hint
+
+Check if the companion server is reachable:
+
+```bash
+curl -s --max-time 2 -o /dev/null -w "%{http_code}" {companion_url}/status
+```
+
+If reachable (HTTP 200 or 404), append this note after the terminal summary:
+
+> The webviewer is available — ask to "show the diff in the webviewer" for a side-by-side visual comparison.
+
+**Do not push the diff automatically.** Only push when the developer explicitly asks. To push:
+
+1. Read the original HR from `scripts_sanitized/`
+2. Generate the refactored HR via `snippet_to_hr.py --raw`
+3. POST the diff payload to the companion:
+
+```bash
+python3 -c "
+import json, sys
+before = open(sys.argv[1]).read()
+after = open(sys.argv[2]).read()
+payload = json.dumps({
+    'type': 'diff',
+    'before': before,
+    'content': after,
+    'repo_path': '{repo_path}'
+})
+sys.stdout.write(payload)
+" "{original_hr_path}" "{refactored_hr_path}" \
+  | curl -s -X POST -H 'Content-Type: application/json' -d @- {companion_url}/webviewer/push
+```
 
 ---
 

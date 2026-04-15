@@ -1,6 +1,33 @@
 # Python
 
-Always use `python3` — never bare `python`. macOS does not ship a `python` binary; the system Python is only available as `python3`. No virtual environment is required — all scripts and the `agent/fmlint/` package use the Python standard library only.
+Always use `python3` — never bare `python`. macOS does not ship a `python` binary; the system Python is only available as `python3`. Core scripts and the `agent/fmlint/` package use the Python standard library only — no virtual environment is required for them.
+
+## Virtual environment (optional — skill dependencies)
+
+Some skills (e.g. `icon-swap`) require Python packages beyond the standard library. These are installed in an **optional venv** inside the project folder. The venv is gitignored and does not affect stdlib-only scripts.
+
+**When to set up:** Only when a skill reports missing dependencies (e.g. `fm_svg_convert.py --check-deps` fails). Do not proactively create the venv — prompt the developer first.
+
+**Setup (macOS):**
+```bash
+python3 -m venv agent/.venv
+source agent/.venv/bin/activate
+pip install cairosvg Pillow
+```
+
+**System dependencies (if needed for stroke-to-fill SVG conversion):**
+```bash
+brew install potrace
+```
+
+**Running scripts with the venv:** When the venv exists, use `agent/.venv/bin/python3` instead of bare `python3` for scripts that need the extra packages:
+```bash
+agent/.venv/bin/python3 agent/scripts/fm_svg_convert.py --check-deps
+```
+
+Or activate the venv first: `source agent/.venv/bin/activate`
+
+**Important:** On some macOS configurations, `pip install` to the system Python is blocked by default. The venv approach avoids this entirely. Never suggest `sudo pip install` or `--break-system-packages`.
 
 # Session startup
 
@@ -16,9 +43,23 @@ If the result is greater than `0`, pause and notify the user before proceeding:
 
 Do this **once per session**, not on every prompt. If the check fails (no network, not a git repo, etc.), skip it silently and continue.
 
+## Environment detection
+
+Also at session start, check if you are running in a sandboxed or non-macOS environment:
+
+```bash
+uname -s 2>/dev/null; command -v osascript &>/dev/null && echo "OSASCRIPT" || echo "NO_OSASCRIPT"
+```
+
+If `uname` returns `Linux` or `osascript` is not found, read `agent/docs/SANDBOXED_ENVIRONMENT.md` before proceeding. That document covers setup paths, platform limitations, and the filesystem bridge workflow for sandboxed agents.
+
 # Local development context
 
 If `PROJECT.md` exists at the project root, read it at session start. It contains local-only context: meta-project notes, toolchain details, and `external_tools/` documentation. Its absence is normal — it is gitignored and will not be present in collaborator environments.
+
+## Documentation Audience
+
+- When writing docs for this project, default audience is END-USERS who download the repo as a tool, NOT collaborative developers/contributors, unless explicitly told otherwise.
 
 # Overview
 
@@ -185,22 +226,22 @@ grep -A 60 '"name": "Step Name"' "agent/catalogs/step-catalog-en.json"
 | `blockPair`   | Matching step partners and role (`open`/`middle`/`close`)                                                                                    |
 | `notes`       | Behavioral context sub-keys                                                                                                                  |
 | `snippetFile` | Path to archival snippet_examples file                                                                                                       |
-| `status`      | `"complete"` / `"auto"` / `"unfinished"`                                                                                                    |
+| `status`      | `"complete"` / `"auto"` / `"unfinished"`                                                                                                     |
 
 ### Param types → XML emission
 
-| Type | XML pattern |
-|---|---|
-| `boolean` | `<Element xmlAttr="True\|False"/>` — check `enumValues` for HR labels |
-| `enum` | `<Element xmlAttr="value">` or `<Element>value</Element>` |
-| `calculation` | `<Calculation><![CDATA[expression]]></Calculation>` |
-| `namedCalc` | `<WrapperElement><Calculation><![CDATA[expression]]></Calculation></WrapperElement>` |
-| `text` | `<Element>literal text</Element>` |
-| `field` | `<Field table="TO" id="N" name="FieldName"/>` — resolve from CONTEXT.json |
-| `script` | `<Script id="N" name="ScriptName"/>` — resolve from CONTEXT.json |
-| `layout` | Layout reference — resolve from CONTEXT.json |
-| `findRequests` | See `agent/catalogs/find-requests.md` |
-| `flagElement` | Empty element presence = on, absence = off |
+| Type           | XML pattern                                                                          |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `boolean`      | `<Element xmlAttr="True\|False"/>` — check `enumValues` for HR labels                |
+| `enum`         | `<Element xmlAttr="value">` or `<Element>value</Element>`                            |
+| `calculation`  | `<Calculation><![CDATA[expression]]></Calculation>`                                  |
+| `namedCalc`    | `<WrapperElement><Calculation><![CDATA[expression]]></Calculation></WrapperElement>` |
+| `text`         | `<Element>literal text</Element>`                                                    |
+| `field`        | `<Field table="TO" id="N" name="FieldName"/>` — resolve from CONTEXT.json            |
+| `script`       | `<Script id="N" name="ScriptName"/>` — resolve from CONTEXT.json                     |
+| `layout`       | Layout reference — resolve from CONTEXT.json                                         |
+| `findRequests` | See `agent/catalogs/find-requests.md`                                                |
+| `flagElement`  | Empty element presence = on, absence = off                                           |
 
 ### HR format generation
 
@@ -232,6 +273,7 @@ Custom functions fall into three categories:
 3. **Solution-specific code** — contain references to fields or table occurrences. Before using one, verify the script will be running on a layout whose base TO supports the referenced fields.
 
 When CONTEXT.json includes a `custom_functions` section, prefer it. Otherwise, check:
+
 - `xml_parsed/custom_functions_sanitized/` — human-readable calculation text
 - `xml_parsed/custom_function_calcs/` — XML calculation definitions
 
@@ -246,6 +288,7 @@ The `agent/library` folder is a curated collection of reusable fmxmlsnippet code
 **Proactively** — before writing significant logic, scan the manifest for keyword matches. If found, adapt the library code rather than writing from scratch.
 
 **Integration rules:**
+
 - Extract inner `<Step>` elements only (not the `<Script>` wrapper) unless specifically requested
 - Replace placeholder references with real values from CONTEXT.json
 - Do not remove structural or purpose comments embedded in library code
@@ -258,6 +301,7 @@ The `agent/library` folder is a curated collection of reusable fmxmlsnippet code
 - **Function reference**: `agent/docs/filemaker/functions/` — official FM function docs (not guaranteed present). Validate function names against this folder when writing calculations. Do not invent function names.
 - **Schema guidance**: `agent/docs/SCHEMA_GUIDANCE.md` — complete param type → XML mapping reference
 - **Documentation conventions**: When writing docs, use generic placeholder names (`SolutionApp`, `SolutionData`) instead of real solution names. Exception: when the context is explicitly about a specific solution.
+- **Sandboxed environments**: `agent/docs/SANDBOXED_ENVIRONMENT.md` — setup and operation guide for agents running in sandboxed, containerized, or virtualized environments (Codex, Claude Code, Docker, etc.). Read this if you detect you are not running natively on macOS.
 
 # Constraints
 

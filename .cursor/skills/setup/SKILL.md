@@ -1,7 +1,7 @@
 ---
 name: setup
 description: Interactive setup wizard for agentic-fm. Detects what's already configured, walks the user through each remaining step, and verifies completion before proceeding. Use when the developer says "help me set up", "setup", "get started", "onboard", "first time setup", "install agentic-fm", "configure agentic-fm", or is clearly new to the project and needs guidance.
-compatibility: Requires Python 3 and xmllint (libxml2). Optionally Node.js for the webviewer.
+compatibility: Requires Python 3 and xmllint (libxml2). Optionally Node.js for the webviewer. Optionally requests and beautifulsoup4 (via venv) for fetching the FM function reference.
 ---
 
 # setup
@@ -385,13 +385,21 @@ After the core setup is complete, mention these optional next steps:
 
 ### FileMaker function reference (optional)
 
-> **Optional:** Download the official Claris function reference for offline use by the agent:
+> **Optional:** Download the official Claris function reference for offline use by the agent.
+>
+> This requires `requests` and `beautifulsoup4`. Set up a venv first:
 >
 > ```bash
-> python3 agent/docs/filemaker/fetch_docs.py
+> python3 -m venv agent/.venv
+> source agent/.venv/bin/activate
+> pip install requests beautifulsoup4
 > ```
 >
-> This requires `requests` and `beautifulsoup4` (auto-installed via pip on first run). A virtual environment is recommended for this script only.
+> Then run the fetch script with the venv active (or prefix with `agent/.venv/bin/python3`):
+>
+> ```bash
+> agent/.venv/bin/python3 agent/docs/filemaker/fetch_docs.py
+> ```
 
 ---
 

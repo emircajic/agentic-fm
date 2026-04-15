@@ -24,6 +24,8 @@ Notes:
       a TODO comment. A warning is also printed to stderr.
 """
 
+import json
+import os
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -45,7 +47,11 @@ L3 = '        ' # great-grandchildren (e.g. <Calculation> inside <Button>)
 
 def escape_xml(text: str) -> str:
     """Escape &, <, > for XML text content."""
-    return (text or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    if not text:
+        return ''
+    if '&' not in text and '<' not in text and '>' not in text:
+        return text
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
 def escape_attr(text: str) -> str:
@@ -1056,7 +1062,7 @@ def tx_close_window(step) -> str:
         sel = wr.find('Select') if wr is not None else None
         if sel is not None:
             sel_type = sel.get('type', 'Calculated')
-            if sel_type == 'Current':
+            if sel_type.lower() == 'current':
                 window_by = 'Current'
             else:
                 window_by = 'ByName'
@@ -1381,9 +1387,339 @@ def tx_insert_from_url(step) -> str:
     return '\n'.join(parts)
 
 
-def tx_unknown(step) -> str:
-    name = step.get('name', 'Unknown')
+# ---------------------------------------------------------------------------
+# Step catalog (for generic fallback)
+# ---------------------------------------------------------------------------
+
+def _find_catalog():
+    """Locate step-catalog-en.json relative to this script."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidate = os.path.normpath(os.path.join(here, '..', 'catalogs', 'step-catalog-en.json'))
+    if os.path.isfile(candidate):
+        return candidate
+    return None
+
+
+def _load_catalog():
+    """Return dict keyed by step name with the full catalog entry."""
+    path = _find_catalog()
+    if path is None:
+        return {}
+    with open(path, encoding='utf-8') as f:
+        entries = json.load(f)
+    return {e['name']: e for e in entries if 'name' in e}
+
+
+_CATALOG = _load_catalog()
+
+# SaXML Boolean types that are inverted in fmxmlsnippet.
+# SaXML "With dialog = False" → fmxmlsnippet "NoInteract state=True"
+_INVERTED_BOOLEANS = {
+    'With dialog': 'NoInteract',
+    'autoEncode': 'AutoEncodeURL',
+}
+
+
+# ---------------------------------------------------------------------------
+# Generic catalog-driven translator (fallback for uncovered steps)
+# ---------------------------------------------------------------------------
+
+def _extract_saxml_calc(param_el) -> str:
+    """Extract calculation text from a SaXML <Parameter type="Calculation">."""
+    return get_calc_text(param_el)
+
+
+def _extract_saxml_boolean(param_el):
+    """
+    Extract boolean info from a SaXML <Parameter> containing <Boolean>.
+    Returns (bool_type, value) or None.
+    """
+    b = param_el.find('Boolean')
+    if b is not None:
+        return b.get('type', ''), b.get('value', 'False')
+    return None
+
+
+def _extract_saxml_field_ref(param_el):
+    """Extract field reference info from a SaXML <Parameter type="FieldReference">."""
+    fr = param_el.find('FieldReference')
+    if fr is None:
+        return None
+    fid = fr.get('id', '0')
+    fname = fr.get('name', '')
+    tor = fr.find('TableOccurrenceReference')
+    ftbl = tor.get('name', '') if tor is not None else ''
+    return ftbl, fid, fname
+
+
+def _extract_saxml_target(param_el):
+    """Extract target (variable or field) from a SaXML <Parameter type="Target">."""
+    v = param_el.find('Variable')
+    if v is not None:
+        return 'variable', v.get('value', '')
+    fr = param_el.find('FieldReference')
+    if fr is not None:
+        fid = fr.get('id', '0')
+        fname = fr.get('name', '')
+        tor = fr.find('TableOccurrenceReference')
+        ftbl = tor.get('name', '') if tor is not None else ''
+        return 'field', (ftbl, fid, fname)
+    return None, None
+
+
+def _extract_saxml_list(param_el):
+    """Extract List info from a SaXML <Parameter> containing <List>."""
+    lst = param_el.find('List')
+    if lst is None:
+        return None
+    return {
+        'name': lst.get('name', ''),
+        'value': lst.get('value', ''),
+        'calc': get_calc_text(lst),
+    }
+
+
+def _extract_saxml_text(param_el) -> str:
+    """Extract text value from parameter's Text child or value attribute."""
+    t = param_el.find('Text')
+    if t is not None and t.text:
+        return t.text
+    return param_el.get('value', '')
+
+
+def tx_generic(step) -> str:
+    """
+    Catalog-driven generic translator for steps without hand-coded handlers.
+
+    Strategy:
+    1. Look up the step in the catalog by name
+    2. Walk the SaXML <Parameter> elements and map to catalog params by type
+    3. Emit fmxmlsnippet child elements based on catalog param definitions
+
+    This handles the ~70% of steps with standard parameter structures.
+    Steps with non-standard structures (boolean inversions, nested lists,
+    complex enum mappings) should have hand-coded translators instead.
+    """
+    name = step.get('name', '')
     enable, sid = step_attrs(step)
+    entry = _CATALOG.get(name)
+
+    if entry is None:
+        # Not in catalog — fall through to tx_unknown
+        return _tx_unknown_inner(name, enable, sid)
+
+    cat_params = entry.get('params', [])
+
+    # Self-closing steps with no params
+    if entry.get('selfClosing', False) and not cat_params:
+        return f'{S}<Step enable="{enable}" id="{sid}" name="{escape_attr(name)}"/>'
+
+    # Collect SaXML parameters
+    saxml_params = all_params(step)
+
+    # If no SaXML params and no catalog params, self-close
+    if not saxml_params and not cat_params:
+        return f'{S}<Step enable="{enable}" id="{sid}" name="{escape_attr(name)}"/>'
+
+    # Build child elements by walking catalog params and matching SaXML params
+    children = []
+    used_saxml = set()  # track consumed SaXML param indices
+
+    for cat_p in cat_params:
+        xml_el = cat_p.get('xmlElement', '')
+        ptype = cat_p.get('type', '')
+        wrapper = cat_p.get('wrapperElement', '')
+        xml_attr = cat_p.get('xmlAttr', 'state')
+
+        if ptype == 'boolean':
+            # Find matching Boolean in SaXML params
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                binfo = _extract_saxml_boolean(sp)
+                if binfo is None:
+                    continue
+                bool_type, val = binfo
+                if bool_type == 'Collapsed':
+                    # Internal display state — emit as <Restore>
+                    children.append(f'{L1}<Restore state="{val}"/>')
+                    used_saxml.add(i)
+                    break
+                # Check for inverted booleans
+                if bool_type in _INVERTED_BOOLEANS:
+                    inv_el = _INVERTED_BOOLEANS[bool_type]
+                    inv_val = 'False' if val == 'True' else 'True'
+                    children.append(f'{L1}<{inv_el} {xml_attr}="{inv_val}"/>')
+                    used_saxml.add(i)
+                    break
+                # Standard boolean
+                children.append(f'{L1}<{xml_el} {xml_attr}="{val}"/>')
+                used_saxml.add(i)
+                break
+
+        elif ptype == 'calculation':
+            # Find first unused Calculation param
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                if sp.get('type') == 'Calculation':
+                    calc = _extract_saxml_calc(sp)
+                    if wrapper:
+                        children.append(f'{L1}<{wrapper}>')
+                        children.append(f'{L2}<Calculation>{cdata(calc)}</Calculation>')
+                        children.append(f'{L1}</{wrapper}>')
+                    else:
+                        children.append(f'{L1}<Calculation>{cdata(calc)}</Calculation>')
+                    used_saxml.add(i)
+                    break
+
+        elif ptype == 'namedCalc':
+            # Named calculation — wrapped in a parent element
+            wrap = wrapper or xml_el
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                # Match by SaXML type containing "Calculation" or the wrapper name
+                sp_type = sp.get('type', '')
+                if sp_type in ('Calculation', 'Title', 'Message', 'Parameter'):
+                    calc = _extract_saxml_calc(sp)
+                    if calc or sp_type in ('Title', 'Message'):
+                        children.append(f'{L1}<{wrap}>')
+                        children.append(f'{L2}<Calculation>{cdata(calc)}</Calculation>')
+                        children.append(f'{L1}</{wrap}>')
+                        used_saxml.add(i)
+                        break
+
+        elif ptype == 'text':
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                sp_type = sp.get('type', '')
+                if sp_type in ('Comment', 'Text', xml_el):
+                    text = _extract_saxml_text(sp)
+                    if text:
+                        children.append(f'{L1}<{xml_el}>{escape_xml(text)}</{xml_el}>')
+                        used_saxml.add(i)
+                        break
+
+        elif ptype == 'field':
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                sp_type = sp.get('type', '')
+                if sp_type == 'FieldReference':
+                    info = _extract_saxml_field_ref(sp)
+                    if info:
+                        ftbl, fid, fname = info
+                        children.append(
+                            f'{L1}<{xml_el} table="{escape_attr(ftbl)}" '
+                            f'id="{fid}" name="{escape_attr(fname)}"/>'
+                        )
+                        used_saxml.add(i)
+                        break
+                elif sp_type == 'Target':
+                    kind, val = _extract_saxml_target(sp)
+                    if kind == 'variable':
+                        children.append(f'{L1}<{xml_el}>{escape_xml(val)}</{xml_el}>')
+                    elif kind == 'field':
+                        ftbl, fid, fname = val
+                        children.append(
+                            f'{L1}<{xml_el} table="{escape_attr(ftbl)}" '
+                            f'id="{fid}" name="{escape_attr(fname)}"/>'
+                        )
+                    used_saxml.add(i)
+                    break
+
+        elif ptype == 'enum':
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                lst_info = _extract_saxml_list(sp)
+                if lst_info:
+                    val = lst_info['name'] or lst_info['value']
+                    if val:
+                        children.append(f'{L1}<{xml_el} {xml_attr}="{escape_attr(val)}"/>')
+                        used_saxml.add(i)
+                        break
+                # Also check Options param
+                if sp.get('type') == 'Options':
+                    opts = sp.find('Options')
+                    if opts is not None:
+                        val = opts.get('type', '') or opts.get('value', '')
+                        if val:
+                            children.append(f'{L1}<{xml_el} {xml_attr}="{escape_attr(val)}"/>')
+                            used_saxml.add(i)
+                            break
+
+        elif ptype == 'flagElement':
+            # Flag elements: presence = on, absence = off
+            # Check if any SaXML boolean with matching semantics exists
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                binfo = _extract_saxml_boolean(sp)
+                if binfo:
+                    _, val = binfo
+                    if val == 'True':
+                        children.append(f'{L1}<{xml_el}/>')
+                    used_saxml.add(i)
+                    break
+
+        elif ptype == 'script':
+            # Script reference
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                if sp.get('type') == 'List':
+                    lst = sp.find('List')
+                    if lst is not None:
+                        sr = lst.find('ScriptReference')
+                        if sr is not None:
+                            s_id = sr.get('id', '0')
+                            s_name = sr.get('name', '')
+                            children.append(
+                                f'{L1}<Script id="{s_id}" '
+                                f'name="{escape_attr(s_name)}"/>'
+                            )
+                            used_saxml.add(i)
+                            break
+
+        elif ptype == 'layout':
+            # Layout reference
+            for i, sp in enumerate(saxml_params):
+                if i in used_saxml:
+                    continue
+                if sp.get('type') == 'Layout':
+                    lrc = sp.find('LayoutReferenceContainer')
+                    if lrc is not None:
+                        lr = lrc.find('LayoutReference')
+                        if lr is not None:
+                            l_id = lr.get('id', '0')
+                            l_name = lr.get('name', '')
+                            children.append(
+                                f'{L1}<Layout id="{l_id}" '
+                                f'name="{escape_attr(l_name)}"/>'
+                            )
+                            used_saxml.add(i)
+                            break
+
+    # Emit the step
+    if children:
+        parts = [f'{S}<Step enable="{enable}" id="{sid}" name="{escape_attr(name)}">']
+        parts.extend(children)
+        parts.append(f'{S}</Step>')
+        return '\n'.join(parts)
+    else:
+        # No children extracted — emit self-closing
+        return f'{S}<Step enable="{enable}" id="{sid}" name="{escape_attr(name)}"/>'
+
+
+# ---------------------------------------------------------------------------
+# Unknown step (no catalog entry and no hand-coded translator)
+# ---------------------------------------------------------------------------
+
+def _tx_unknown_inner(name, enable, sid) -> str:
+    """Emit a placeholder for a completely unknown step."""
     print(
         f'WARNING: unhandled step type "{name}" (id={sid}) — '
         'emitted as self-closing with TODO comment',
@@ -1393,6 +1729,15 @@ def tx_unknown(step) -> str:
         f'{S}<!-- TODO: manual conversion required for step "{escape_xml(name)}" -->\n'
         f'{S}<Step enable="{enable}" id="{sid}" name="{escape_attr(name)}"/>'
     )
+
+
+def tx_unknown(step) -> str:
+    name = step.get('name', 'Unknown')
+    enable, sid = step_attrs(step)
+    # Try the generic catalog-driven translator first
+    if name in _CATALOG:
+        return tx_generic(step)
+    return _tx_unknown_inner(name, enable, sid)
 
 
 # ---------------------------------------------------------------------------

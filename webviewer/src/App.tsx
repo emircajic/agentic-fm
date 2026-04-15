@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { Toolbar } from '@/ui/Toolbar';
+import { Toolbar, type AppMode } from '@/ui/Toolbar';
 import { StatusBar } from '@/ui/StatusBar';
 import { EditorPanel } from '@/editor/EditorPanel';
 import { XmlPreview } from '@/editor/xml-preview/XmlPreview';
@@ -81,6 +81,7 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLoadScript, setShowLoadScript] = useState(false);
   const [showLibrary, setShowLibrary] = useState(initialPrefs.showLibrary);
+  const [appMode, setAppMode] = useState<AppMode>(initialPrefs.showIconBrowser ? 'icons' : 'editor');
   const [steps, setSteps] = useState<StepInfo[]>([]);
   const [catalog, setCatalog] = useState<StepCatalogEntry[]>([]);
   const [promptMarker, setPromptMarker] = useState('prompt');
@@ -153,11 +154,12 @@ export function App() {
       showXmlPreview,
       showChat,
       showLibrary,
+      showIconBrowser: appMode === 'icons',
       editorPct: mainSplit.pct,
       editorXmlPct: editorXmlSplit.pct,
       libraryWidth: library.width,
     });
-  }, [showXmlPreview, showChat, showLibrary, mainSplit.pct, editorXmlSplit.pct, library.width]);
+  }, [showXmlPreview, showChat, showLibrary, appMode, mainSplit.pct, editorXmlSplit.pct, library.width]);
 
   // Server fallback: restore layout prefs when localStorage has no saved state
   useEffect(() => {
@@ -167,6 +169,7 @@ export function App() {
       setShowXmlPreview(prefs.showXmlPreview);
       setShowChat(prefs.showChat);
       setShowLibrary(prefs.showLibrary);
+      setAppMode(prefs.showIconBrowser ? 'icons' : 'editor');
       mainSplit.setPct(prefs.editorPct);
       editorXmlSplit.setPct(prefs.editorXmlPct);
       library.setWidth(prefs.libraryWidth);
@@ -195,6 +198,28 @@ export function App() {
       delete (window as any).loadScript;
       delete (window as any).triggerAppAction;
     };
+  }, []);
+
+  // Listen for postMessage from the icon browser iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://elemental-svg.com') return;
+      const { type, xml } = event.data ?? {};
+      if (!xml || typeof xml !== 'string') return;
+      if (type === 'copy-button-bar' || type === 'copy-button') {
+        clipboardWrite(xml).then(result => {
+          if (result.ok) {
+            setStatus('Icon copied to clipboard — ready to paste into FileMaker');
+          } else {
+            setStatus(`Clipboard error: ${result.error}`);
+          }
+        }).catch(() => {
+          setStatus('Clipboard write failed (server error)');
+        });
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const handleNewScript = useCallback(async () => {
@@ -343,6 +368,7 @@ export function App() {
         case 'agfm.toggleXmlPreview': setShowXmlPreview(v => !v); break;
         case 'agfm.toggleChat':      setShowChat(v => !v); break;
         case 'agfm.toggleLibrary':   setShowLibrary(v => !v); break;
+        case 'agfm.toggleIcons':     setAppMode(m => m === 'icons' ? 'editor' : 'icons'); break;
       }
     };
   }, [handleNewScript, handleValidate, handleClipboard]);
@@ -359,6 +385,7 @@ export function App() {
         showChat={showChat}
         showLibrary={showLibrary}
         editorMode={editorMode}
+        appMode={appMode}
         onToggleXmlPreview={() => setShowXmlPreview(v => !v)}
         onToggleChat={() => setShowChat(v => !v)}
         onToggleLibrary={() => setShowLibrary(v => !v)}
@@ -373,8 +400,21 @@ export function App() {
         onLoadScript={() => setShowLoadScript(true)}
         onOpenSettings={() => setShowSettings(true)}
         onSetEditorMode={(mode) => { setEditorMode(mode); saveEditorMode(mode); }}
+        onSetAppMode={setAppMode}
       />
-      <div class="flex-1 min-h-0 flex">
+
+      {/* Icon browser — kept mounted to preserve state when toggling */}
+      <div class="flex-1 min-h-0" style={{ display: appMode === 'icons' ? 'flex' : 'none' }}>
+        <iframe
+          src="https://elemental-svg.com"
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          allow="clipboard-read; clipboard-write"
+          title="Elemental SVG Icon Browser"
+        />
+      </div>
+
+      {/* Editor panels */}
+      <div class="flex-1 min-h-0 flex" style={{ display: appMode === 'editor' ? 'flex' : 'none' }}>
         {showLibrary && (
           <>
             <div style={{ width: library.width, flexShrink: 0 }} class="h-full min-w-0 overflow-hidden">

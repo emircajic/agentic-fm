@@ -1,11 +1,14 @@
 import type { FMContext } from '@/context/types';
 
+export type AppMode = 'editor' | 'icons';
+
 interface ToolbarProps {
   context: FMContext | null;
   showXmlPreview: boolean;
   showChat: boolean;
   showLibrary: boolean;
   editorMode: 'script' | 'calc';
+  appMode: AppMode;
   onToggleXmlPreview: () => void;
   onToggleChat: () => void;
   onToggleLibrary: () => void;
@@ -16,6 +19,7 @@ interface ToolbarProps {
   onLoadScript: () => void;
   onOpenSettings: () => void;
   onSetEditorMode: (mode: 'script' | 'calc') => void;
+  onSetAppMode: (mode: AppMode) => void;
 }
 
 export function Toolbar({
@@ -24,6 +28,7 @@ export function Toolbar({
   showChat,
   showLibrary,
   editorMode,
+  appMode,
   onToggleXmlPreview,
   onToggleChat,
   onToggleLibrary,
@@ -34,6 +39,7 @@ export function Toolbar({
   onLoadScript,
   onOpenSettings,
   onSetEditorMode,
+  onSetAppMode,
 }: ToolbarProps) {
   return (
     <div class="flex items-center gap-1 px-3 py-1.5 bg-neutral-800 border-b border-neutral-700 text-sm select-none">
@@ -41,69 +47,83 @@ export function Toolbar({
 
       <div class="h-4 w-px bg-neutral-600 mx-1" />
 
-      <IconButton onClick={onNewScript} title="New script">
-        <PlusIcon />
-      </IconButton>
+      {/* App mode toggle: Editor / Icons */}
+      <ModeTab active={appMode === 'editor'} onClick={() => onSetAppMode('editor')}>
+        Editor
+      </ModeTab>
+      <ModeTab active={appMode === 'icons'} onClick={() => onSetAppMode('icons')}>
+        Icons
+      </ModeTab>
 
-      <IconButton onClick={onValidate} title="Validate XML output">
-        <FileCheckIcon />
-      </IconButton>
+      {appMode === 'editor' && (
+        <>
+          <div class="h-4 w-px bg-neutral-600 mx-1" />
 
-      <IconButton onClick={onClipboard} title="Convert to XML and copy to clipboard">
-        <ClipboardCopyIcon />
-      </IconButton>
+          <IconButton onClick={onNewScript} title="New script">
+            <PlusIcon />
+          </IconButton>
 
-      <IconButton onClick={onLoadScript} title="Load an existing script">
-        <FolderOpenIcon />
-      </IconButton>
+          <IconButton onClick={onValidate} title="Validate XML output">
+            <FileCheckIcon />
+          </IconButton>
 
-      <div class="h-4 w-px bg-neutral-600 mx-1" />
+          <IconButton onClick={onClipboard} title="Convert to XML and copy to clipboard">
+            <ClipboardCopyIcon />
+          </IconButton>
 
-      {/* Script / Calculation mode toggle */}
-      <IconButton
-        onClick={() => onSetEditorMode('script')}
-        active={editorMode === 'script'}
-        title="Script mode — step completions at line start, functions inside [ ]"
-      >
-        <ScriptIcon />
-      </IconButton>
-      <IconButton
-        onClick={() => onSetEditorMode('calc')}
-        active={editorMode === 'calc'}
-        title="Calculation mode — function completions everywhere, no step suggestions"
-      >
-        <CalcIcon />
-      </IconButton>
+          <IconButton onClick={onLoadScript} title="Load an existing script">
+            <FolderOpenIcon />
+          </IconButton>
 
-      <div class="h-4 w-px bg-neutral-600 mx-1" />
+          <div class="h-4 w-px bg-neutral-600 mx-1" />
 
-      <IconButton
-        onClick={onToggleLibrary}
-        active={showLibrary}
-        title="Toggle library panel"
-      >
-        <LibraryBigIcon />
-      </IconButton>
+          {/* Script / Calculation mode toggle */}
+          <IconButton
+            onClick={() => onSetEditorMode('script')}
+            active={editorMode === 'script'}
+            title="Script mode — step completions at line start, functions inside [ ]"
+          >
+            <ScriptIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => onSetEditorMode('calc')}
+            active={editorMode === 'calc'}
+            title="Calculation mode — function completions everywhere, no step suggestions"
+          >
+            <CalcIcon />
+          </IconButton>
 
-      <IconButton
-        onClick={onToggleXmlPreview}
-        active={showXmlPreview}
-        title="Toggle XML preview panel"
-      >
-        <CodeXmlIcon />
-      </IconButton>
+          <div class="h-4 w-px bg-neutral-600 mx-1" />
 
-      <IconButton
-        onClick={onToggleChat}
-        active={showChat}
-        title="Toggle AI chat panel"
-      >
-        <MessageSquareTextIcon />
-      </IconButton>
+          <IconButton
+            onClick={onToggleLibrary}
+            active={showLibrary}
+            title="Toggle library panel"
+          >
+            <LibraryBigIcon />
+          </IconButton>
+
+          <IconButton
+            onClick={onToggleXmlPreview}
+            active={showXmlPreview}
+            title="Toggle XML preview panel"
+          >
+            <CodeXmlIcon />
+          </IconButton>
+
+          <IconButton
+            onClick={onToggleChat}
+            active={showChat}
+            title="Toggle AI chat panel"
+          >
+            <MessageSquareTextIcon />
+          </IconButton>
+        </>
+      )}
 
       <div class="flex-1" />
 
-      {context?.task && (
+      {context?.task && appMode === 'editor' && (
         <span class="text-neutral-400 text-xs truncate max-w-sm" title={context.task}>
           {context.task}
         </span>
@@ -117,6 +137,29 @@ export function Toolbar({
         <RefreshCwIcon />
       </IconButton>
     </div>
+  );
+}
+
+function ModeTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: preact.ComponentChildren;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      class={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+        active
+          ? 'bg-blue-600 text-white'
+          : 'bg-neutral-700 hover:bg-neutral-600 text-neutral-400'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
