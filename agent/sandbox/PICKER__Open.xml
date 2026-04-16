@@ -1,0 +1,75 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Generic picker launcher. Opens a card window on the picker layout and pushes the payload to the web viewer.
+Caller is responsible for building the full payload JSON including callbackScript and callbackContext.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: (JSON object — passed as-is to receiveFromFileMaker)
+  callbackScript  (text, required) — FM script PICKER__Callback will dispatch to
+  callbackContext (object, optional) — merged into callback param alongside stavkePKs
+  groups          (array, required) — picker data
+  groupCount      (number)
+  stavkeCount     (number)</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Open card window</Text>
+	</Step>
+
+	<Step enable="True" id="122" name="New Window">
+		<LayoutDestination value="SelectedLayout"/>
+		<Name>
+			<Calculation><![CDATA["Primka Picker"]]></Calculation>
+		</Name>
+		<Height>
+			<Calculation><![CDATA[600]]></Calculation>
+		</Height>
+		<Width>
+			<Calculation><![CDATA[900]]></Calculation>
+		</Width>
+		<NewWndStyles DimParentWindow="Yes" Toolbars="No" MenuBar="No" Style="Card" Close="Yes" Minimize="No" Maximize="No" Resize="No" Styles="1076299266"/>
+		<Layout id="0" name="PICKER__PrimkaPicker"/>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>⚠ Update Layout id above after creating the PICKER__PrimkaPicker layout.</Text>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Push data to web viewer</Text>
+	</Step>
+
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName>
+			<Calculation><![CDATA["wv_PrimkaPicker"]]></Calculation>
+		</ObjectName>
+		<FunctionName>
+			<Calculation><![CDATA["receiveFromFileMaker"]]></Calculation>
+		</FunctionName>
+		<Parameters Count="1">
+			<P>
+				<Calculation><![CDATA[$payload]]></Calculation>
+			</P>
+		</Parameters>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString )]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

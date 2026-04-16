@@ -1,20 +1,18 @@
 <fmxmlsnippet type="FMObjectList">
 
 	<Step enable="True" id="89" name="# (comment)">
-		<Text>PURPOSE: Release all attached Primke from a UFD header, then delete the UFD record.</Text>
+		<Text>PURPOSE: Release all attached StavkePrimke from a UFD (clear FK and unlock), then delete the UFD record.</Text>
 	</Step>
-
 	<Step enable="False" id="61" name="Insert Text">
 		<SelectAll state="False"/>
 		<Text>PARAMS: ulaznaFakturaID (text, required)
 RETURNS: data.releasedCount (number)</Text>
-		<Field table="" id="0" name="$README"/>
+		<Field>$README</Field>
 	</Step>
 
 	<Step enable="True" id="85" name="Allow User Abort">
 		<Set state="False"/>
 	</Step>
-
 	<Step enable="True" id="86" name="Set Error Capture">
 		<Set state="True"/>
 	</Step>
@@ -23,24 +21,21 @@ RETURNS: data.releasedCount (number)</Text>
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "ulaznaFakturaID" )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$releasedCount</Name>
 		<Value><Calculation><![CDATA[0]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_REMOVE_START" ; "Removing UFD: " & $ulaznaFakturaID ; $params )]]></Calculation></Value>
 	</Step>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Validate ──────────────────────────────────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Validate</Text>
 	</Step>
 
 	<Step enable="True" id="68" name="If">
@@ -53,8 +48,8 @@ RETURNS: data.releasedCount (number)</Text>
 		<Step enable="True" id="68" name="If">
 			<Calculation><![CDATA[$isRoot]]></Calculation>
 		</Step>
-			<Step enable="True" id="25" name="Perform Script">
-				<Script id="780" name="UTIL__FlushLog"/>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="0" name="UTIL__FlushLog"/>
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
@@ -63,66 +58,55 @@ RETURNS: data.releasedCount (number)</Text>
 		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Collect attached Primke PKs via SQL ───────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Release attached StavkePrimke</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaRows</Name>
+		<Name>$stavkaRows</Name>
 		<Value><Calculation><![CDATA[ExecuteSQL (
-	"SELECT PrimaryKey FROM Primke WHERE ForeignKeyUlaznaFakturaID = ?" ;
+	"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyUlaznaFakturaID = ?" ;
 	"" ; "¶" ;
 	$ulaznaFakturaID
 )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaCount</Name>
-		<Value><Calculation><![CDATA[If ( IsEmpty ( $primkaRows ) or Left ( $primkaRows ; 1 ) = "?" ; 0 ; ValueCount ( $primkaRows ) )]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Release Primke — single find with multiple requests, then iterate found set ──</Text>
+		<Name>$stavkaCount</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $stavkaRows ) or Left ( $stavkaRows ; 1 ) = "?" ; 0 ; ValueCount ( $stavkaRows ) )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[$primkaCount > 0]]></Calculation>
+		<Calculation><![CDATA[$stavkaCount > 0]]></Calculation>
 	</Step>
 
 		<Step enable="True" id="6" name="Go to Layout">
 			<LayoutDestination value="SelectedLayout"/>
-			<Layout id="229" name="Dev Primke"/>
+			<Layout id="227" name="Dev StavkePrimke"/>
 			<Animation value="None"/>
 		</Step>
-
 		<Step enable="True" id="22" name="Enter Find Mode">
-			<Pause state="False"/>
+			<UseCurrentRecord state="False"/>
+			<PauseForUser state="False"/>
 		</Step>
-
 		<Step enable="True" id="76" name="Set Field">
-			<Calculation><![CDATA[GetValue ( $primkaRows ; 1 )]]></Calculation>
-			<Field table="Primke" id="1" name="PrimaryKey"/>
-		</Step>
-
-		<Step enable="True" id="89" name="# (comment)">
-			<Text>Add one find request per additional Primka</Text>
+			<Field table="StavkePrimke" id="0" name="PrimaryKey"/>
+			<Calculation><![CDATA[GetValue ( $stavkaRows ; 1 )]]></Calculation>
 		</Step>
 
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$i</Name>
 			<Value><Calculation><![CDATA[2]]></Calculation></Value>
 		</Step>
-
 		<Step enable="True" id="71" name="Loop">
 			<FlushType value="Always"/>
 		</Step>
 			<Step enable="True" id="72" name="Exit Loop If">
-				<Calculation><![CDATA[$i > $primkaCount]]></Calculation>
+				<Calculation><![CDATA[$i > $stavkaCount]]></Calculation>
 			</Step>
-			<Step enable="True" id="7" name="New Record/Request"/>
+			<Step enable="True" id="24" name="New Record/Request"/>
 			<Step enable="True" id="76" name="Set Field">
-				<Calculation><![CDATA[GetValue ( $primkaRows ; $i )]]></Calculation>
-				<Field table="Primke" id="1" name="PrimaryKey"/>
+				<Field table="StavkePrimke" id="0" name="PrimaryKey"/>
+				<Calculation><![CDATA[GetValue ( $stavkaRows ; $i )]]></Calculation>
 			</Step>
 			<Step enable="True" id="141" name="Set Variable">
 				<Name>$i</Name>
@@ -130,34 +114,26 @@ RETURNS: data.releasedCount (number)</Text>
 			</Step>
 		<Step enable="True" id="73" name="End Loop"/>
 
-		<Step enable="True" id="31" name="Perform Find">
-			<Restore state="False"/>
-		</Step>
+		<Step enable="True" id="28" name="Perform Find"/>
 
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$releasedCount</Name>
 			<Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
 		</Step>
 
-		<Step enable="True" id="89" name="# (comment)">
-			<Text>Iterate found set — no layout navigation inside loop</Text>
-		</Step>
-
 		<Step enable="True" id="16" name="Go to Record/Request/Page">
 			<RowPageLocation value="First"/>
-			<Exit state="False"/>
 		</Step>
-
 		<Step enable="True" id="71" name="Loop">
 			<FlushType value="Always"/>
 		</Step>
 			<Step enable="True" id="76" name="Set Field">
+				<Field table="StavkePrimke" id="0" name="ForeignKeyUlaznaFakturaID"/>
 				<Calculation><![CDATA[""]]></Calculation>
-				<Field table="Primke" id="18" name="ForeignKeyUlaznaFakturaID"/>
 			</Step>
 			<Step enable="True" id="76" name="Set Field">
-				<Calculation><![CDATA["Otvorena"]]></Calculation>
-				<Field table="Primke" id="14" name="Status"/>
+				<Field table="StavkePrimke" id="31" name="Locked"/>
+				<Calculation><![CDATA[0]]></Calculation>
 			</Step>
 			<Step enable="True" id="75" name="Commit Records/Requests">
 				<NoInteract state="True"/>
@@ -165,15 +141,15 @@ RETURNS: data.releasedCount (number)</Text>
 				<ESSForceCommit state="False"/>
 			</Step>
 			<Step enable="True" id="16" name="Go to Record/Request/Page">
-				<RowPageLocation value="Next"/>
 				<Exit state="True"/>
+				<RowPageLocation value="Next"/>
 			</Step>
 		<Step enable="True" id="73" name="End Loop"/>
 
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Delete UFD record ─────────────────────────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Delete UFD record</Text>
 	</Step>
 
 	<Step enable="True" id="6" name="Go to Layout">
@@ -181,19 +157,15 @@ RETURNS: data.releasedCount (number)</Text>
 		<Layout id="240" name="UFD__UlaznaFakturaDobavljaca"/>
 		<Animation value="None"/>
 	</Step>
-
 	<Step enable="True" id="22" name="Enter Find Mode">
-		<Pause state="False"/>
+		<UseCurrentRecord state="False"/>
+		<PauseForUser state="False"/>
 	</Step>
-
 	<Step enable="True" id="76" name="Set Field">
+		<Field table="UFD__UlaznaFakturaDobavljaca" id="0" name="PrimaryKey"/>
 		<Calculation><![CDATA[$ulaznaFakturaID]]></Calculation>
-		<Field table="UFD__UlaznaFakturaDobavljaca" id="1" name="PrimaryKey"/>
 	</Step>
-
-	<Step enable="True" id="31" name="Perform Find">
-		<Restore state="False"/>
-	</Step>
+	<Step enable="True" id="28" name="Perform Find"/>
 
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
@@ -202,9 +174,8 @@ RETURNS: data.releasedCount (number)</Text>
 			<Name>$void</Name>
 			<Value><Calculation><![CDATA[Response_AddWarning ( "UFD_ALREADY_GONE" ; "UFD record not found for deletion: " & $ulaznaFakturaID ; "" ; "{}" ; "" )]]></Calculation></Value>
 		</Step>
-	<Step enable="True" id="69" name="Else">
-	</Step>
-		<Step enable="True" id="30" name="Delete Record/Request">
+	<Step enable="True" id="69" name="Else"/>
+		<Step enable="True" id="9" name="Delete Record/Request">
 			<NoInteract state="True"/>
 		</Step>
 		<Step enable="True" id="68" name="If">
@@ -221,8 +192,8 @@ RETURNS: data.releasedCount (number)</Text>
 			<Step enable="True" id="68" name="If">
 				<Calculation><![CDATA[$isRoot]]></Calculation>
 			</Step>
-				<Step enable="True" id="25" name="Perform Script">
-					<Script id="780" name="UTIL__FlushLog"/>
+				<Step enable="True" id="1" name="Perform Script">
+					<Script id="0" name="UTIL__FlushLog"/>
 					<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 				</Step>
 			<Step enable="True" id="70" name="End If"/>
@@ -232,25 +203,26 @@ RETURNS: data.releasedCount (number)</Text>
 		<Step enable="True" id="70" name="End If"/>
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Result ────────────────────────────────────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Result</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ; "releasedCount" ; $releasedCount ; JSONNumber ) )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_REMOVE_OK" ; "UFD removed, released " & $releasedCount & " primke" ; $params )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_REMOVE_OK" ; "UFD removed, released " & $releasedCount & " stavke" ; $params )]]></Calculation></Value>
 	</Step>
+
+	<Step enable="True" id="23" name="Show All Records"/>
 
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[$isRoot]]></Calculation>
 	</Step>
-		<Step enable="True" id="25" name="Perform Script">
-			<Script id="780" name="UTIL__FlushLog"/>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="0" name="UTIL__FlushLog"/>
 			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 		</Step>
 	<Step enable="True" id="70" name="End If"/>

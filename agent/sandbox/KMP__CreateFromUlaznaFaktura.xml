@@ -1,0 +1,261 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[jsonToVars(Get(ScriptParameter);"local")]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[False]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $ulaznaFakturaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje ulaznaFakturaID" ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$exit]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "kalkulacijaID" ; "" ; JSONString ] ;
+		[ "errors" ; $errors ; JSONArray ]
+	)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="240" name="UFD__UlaznaFakturaDobavljaca"/>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$ulaznaFakturaID]]></Calculation>
+    <Field table="UFD__UlaznaFakturaDobavljaca" id="1" name="PrimaryKey"/>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nije pronađen račun dobavljača" ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not $exit and IsEmpty ( UFD__StavkePrimke::PrimaryKey )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Račun dobavljača nema stavki" ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not $exit]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ExecuteSQL ( "SELECT Count(*) FROM KMP__KalkulacijaMP WHERE ForeignKeyUlaznaFakturaID = ? AND Status IN ('Otvorena','Knjižena')" ; "" ; ""; $ulaznaFakturaID )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$query</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$query > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Kalkulacija već postoji" ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$exit</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$exit]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "kalkulacijaID" ; "" ; JSONString ] ;
+		[ "errors" ; $errors ; JSONArray ]
+	)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="241" name="KMP__KalkulacijaMP"/>
+  </Step>
+  <Step enable="True" id="7" name="New Record/Request"/>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$ulaznaFakturaID]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="8" name="ForeignKeyUlaznaFakturaID"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Get(CurrentDate)]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="7" name="DatumKalkulacije"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["Otvorena"]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="10" name="Status"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[0]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="9" name="UkupnoMP_Roba"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["TMP-" & Left ( Get ( UUID ) ; 8 )]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="6" name="BrojKalkulacije"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get(LastError)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$lastError</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$lastError <> 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Greška pri kreiranju kalkulacije" ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$errors</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+		[ "status" ; "fail" ; JSONString ] ;
+		[ "kalkulacijaID" ; "" ; JSONString ] ;
+		[ "errors" ; $errors ; JSONArray ]
+	)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "kalkulacijaID" ; KMP__KalkulacijaMP::PrimaryKey ; JSONString ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+  </Step>
+</fmxmlsnippet>

@@ -1,0 +1,12 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Close the picker card window. Called by the web viewer after firing the callback script.</Text>
+	</Step>
+
+	<Step enable="True" id="121" name="Close Window">
+		<LimitToWindowsOfCurrentFile state="True"/>
+		<Window value="Current"/>
+	</Step>
+
+</fmxmlsnippet>
