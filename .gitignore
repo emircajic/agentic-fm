@@ -9,6 +9,7 @@ agent/CONTEXT.json
 .cursor/in-development/
 external_tools/
 plans/
+.claude/worktrees/
 
 # Generated Claris documentation (copyright Claris International Inc.)
 # Run agent/docs/filemaker/fetch_docs.py to generate locally.
