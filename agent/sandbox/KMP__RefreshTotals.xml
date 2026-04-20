@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Recompute UkupnoMP_Roba for a single KalkulacijaMP. Called from OnObjectSave triggers and button on the KMP__KalkulacijaMP layout. Parameter: raw PrimaryKey (UUID string).</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$kalkulacijaID</Name>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $kalkulacijaID )]]></Calculation>
+  </Step>
+    <Step enable="True" id="5" name="Exit Script">
+      <Calculation><![CDATA[""]]></Calculation>
+    </Step>
+  <Step enable="True" id="69" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Find KalkulacijaMP ──────────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="241" name="KMP__KalkulacijaMP"/>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$kalkulacijaID]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="1" name="PrimaryKey"/>
+  </Step>
+  <Step enable="True" id="31" name="Perform Find"/>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
+  </Step>
+    <Step enable="True" id="5" name="Exit Script">
+      <Calculation><![CDATA[""]]></Calculation>
+    </Step>
+  <Step enable="True" id="69" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Compute and write total ──────────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Sum ( KMP__Stavke::IznosMP )]]></Calculation>
+    <Field table="KMP__KalkulacijaMP" id="9" name="UkupnoMP_Roba"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+  </Step>
+
+</fmxmlsnippet>
