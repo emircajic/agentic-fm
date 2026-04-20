@@ -17,7 +17,7 @@ agent/docs/filemaker/functions/
 agent/docs/filemaker/error-codes.md
 
 # Specific files
-PROJECT.md
+# PROJECT.md — intentionally tracked; cross-session journal of decisions and tasks
 *_PRIVATE.md
 Prompt.md
 .cursorignore
