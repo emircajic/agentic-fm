@@ -120,7 +120,7 @@ RETURNS: data.kalkulacijaID (text) | data.lockedCount (number)</Text>
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$kalkulacijaID</Name>
-		<Value><Calculation><![CDATA[JSONGetElement ( $r ; "kalkulacijaID" )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[JSONGetElement ( $r ; "data.kalkulacijaID" )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="68" name="If">

@@ -1,0 +1,224 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Sync PDVPostotak ↔ PDVIznos for a single KMP__Stavke row — no layout navigation.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: stavkaID (text, required) — PrimaryKey of the KMP__Stavke row
+kalkulacijaID (text, required) — PrimaryKey of the parent KMP__KalkulacijaMP
+mode (text, required) — "postotak" or "iznos"
+
+RETURNS: data.stavkaID (text)
+
+NOTE: PDV base = nabavnaTotal + RUCIznos  (prodajna cijena bez PDV)
+      nabavnaTotal = Kolicina * NabavnaCijenaStavke * (1 - RabatPostotak/100) + ZavisniTroskovi</Text>
+		<Field table="" id="0" name="$README"/>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "stavkaID|kalkulacijaID|mode" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "KMP_SYNC_PDV_START" ; "mode=" & $mode & " stavkaID=" & $stavkaID ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Validate ──────────────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $stavkaID ) or IsEmpty ( $kalkulacijaID )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "stavkaID and kalkulacijaID are required" ; "stavkaID" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$mode ≠ "postotak" and $mode ≠ "iznos"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "INVALID_PARAM" ; "mode must be postotak or iznos, got: " & $mode ; "mode" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Read base values (no layout navigation) ───────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sel</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT sp.Kolicina * sp.NabavnaCijenaStavke * (1 - s.RabatPostotak / 100) + s.ZavisniTroskovi + s.RUCIznos,
+	        s.PDVPostotak,
+	        s.PDVIznos
+	 FROM KMP__Stavke s
+	 INNER JOIN KMP__SKMP_StavkePrimke sp ON sp.PrimaryKey = s.PrimaryKey
+	 WHERE s.PrimaryKey = ?" ;
+	"useSQLResult=Yes" ;
+	$stavkaID
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $sel )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "SELECT failed: " & $sel ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$prodajnaBezPDV</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 1 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$pdvPostotak</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 2 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$pdvIznos</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 3 ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Compute and update ────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$mode = "postotak"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$upd</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE KMP__Stavke SET PDVIznos = ? WHERE PrimaryKey = ?" ;
+	"" ;
+	$prodajnaBezPDV * $pdvPostotak / 100 ;
+	$stavkaID
+)]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="69" name="Else"/>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$upd</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE KMP__Stavke SET PDVPostotak = ? WHERE PrimaryKey = ?" ;
+	"" ;
+	If ( $prodajnaBezPDV ≠ 0 ; $pdvIznos / $prodajnaBezPDV * 100 ; 0 ) ;
+	$stavkaID
+)]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $upd )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "UPDATE failed: " & $upd ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Chain totals ──────────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="696" name="KMP__RefreshTotals"/>
+		<Calculation><![CDATA[$kalkulacijaID]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Success ───────────────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ; "stavkaID" ; $stavkaID ; JSONString ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "KMP_SYNC_PDV_DONE" ; "mode=" & $mode & " stavkaID=" & $stavkaID ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="25" name="Perform Script">
+			<Script id="780" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

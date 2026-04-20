@@ -46,19 +46,30 @@ When NabavnaCijenaStavke is set on a StavkaPrimke that belongs to a UFD:
 - Update NabavnaCijenaStavke to match on all unlocked records
 - Trigger: field exit script on the layout
 
-## Script inventory
+## Script inventory (built — all in agent/sandbox/)
 
-| Script | Type | Status |
+| Script | ID | Status |
 |---|---|---|
-| UFD__SyncNabavnaCijena | Effectful worker | New |
-| UFD__ValidatePrices | Pure function | New |
-| UFD__LockPrimke | Effectful worker | New |
-| UFD__Process | Root orchestrator | New |
-| UFD__Backfill | Orchestrator | New (simple: group by supplier+month, create headers, attach Primke, no dialog flow — UI handles add/remove) |
-| INV__LockStavkePrimkeProdajna | Effectful worker | New |
-| Handle Success Response | Effectful worker | Amend — call INV__LockStavkePrimkeProdajna after fiscal success |
-| UFD__Create | Effectful worker | Amend — migrate to Response envelope |
-| UFD__AttachPrimke | Effectful worker | Amend — set Primke.Status = "Priložena" on attach |
+| UFD__Create | 677 | Built |
+| UFD__AttachPrimke | 678 | Built — sets Primke.Status = "Priložena" on attach |
+| UFD__Remove | 789 | Built — releases all Primke (clear FK + reset Status="Otvorena"), deletes UFD |
+| UFD__SyncNabavnaCijena | 781 | Built |
+| UFD__ValidatePrices | 782 | Built — pure function |
+| UFD__LockPrimke | 783 | Built |
+| UFD__Process | 784 | Built — orchestrator: validate → KMP → lock → close UFD |
+| UFD__Backfill | 787 | Built — one-shot retroactive grouping of unattached Primke |
+
+## Layouts used
+
+- UFD__UlaznaFakturaDobavljaca (id 240) — base TO: UFD__UlaznaFakturaDobavljaca (1065262)
+- Dev Primke (id 229) — base TO: Primke (1065138) ← use `Primke::` here, NOT `UFD__Primke::`
+- Dev StavkePrimke (id 227)
+
+**Why:** Portal TO `UFD__Primke` (1065267) is only accessible via the UFD→Primke portal relationship. Using it on Dev Primke layout causes empty reads for unlinked records.
+
+## Pre-2026 stock cleanup
+
+Ran `DB__ConsumePreYearStock` (id 786) — created a dummy ServiceOrder dated 2025-12-31 17:00-18:00 with number "ZATVARANJE-ZALIHA-2025" that consumed all available pre-2026 StavkePrimke stock via existing KretanjeRobe IZLAZ flow.
 
 ## Key relationship IDs (from relationships.index)
 
