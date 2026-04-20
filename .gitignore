@@ -155,3 +155,4 @@ $RECYCLE.BIN/
 # Git
 *.orig
 *.rej
+.claude/worktrees/mystifying-lamport
