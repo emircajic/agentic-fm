@@ -1,0 +1,174 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Attach all StavkePrimke from a single Primka to a UFD.
+Convenience wrapper around UFD__AttachPrimke for the common case of attaching an entire batch.
+Edge cases (partial attach) are handled by deleting individual stavke afterwards.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: ulaznaFakturaID (text, required) | primkaID (text, required)
+RETURNS: data.attachedCount (number)</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "ulaznaFakturaID|primkaID" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_ATTACH_PRIMKA_START" ; "Attaching all stavke from primka " & $primkaID & " to UFD " & $ulaznaFakturaID ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Validate</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $ulaznaFakturaID )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "ulaznaFakturaID is required" ; "ulaznaFakturaID" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "primkaID is required" ; "primkaID" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[Response_HasErrors ( $response )]]></Calculation>
+	</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="0" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Collect StavkePrimke PKs for this Primka</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rows</Name>
+		<Value><Calculation><![CDATA[ExecuteSQL (
+	"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyPrimkaID = ?" ;
+	"" ; "¶" ;
+	$primkaID
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rowCount</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $rows ) or Left ( $rows ; 1 ) = "?" ; 0 ; ValueCount ( $rows ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$rowCount = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NO_STAVKE" ; "No StavkePrimke found for primkaID: " & $primkaID ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="0" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavkePKs</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i > $rowCount]]></Calculation>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$stavkePKs</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $stavkePKs ; "[+]" ; GetValue ( $rows ; $i ) ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Delegate to UFD__AttachPrimke</Text>
+	</Step>
+
+	<Step enable="True" id="1" name="Perform Script">
+		<Script id="678" name="UFD__AttachPrimke"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ulaznaFakturaID" ; $ulaznaFakturaID ; JSONString ] ;
+	[ "stavkePKs"       ; $stavkePKs       ; JSONArray  ] ;
+	[ "traceID"         ; $traceID         ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_ATTACH_PRIMKA_DONE" ; "Attached " & JSONGetElement ( $r ; "data.attachedCount" ) & " of " & $rowCount & " stavke from primka " & $primkaID ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="0" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

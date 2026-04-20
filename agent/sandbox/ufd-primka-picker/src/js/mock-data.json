@@ -1,0 +1,73 @@
+{
+  "ufdID": "UFD-2024-0042",
+  "callbackScript": "UFD__AttachPrimke",
+  "callbackContext": { "ulaznaFakturaID": "UFD-2024-0042" },
+  "groupCount": 2,
+  "stavkeCount": 5,
+  "groups": [
+    {
+      "primkaPK": "PK-PRIMKA-001",
+      "brojFakture": "R-2024/0089",
+      "datum": "12.01.2024.",
+      "stavke": [
+        {
+          "stavkaPK": "SP-001",
+          "sifra": "OIL-5W40-4L",
+          "naziv": "Motorno ulje 5W-40 4L",
+          "kolicina": 10,
+          "nabavna": 18.50,
+          "prodajna": 24.90,
+          "qtyAvailable": 10,
+          "transferStatus": "Slobodan"
+        },
+        {
+          "stavkaPK": "SP-002",
+          "sifra": "FLT-OIL-VAG",
+          "naziv": "Filter ulja VAG",
+          "kolicina": 10,
+          "nabavna": 4.20,
+          "prodajna": 7.50,
+          "qtyAvailable": 8,
+          "transferStatus": "Djelomično"
+        },
+        {
+          "stavkaPK": "SP-003",
+          "sifra": "FLT-AIR-BMW",
+          "naziv": "Filter zraka BMW E90",
+          "kolicina": 5,
+          "nabavna": 9.80,
+          "prodajna": 16.00,
+          "qtyAvailable": 5,
+          "transferStatus": "Slobodan"
+        }
+      ]
+    },
+    {
+      "primkaPK": "PK-PRIMKA-002",
+      "brojFakture": "R-2024/0074",
+      "datum": "05.01.2024.",
+      "stavke": [
+        {
+          "stavkaPK": "SP-004",
+          "sifra": "BRK-DISC-F",
+          "naziv": "Disk kočnice prednji par",
+          "kolicina": 4,
+          "nabavna": 28.00,
+          "prodajna": 48.00,
+          "qtyAvailable": 0,
+          "transferStatus": "Prenesen"
+        },
+        {
+          "stavkaPK": "SP-005",
+          "sifra": "BRK-PAD-F",
+          "naziv": "Pločice kočnica prednje",
+          "kolicina": 4,
+          "nabavna": 14.50,
+          "prodajna": 26.00,
+          "qtyAvailable": 4,
+          "transferStatus": "Slobodan"
+        }
+      ]
+    }
+  ]
+}

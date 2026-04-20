@@ -2,20 +2,18 @@
 
 	<Step enable="True" id="89" name="# (comment)">
 		<Text>PURPOSE: Validate NabavnaCijenaStavke across all StavkePrimke attached to a UFD.
-Checks for missing prices and cross-Primka inconsistencies per ArtikalID.</Text>
+Checks for missing prices and cross-stavka inconsistencies per ArtikalID.</Text>
 	</Step>
-
 	<Step enable="False" id="61" name="Insert Text">
 		<SelectAll state="False"/>
 		<Text>PARAMS: ulaznaFakturaID (text, required)
-RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue, primkaID})</Text>
-		<Field table="" id="0" name="$README"/>
+RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue, stavkaPK})</Text>
+		<Field>$README</Field>
 	</Step>
 
 	<Step enable="True" id="85" name="Allow User Abort">
 		<Set state="False"/>
 	</Step>
-
 	<Step enable="True" id="86" name="Set Error Capture">
 		<Set state="True"/>
 	</Step>
@@ -24,164 +22,41 @@ RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue,
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "ulaznaFakturaID" )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_VALIDATE_START" ; "Validating prices for UFD " & $ulaznaFakturaID ; $params )]]></Calculation></Value>
 	</Step>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Validate ──────────────────────────────────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Validate</Text>
 	</Step>
 
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[IsEmpty ( $ulaznaFakturaID )]]></Calculation>
 	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "ulaznaFakturaID is required" ; "ulaznaFakturaID" ; "{}" ; "" )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[$isRoot]]></Calculation>
-	</Step>
-	<Step enable="True" id="25" name="Perform Script">
-		<Script id="780" name="UTIL__FlushLog"/>
-		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-	</Step>
-	<Step enable="True" id="70" name="End If"/>
-	<Step enable="True" id="103" name="Exit Script">
-		<Calculation><![CDATA[Response_Finalize]]></Calculation>
-	</Step>
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Collect Primka PKs ────────────────────────────────────────────────────</Text>
-	</Step>
-
-	<Step enable="True" id="6" name="Go to Layout">
-		<LayoutDestination value="SelectedLayout"/>
-		<Layout id="229" name="Dev Primke"/>
-		<Animation value="None"/>
-	</Step>
-
-	<Step enable="True" id="22" name="Enter Find Mode">
-		<Pause state="False"/>
-	</Step>
-
-	<Step enable="True" id="76" name="Set Field">
-		<Calculation><![CDATA[$ulaznaFakturaID]]></Calculation>
-		<Field table="UFD__Primke" id="18" name="ForeignKeyUlaznaFakturaID"/>
-	</Step>
-
-	<Step enable="True" id="31" name="Perform Find">
-		<Restore state="False"/>
-	</Step>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Response_AddError ( "NO_PRIMKE" ; "No Primke attached to UFD: " & $ulaznaFakturaID ; "" ; "{}" ; "" )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[$isRoot]]></Calculation>
-	</Step>
-	<Step enable="True" id="25" name="Perform Script">
-		<Script id="780" name="UTIL__FlushLog"/>
-		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-	</Step>
-	<Step enable="True" id="70" name="End If"/>
-	<Step enable="True" id="103" name="Exit Script">
-		<Calculation><![CDATA[Response_Finalize]]></Calculation>
-	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "ulaznaFakturaID is required" ; "ulaznaFakturaID" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="0" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaCount</Name>
-		<Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaKeys</Name>
-		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$j</Name>
-		<Value><Calculation><![CDATA[0]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="16" name="Go to Record/Request/Page">
-		<RowPageLocation value="First"/>
-		<Exit state="False"/>
-	</Step>
-
-	<Step enable="True" id="71" name="Loop">
-		<FlushType value="Always"/>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaKeys</Name>
-		<Value><Calculation><![CDATA[JSONSetElement ( $primkaKeys ; "[+]" ; UFD__Primke::PrimaryKey ; JSONString )]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$j</Name>
-		<Value><Calculation><![CDATA[$j + 1]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="72" name="Exit Loop If">
-		<Calculation><![CDATA[$j >= $primkaCount]]></Calculation>
-	</Step>
-
-	<Step enable="True" id="16" name="Go to Record/Request/Page">
-		<RowPageLocation value="Next"/>
-		<Exit state="False"/>
-	</Step>
-
-	<Step enable="True" id="73" name="End Loop"/>
-
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Check prices per Primka ───────────────────────────────────────────────</Text>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$priceMap</Name>
-		<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$seenArtikali</Name>
-		<Value><Calculation><![CDATA[""]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$issues</Name>
-		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$i</Name>
-		<Value><Calculation><![CDATA[0]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="71" name="Loop">
-		<FlushType value="Always"/>
-	</Step>
-
-	<Step enable="True" id="72" name="Exit Loop If">
-		<Calculation><![CDATA[$i >= $primkaCount]]></Calculation>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$primkaID</Name>
-		<Value><Calculation><![CDATA[JSONGetElement ( $primkaKeys ; "[" & $i & "]" )]]></Calculation></Value>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Find StavkePrimke for this UFD</Text>
 	</Step>
 
 	<Step enable="True" id="6" name="Go to Layout">
@@ -189,135 +64,136 @@ RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue,
 		<Layout id="227" name="Dev StavkePrimke"/>
 		<Animation value="None"/>
 	</Step>
-
 	<Step enable="True" id="22" name="Enter Find Mode">
-		<Pause state="False"/>
+		<UseCurrentRecord state="False"/>
+		<PauseForUser state="False"/>
 	</Step>
-
 	<Step enable="True" id="76" name="Set Field">
-		<Calculation><![CDATA[$primkaID]]></Calculation>
-		<Field table="StavkePrimke" id="6" name="ForeignKeyFakturaID"/>
+		<Field table="StavkePrimke" id="0" name="ForeignKeyUlaznaFakturaID"/>
+		<Calculation><![CDATA[$ulaznaFakturaID]]></Calculation>
 	</Step>
-
-	<Step enable="True" id="31" name="Perform Find">
-		<Restore state="False"/>
-	</Step>
+	<Step enable="True" id="28" name="Perform Find"/>
 
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
 	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Response_AddWarning ( "EMPTY_PRIMKA" ; "Primka has no StavkePrimke: " & $primkaID ; "" ; JSONSetElement ( "{}" ; "primkaID" ; $primkaID ; JSONString ) ; "" )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="69" name="Else">
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NO_STAVKE" ; "No StavkePrimke attached to UFD: " & $ulaznaFakturaID ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="0" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Loop and check prices</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$recCount</Name>
+		<Name>$stavkaCount</Name>
 		<Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$k</Name>
+		<Name>$priceMap</Name>
+		<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$seenArtikali</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$issues</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
 		<Value><Calculation><![CDATA[0]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="16" name="Go to Record/Request/Page">
 		<RowPageLocation value="First"/>
-		<Exit state="False"/>
 	</Step>
 
 	<Step enable="True" id="71" name="Loop">
 		<FlushType value="Always"/>
 	</Step>
 
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$artikalID</Name>
-		<Value><Calculation><![CDATA[StavkePrimke::ForeignKeyArtikalID]]></Calculation></Value>
-	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$artikalID</Name>
+			<Value><Calculation><![CDATA[StavkePrimke::ForeignKeyArtikalID]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$nabavna</Name>
+			<Value><Calculation><![CDATA[StavkePrimke::NabavnaCijenaStavke]]></Calculation></Value>
+		</Step>
 
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$nabavna</Name>
-		<Value><Calculation><![CDATA[StavkePrimke::NabavnaCijenaStavke]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[IsEmpty ( $nabavna )]]></Calculation>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$issues</Name>
-		<Value><Calculation><![CDATA[JSONSetElement ( $issues ; "[+]" ;
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( $nabavna )]]></Calculation>
+		</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$issues</Name>
+				<Value><Calculation><![CDATA[JSONSetElement ( $issues ; "[+]" ;
 	JSONSetElement ( "{}" ;
 		[ "artikalID" ; $artikalID ; JSONString ] ;
 		[ "issue"     ; "MISSING_PRICE" ; JSONString ] ;
-		[ "primkaID"  ; $primkaID ; JSONString ]
+		[ "stavkaPK"  ; StavkePrimke::PrimaryKey ; JSONString ]
 	) ; JSONObject )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="69" name="Else">
-	</Step>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[IsEmpty ( FilterValues ( $seenArtikali ; $artikalID ) )]]></Calculation>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$priceMap</Name>
-		<Value><Calculation><![CDATA[JSONSetElement ( $priceMap ; $artikalID ; $nabavna ; JSONNumber )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$seenArtikali</Name>
-		<Value><Calculation><![CDATA[$seenArtikali & $artikalID & ¶]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="69" name="Else">
-	</Step>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[JSONGetElement ( $priceMap ; $artikalID ) ≠ $nabavna]]></Calculation>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$issues</Name>
-		<Value><Calculation><![CDATA[JSONSetElement ( $issues ; "[+]" ;
+			</Step>
+		<Step enable="True" id="69" name="Else"/>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[IsEmpty ( FilterValues ( $seenArtikali ; $artikalID ) )]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$priceMap</Name>
+					<Value><Calculation><![CDATA[JSONSetElement ( $priceMap ; $artikalID ; $nabavna ; JSONNumber )]]></Calculation></Value>
+				</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$seenArtikali</Name>
+					<Value><Calculation><![CDATA[$seenArtikali & $artikalID & ¶]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="69" name="Else"/>
+				<Step enable="True" id="68" name="If">
+					<Calculation><![CDATA[JSONGetElement ( $priceMap ; $artikalID ) ≠ $nabavna]]></Calculation>
+				</Step>
+					<Step enable="True" id="141" name="Set Variable">
+						<Name>$issues</Name>
+						<Value><Calculation><![CDATA[JSONSetElement ( $issues ; "[+]" ;
 	JSONSetElement ( "{}" ;
 		[ "artikalID"     ; $artikalID ; JSONString ] ;
 		[ "issue"         ; "PRICE_CONFLICT" ; JSONString ] ;
-		[ "primkaID"      ; $primkaID ; JSONString ] ;
+		[ "stavkaPK"      ; StavkePrimke::PrimaryKey ; JSONString ] ;
 		[ "expectedPrice" ; JSONGetElement ( $priceMap ; $artikalID ) ; JSONNumber ] ;
 		[ "actualPrice"   ; $nabavna ; JSONNumber ]
 	) ; JSONObject )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="70" name="End If"/>
+					</Step>
+				<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$k</Name>
-		<Value><Calculation><![CDATA[$k + 1]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="72" name="Exit Loop If">
-		<Calculation><![CDATA[$k >= $recCount]]></Calculation>
-	</Step>
-
-	<Step enable="True" id="16" name="Go to Record/Request/Page">
-		<RowPageLocation value="Next"/>
-		<Exit state="False"/>
-	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i >= $stavkaCount]]></Calculation>
+		</Step>
+		<Step enable="True" id="16" name="Go to Record/Request/Page">
+			<Exit state="False"/>
+			<RowPageLocation value="Next"/>
+		</Step>
 
 	<Step enable="True" id="73" name="End Loop"/>
 
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$i</Name>
-		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="73" name="End Loop"/>
-
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>── Evaluate and return ───────────────────────────────────────────────────</Text>
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Evaluate and return</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
@@ -328,10 +204,10 @@ RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue,
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[$issueCount > 0]]></Calculation>
 	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Response_AddError ( "PRICE_VALIDATION_FAILED" ; "Found " & $issueCount & " price issue(s) on UFD " & $ulaznaFakturaID ; "" ; $issues ; "" )]]></Calculation></Value>
-	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "PRICE_VALIDATION_FAILED" ; "Found " & $issueCount & " price issue(s) on UFD " & $ulaznaFakturaID ; "" ; $issues ; "" )]]></Calculation></Value>
+		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="141" name="Set Variable">
@@ -341,7 +217,6 @@ RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue,
 	[ "issues" ; $issues ; JSONArray ]
 ) )]]></Calculation></Value>
 	</Step>
-
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Log.add ( "info" ; "UFD_VALIDATE_DONE" ; "Validation " & If ( $issueCount = 0 ; "passed" ; "failed with " & $issueCount & " issue(s)" ) ; $params )]]></Calculation></Value>
@@ -350,10 +225,10 @@ RETURNS: data.valid (boolean 0/1) | data.issues (JSONArray of {artikalID, issue,
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[$isRoot]]></Calculation>
 	</Step>
-	<Step enable="True" id="25" name="Perform Script">
-		<Script id="780" name="UTIL__FlushLog"/>
-		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="0" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="103" name="Exit Script">
