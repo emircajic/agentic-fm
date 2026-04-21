@@ -32,6 +32,39 @@ epSQLResult ( row ; column {; "ResultSetName" } )
 - Used after `epSQLExecute` with `useSQLResult=Yes`
 - Result set is overwritten by the next `epSQLExecute` call — read all values into `$variables` before issuing another query
 
+## Named result sets — the correct pattern for multi-SELECT loops
+
+When a loop body needs to issue a second `epSQLExecute` SELECT (e.g. fetching per-row detail), use a **named result set** for the outer query so the buffer isn't overwritten:
+
+```
+// Outer SELECT — stored under a named key
+epSQLExecute ( "SELECT ..." ; "useSQLResult=stavke" ; $param )
+
+// Row count — loop termination
+$rowCount = epSQLResultRowCount ( "stavke" )   // 0 rows → loop never runs
+
+// Loop: $i from 0 to $rowCount - 1
+epSQLResult ( $i ; 0 ; "stavke" )   // read from named set
+epSQLResult ( $i ; 1 ; "stavke" )
+
+// Inner SELECT — uses default unnamed buffer, does NOT touch "stavke"
+epSQLExecute ( "SELECT ..." ; "useSQLResult=Yes" ; $innerParam )
+epSQLResult ( 0 ; 0 )   // default buffer
+
+// Cleanup after loop
+epSQLResultDelete ( "stavke" )
+```
+
+**Never** use `IsEmpty ( epSQLResult ( $i ; 0 ) )` as a loop exit condition — it is unreliable and can cause infinite loops. Always use `epSQLResultRowCount` for the termination check.
+
+## SELECT column count — silent failure above ~3 columns with JOIN (confirmed gotcha)
+
+A SELECT with an `INNER JOIN` that returns more than ~3 columns can silently return an empty result — `epSQLExecute` returns `""` (looks like success) but `epSQLResultRowCount` is 0 and all `epSQLResult` calls return `""`. No error is surfaced.
+
+**Rule:** Keep JOINed SELECTs to **≤ 3 columns**. If you need more values, split into two separate SELECTs (the named result set pattern above handles the buffer safely).
+
+Simple single-table SELECTs are not affected.
+
 ## Record locking before UPDATE (confirmed gotcha)
 
 When `epSQLExecute` UPDATE is called from a script triggered by `OnObjectSave` (or any trigger that fires while a record is open), the target record is locked by the current session → error 301. Fix: `Commit Records/Requests [ With dialog: OFF ]` **before** the UPDATE call.
