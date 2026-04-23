@@ -5,7 +5,8 @@
       "Bash(git merge:*)",
       "Bash(git stash:*)",
       "Bash(git push:*)",
-      "Bash(find agent/xml_parsed -name *AGENT__*)"
+      "Bash(find agent/xml_parsed -name *AGENT__*)",
+      "Bash(find /Users/emir/agenticfm/agent/sandbox -type f -exec grep -l \"InvoiceLine\\\\|ServiceOrderLine\" {} \\\\;)"
     ]
   }
 }

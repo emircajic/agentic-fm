@@ -1,0 +1,150 @@
+{
+  "label": "Test__KMP_Flow",
+  "lastError": 0,
+  "lastErrorLocation": "",
+  "timestamp": "4/16/2026 10:46:30 PM",
+  "vars": {
+    "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+    "log": [
+      {
+        "note": "",
+        "result": {
+          "data": {
+            "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9"
+          },
+          "messages": {
+            "error": [],
+            "info": [],
+            "warning": []
+          },
+          "status": "success"
+        },
+        "severity": "pass",
+        "test": "Create kalkulacija",
+        "ts": "4/16/2026 10:30:46 PM"
+      },
+      {
+        "note": "Expected: success + same kalkulacijaID. Script is idempotent — must not create a duplicate.",
+        "result": {
+          "data": {
+            "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9"
+          },
+          "messages": {
+            "error": [],
+            "info": [],
+            "warning": []
+          },
+          "status": "success"
+        },
+        "severity": "pass",
+        "test": "Create duplicate (idempotent)",
+        "ts": "4/16/2026 10:31:09 PM"
+      },
+      {
+        "note": "",
+        "result": {
+          "data": {
+            "generatedCount": 90
+          },
+          "messages": {
+            "error": [],
+            "info": [],
+            "warning": []
+          },
+          "status": "success"
+        },
+        "severity": "pass",
+        "test": "Generate stavke",
+        "ts": "4/16/2026 10:42:51 PM"
+      },
+      {
+        "note": "Expected: fail — stavke already exist for this kalkulacija.",
+        "result": {
+          "data": {},
+          "messages": {
+            "error": [
+              {
+                "code": "ALREADY_GENERATED",
+                "context": {},
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "Stavke already exist for kalkulacijaID: 8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+                "timestamp": "4/16/2026 10:43:15 PM"
+              }
+            ],
+            "info": [],
+            "warning": []
+          },
+          "status": "fail"
+        },
+        "severity": "pass",
+        "test": "Generate again (guard: ALREADY_GENERATED)",
+        "ts": "4/16/2026 10:43:20 PM"
+      },
+      {
+        "note": "",
+        "result": {
+          "data": {
+            "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+            "ukupnoMP_Roba": 9281.17145704846
+          },
+          "messages": {
+            "error": [],
+            "info": [],
+            "warning": []
+          },
+          "status": "success"
+        },
+        "severity": "pass",
+        "test": "Post kalkulacija",
+        "ts": "4/16/2026 10:44:15 PM"
+      },
+      {
+        "note": "Expected: fail — Status is already Knjižena.",
+        "result": {
+          "data": {},
+          "messages": {
+            "error": [
+              {
+                "code": "INVALID_STATUS",
+                "context": {},
+                "field": "",
+                "script": "KMP__Post",
+                "text": "KalkulacijaMP is not Otvorena — current status: Knjižena",
+                "timestamp": "4/16/2026 10:44:32 PM"
+              }
+            ],
+            "info": [],
+            "warning": []
+          },
+          "status": "fail"
+        },
+        "severity": "pass",
+        "test": "Post again (guard: INVALID_STATUS)",
+        "ts": "4/16/2026 10:44:34 PM"
+      },
+      {
+        "note": "",
+        "result": {
+          "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+          "status": "Knjižena",
+          "stavkeCount": 90,
+          "ukupnoMP_Roba": 9281.17145704846
+        },
+        "severity": "pass",
+        "test": "Verify final state",
+        "ts": "4/16/2026 10:45:23 PM"
+      },
+      {
+        "note": "UkupnoMP_Roba must remain > 0 after RefreshTotals runs on a Knjižena record.",
+        "result": {
+          "ukupnoMP_Roba": 9281.17145704846
+        },
+        "severity": "pass",
+        "test": "RefreshTotals (regression)",
+        "ts": "4/16/2026 10:46:04 PM"
+      }
+    ],
+    "stavkeCount": 90
+  }
+}

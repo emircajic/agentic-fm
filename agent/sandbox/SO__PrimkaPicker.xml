@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Orchestrate the service-order primka picker — load available stavke on the server, then open the picker card.</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMS: serviceOrderID (text, required)&#xD;RETURNS: nothing — side effect is the picker card opening</Text>
+    <Field>$README</Field>
+  </Step>
+
+  <Step enable="True" id="164" name="Perform Script on Server">
+    <WaitForCompletion state="True"/>
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "serviceOrderID" ; ServiceOrders::PrimaryKey ; JSONString ] ;
+	[ "callbackScript" ; "SO__AttachPrimke" ; JSONString ] ;
+	[ "callbackContext" ; JSONSetElement ( "{}" ; "serviceOrderID" ; ServiceOrders::PrimaryKey ; JSONString ) ; JSONObject ]
+)]]></Calculation>
+    <Script id="0" name="SO__LoadAvailablePrimkas"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$r</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$payload</Name>
+    <Value><Calculation><![CDATA[JSONGetElement ( $r ; "data.scriptPayload" )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="62" name="Pause/Resume Script">
+    <PauseTime value="Indefinitely"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$payload]]></Calculation>
+    <Script id="793" name="PICKER__Open"/>
+  </Step>
+
+</fmxmlsnippet>
