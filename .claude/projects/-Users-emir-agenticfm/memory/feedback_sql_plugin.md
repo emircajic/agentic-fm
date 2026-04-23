@@ -116,3 +116,19 @@ SQL statements will silently fail if smart (curly) quotes appear instead of stra
 **Why:** FM's autocorrect can substitute `"` with `"` or `"`, which SQL does not recognize.
 
 **How to apply:** Confirm smart quotes are disabled when writing SQL with inline string literals.
+
+---
+
+## epFMNameID — name/ID translation
+
+`epFMNameID( nameOrID ; type {; fileName} {; layoutName} )` — given a name returns its numeric ID, given an ID returns its name. Types: `"T"` Table, `"L"` Layout, `"F"` Field, `"S"` Script, `"V"` ValueList.
+
+**Why use it:** FM object IDs never change even after renaming, duplicating, or format-converting the file. Using IDs instead of string names means renames never break SQL queries or plugin calls like `epScriptQueue`.
+
+**Key gotchas:**
+- Fields require a `layoutName` parameter — without it, the current layout is used and calls can break if the layout changes. Pass a stable layout ID: `epFMNameID("6"; "F"; ""; epFMNameID("3"; "L"))`.
+- For fields in FM10+, prefer native `GetFieldName(Table::Field)` — it doesn't need a layout context.
+- IDs are unique per type only — a script and a field can share the same numeric ID, so always pass the type parameter.
+- Tip: append the ID to the script/object name (e.g. `My Script (37)`) so you don't have to look it up repeatedly.
+
+**How to apply:** In SQL queries and plugin calls that reference FM object names by string, wrap with `epFMNameID` using the object's numeric ID to make the reference rename-safe.
