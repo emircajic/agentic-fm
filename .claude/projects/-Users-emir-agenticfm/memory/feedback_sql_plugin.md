@@ -75,3 +75,44 @@ When `epSQLExecute` UPDATE is called from a script triggered by `OnObjectSave` (
 - **Use native FM steps:** simple single-field sets where you already have context and no locking concern
 
 **Why:** User confirmed plugin is on all machines and SQL-based updates are the preferred pattern throughout this codebase.
+
+---
+
+## Quoting table/field names
+
+Always double-quote table occurrence names and field names in SQL: `SELECT "MyTable"."MyField" FROM "MyTable"`. Mandatory when names contain spaces or match FM keywords (e.g. `"Date"`). Field double-quotes come after the alias: `alias."My Field"`.
+
+Use `epFMNameID` to future-proof against renames: `Quote(epFMNameID("303"; "F"))` for field ID 303, `Quote(epFMNameID("505"; "T"))` for table ID 505.
+
+**Why:** SQL silently breaks if a table/field name is renamed and bare strings were used.
+
+**How to apply:** Use double-quoted names always; use epFMNameID when IDs are available.
+
+---
+
+## Quoting values (INSERT/UPDATE)
+
+Always use `epSQLQuote(value)` instead of manually quoting values. It handles the correct syntax per data type and FileMaker version automatically:
+- Text: wraps in single quotes, doubles internal single quotes
+- Number: no quotes
+- Empty string: returns `NULL`
+- Date/Time/Timestamp: version-appropriate CAST syntax
+
+Use typed variants when coercion is needed:
+- `epSQLQuote(GetAsText(field))` — force Number field → Text column
+- `epSQLQuote(GetAsNumber(field))` — force Text field → Number column
+- `epSQLQuoteDate`, `epSQLQuoteTime`, `epSQLQuoteTimestamp` for explicit type forcing
+
+**Why:** Manual quoting breaks on special characters, type mismatches, and FileMaker version differences.
+
+**How to apply:** Never manually single-quote values in INSERT/UPDATE — always delegate to epSQLQuote.
+
+---
+
+## Smart quotes
+
+SQL statements will silently fail if smart (curly) quotes appear instead of straight quotes around table/field names. Disable smart quotes in File > File Options > Text tab, or use `ReplaceSmartQuotes()` custom function.
+
+**Why:** FM's autocorrect can substitute `"` with `"` or `"`, which SQL does not recognize.
+
+**How to apply:** Confirm smart quotes are disabled when writing SQL with inline string literals.
