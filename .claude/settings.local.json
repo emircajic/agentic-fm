@@ -5,7 +5,9 @@
       "Bash(git merge:*)",
       "Bash(git stash:*)",
       "Bash(git push:*)",
-      "Bash(find agent/xml_parsed -name *AGENT__*)"
+      "Bash(find agent/xml_parsed -name *AGENT__*)",
+      "Bash(command -v osascript)",
+      "Bash(python3 -m agent.fmlint agent/sandbox/CopyLineToOrder.xml agent/sandbox/CopyToOrder.xml agent/sandbox/SO__OpenSOPicker.xml agent/sandbox/SO__LoadSOPage.xml agent/sandbox/SO__PickerConfirm.xml)"
     ]
   }
 }

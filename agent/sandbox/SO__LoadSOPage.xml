@@ -1,0 +1,323 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Load a page of ServiceOrders for the SO picker. Runs locally; called from web viewer.
+Builds dynamic SQL with JOINs to Clients, Vehicles, Staff. Returns results to wv_SOPicker.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS:
+  filter       (text) — searches SO#, plate, client name, description
+  statuses     (array of text) — e.g. ["Otvoren","U toku"]; empty = no status filter
+  dateRanges   (array of {from,to} YYYY-MM-DD) — ORed together; empty = no date filter
+  offset       (number) — 0-based page offset
+  limit        (number) — records per page, default 20
+  requestGen   (text) — echoed back; stale responses discarded by web viewer</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$params</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$filter</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "filter" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$statuses</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "statuses" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$dateRanges</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "dateRanges" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$offset</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $params ; "offset" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$limit</Name>
+		<Value><Calculation><![CDATA[Let ( $l = GetAsNumber ( JSONGetElement ( $params ; "limit" ) ) ; If ( $l > 0 ; $l ; 20 ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$requestGen</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "requestGen" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Build WHERE clause — status filter</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$conditions</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$statusCount</Name>
+		<Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $statuses ; "" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$statusCount > 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$statusClause</Name>
+			<Value><Calculation><![CDATA["so.Status IN ("]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="71" name="Loop">
+			<Flush state="Always"/>
+		</Step>
+			<Step enable="True" id="74" name="Exit Loop If">
+				<Calculation><![CDATA[$i >= $statusCount]]></Calculation>
+			</Step>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[$i > 0]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$statusClause</Name>
+					<Value><Calculation><![CDATA[$statusClause & ", "]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$statusClause</Name>
+				<Value><Calculation><![CDATA[$statusClause & "'" & JSONGetElement ( $statuses ; $i ) & "'"]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$i</Name>
+				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="73" name="End Loop"/>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$conditions</Name>
+			<Value><Calculation><![CDATA[$statusClause & ")"]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Date range filter (ORed)</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$dateCount</Name>
+		<Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $dateRanges ; "" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$dateCount > 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$dateClause</Name>
+			<Value><Calculation><![CDATA["("]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="71" name="Loop">
+			<Flush state="Always"/>
+		</Step>
+			<Step enable="True" id="74" name="Exit Loop If">
+				<Calculation><![CDATA[$i >= $dateCount]]></Calculation>
+			</Step>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[$i > 0]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$dateClause</Name>
+					<Value><Calculation><![CDATA[$dateClause & " OR "]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$dateClause</Name>
+				<Value><Calculation><![CDATA[$dateClause &
+"so.JobDate BETWEEN DATE '" & JSONGetElement ( $dateRanges ; "[" & $i & "].from" ) &
+"' AND DATE '" & JSONGetElement ( $dateRanges ; "[" & $i & "].to" ) & "'"]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$i</Name>
+				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="73" name="End Loop"/>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$conditions</Name>
+			<Value><Calculation><![CDATA[If ( IsEmpty ( $conditions ) ;
+	$dateClause & ")" ;
+	$conditions & " AND " & $dateClause & ")"
+)]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Text search filter (ANDed on top of status/date)</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $filter )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$fEsc</Name>
+			<Value><Calculation><![CDATA[Lower ( Substitute ( $filter ; "'" ; "''" ) )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$textClause</Name>
+			<Value><Calculation><![CDATA["(LOWER(so.ServiceOrderNumber) LIKE '%" & $fEsc & "%'" &
+" OR LOWER(so.Description) LIKE '%" & $fEsc & "%'" &
+" OR LOWER(vh.PlateNumber) LIKE '%" & $fEsc & "%'" &
+" OR LOWER(cl.FirstName) LIKE '%" & $fEsc & "%'" &
+" OR LOWER(cl.LastName) LIKE '%" & $fEsc & "%'" &
+" OR LOWER(cl.CompanyName) LIKE '%" & $fEsc & "%')"]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$conditions</Name>
+			<Value><Calculation><![CDATA[If ( IsEmpty ( $conditions ) ; $textClause ; $conditions & " AND " & $textClause )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Assemble full SQL — LEFT JOINs to Clients, Vehicles, Staff</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$dq</Name>
+		<Value><Calculation><![CDATA[Char ( 34 )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sql</Name>
+		<Value><Calculation><![CDATA["SELECT so.PrimaryKey, so.ServiceOrderNumber, so.JobDate, so.Status, so.Description," &
+" cl.FirstName, cl.LastName, cl.CompanyName," &
+" vh.Manufacturer, vh.Model, vh.PlateNumber," &
+" st." & $dq & "First Name" & $dq & ", st." & $dq & "Last Name" & $dq &
+" FROM ServiceOrders AS so" &
+" LEFT JOIN Clients AS cl ON so.ForeignKeyClient = cl.PrimaryKey" &
+" LEFT JOIN Vehicles AS vh ON so.ForeignKeyVehicle = vh.PrimaryKey" &
+" LEFT JOIN Staff AS st ON so.ForeignKeyStaff = st.PrimaryKey" &
+If ( not IsEmpty ( $conditions ) ; " WHERE " & $conditions ; "" ) &
+" ORDER BY so.JobDate DESC" &
+" OFFSET " & $offset & " ROWS FETCH FIRST " & $limit & " ROWS ONLY"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Execute SQL</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rawResult</Name>
+		<Value><Calculation><![CDATA[ExecuteSQL ( $sql ; "|" ; "¶" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: SQL error or empty result — push empty payload to web viewer</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $rawResult ) or $rawResult = "?"]]></Calculation>
+	</Step>
+		<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+			<ObjectName>
+				<Calculation><![CDATA["wv_SOPicker"]]></Calculation>
+			</ObjectName>
+			<FunctionName>
+				<Calculation><![CDATA["injectSOs"]]></Calculation>
+			</FunctionName>
+			<Parameters Count="1">
+				<P>
+					<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["results" ; "[]" ; JSONArray] ;
+	["requestGen" ; $requestGen ; JSONString] ;
+	["hasMore" ; False ; JSONBoolean]
+)]]></Calculation>
+				</P>
+			</Parameters>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[""]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Convert SQL result to JSON array</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$fields</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "[]" ;
+	[0  ; "pk"              ; JSONString] ;
+	[1  ; "number"          ; JSONString] ;
+	[2  ; "date"            ; JSONString] ;
+	[3  ; "status"          ; JSONString] ;
+	[4  ; "description"     ; JSONString] ;
+	[5  ; "clientFirstName" ; JSONString] ;
+	[6  ; "clientLastName"  ; JSONString] ;
+	[7  ; "clientCompany"   ; JSONString] ;
+	[8  ; "vehicleMake"     ; JSONString] ;
+	[9  ; "vehicleModel"    ; JSONString] ;
+	[10 ; "plate"           ; JSONString] ;
+	[11 ; "mechanicFirst"   ; JSONString] ;
+	[12 ; "mechanicLast"    ; JSONString]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$types</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "[]" ;
+	[0  ; "text" ; JSONString] ;
+	[1  ; "text" ; JSONString] ;
+	[2  ; "text" ; JSONString] ;
+	[3  ; "text" ; JSONString] ;
+	[4  ; "text" ; JSONString] ;
+	[5  ; "text" ; JSONString] ;
+	[6  ; "text" ; JSONString] ;
+	[7  ; "text" ; JSONString] ;
+	[8  ; "text" ; JSONString] ;
+	[9  ; "text" ; JSONString] ;
+	[10 ; "text" ; JSONString] ;
+	[11 ; "text" ; JSONString] ;
+	[12 ; "text" ; JSONString]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="1" name="Perform Script">
+		<Script id="0" name="ConvertSQLResultToJSON"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["sqlResult" ; $rawResult ; JSONString] ;
+	["fields"    ; $fields    ; JSONArray]  ;
+	["types"     ; $types     ; JSONArray]
+)]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$results</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Build response envelope and push to web viewer</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$response</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["results"    ; $results    ; JSONArray]  ;
+	["requestGen" ; $requestGen ; JSONString] ;
+	["hasMore"    ; ValueCount ( $rawResult ) >= $limit ; JSONBoolean] ;
+	["offset"     ; $offset     ; JSONNumber]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName>
+			<Calculation><![CDATA["wv_SOPicker"]]></Calculation>
+		</ObjectName>
+		<FunctionName>
+			<Calculation><![CDATA["injectSOs"]]></Calculation>
+		</FunctionName>
+		<Parameters Count="1">
+			<P>
+				<Calculation><![CDATA[$response]]></Calculation>
+			</P>
+		</Parameters>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[""]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

@@ -1,0 +1,273 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Open the SO picker card. Stores callbackScript in shared state, injects HTML into
+$$SO_PICKER_HTML, then opens the SO__SOPicker card window. The web viewer self-starts via tryFetchPage().</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: none — reads callbackScript from Globals::ServiceOrderSelector.callbackScript
+  (caller must set this before calling SO__OpenSOPicker)</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Inject picker HTML into global — layout web viewer reads $$SO_PICKER_HTML as its URL</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$$SO_PICKER_HTML</Name>
+		<Value><Calculation><![CDATA["data:text/html,<!DOCTYPE html>
+<html lang='hr'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow:hidden;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#FFFBFE;color:#1C1B1F;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.hdr{padding:14px 16px 10px;background:#FFFBFE;border-bottom:1px solid #E6E1E5;flex-shrink:0}
+.srch-wrap{position:relative;margin-bottom:10px}
+.srch-inp{width:100%;padding:11px 38px 11px 16px;border:1px solid #79747E;border-radius:28px;font-size:14px;background:#F7F2FA;color:#1C1B1F;outline:none;transition:border-color .2s}
+.srch-inp:focus{border-color:#006494;border-width:2px;background:#fff}
+.srch-clr{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#79747E;font-size:18px;line-height:1;display:none}
+.chips-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:4px;scrollbar-width:none}
+.chips-row::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;border:1px solid #79747E;background:transparent;color:#1C1B1F;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;user-select:none;line-height:1.2}
+.chip:hover{background:#F4EFF4}
+.chip.sel{background:#CCE5FF;border-color:#006494;color:#001E31}
+.chip.s-otv.sel{background:#C8F0CF;border-color:#1C6B2A;color:#0A1F0E}
+.chip.s-utu.sel{background:#FFE0BB;border-color:#7A4100;color:#2D1600}
+.chip.s-zav.sel{background:#E4E1EC;border-color:#44474F;color:#1C1B1F}
+.chip.s-otk.sel{background:#FFB4AB;border-color:#690005;color:#410002}
+.cdot{width:7px;height:7px;border-radius:50%;margin-right:6px;display:inline-block;flex-shrink:0}
+.d-otv{background:#1C6B2A}.d-utu{background:#E76C00}.d-zav{background:#79747E}.d-otk{background:#BA1A1A}
+.list-wrap{flex:1;overflow-y:auto;padding:10px 14px}
+.card{background:#fff;border:1px solid #E6E1E5;border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s,background .15s}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.12);background:#F7F2FA}
+.card:active{background:#EDE7F6}
+.r1{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.son{font-size:13px;font-weight:600;color:#006494}
+.sod{font-size:12px;color:#49454F}
+.sbadge{margin-left:auto;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px}
+.b-otv{background:#C8F0CF;color:#0A1F0E}
+.b-utu{background:#FFE0BB;color:#2D1600}
+.b-zav{background:#E4E1EC;color:#1C1B1F}
+.b-otk{background:#FFB4AB;color:#410002}
+.b-def{background:#E4E1EC;color:#1C1B1F}
+.r2{font-size:13px;font-weight:500;color:#1C1B1F;margin-bottom:4px}
+.r3{display:flex;justify-content:space-between;font-size:12px;color:#49454F}
+.desc{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mech{flex-shrink:0;margin-left:10px;color:#79747E;font-style:italic}
+.ftr{padding:10px 16px;border-top:1px solid #E6E1E5;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#FFFBFE}
+.stxt{font-size:12px;color:#79747E}
+.spin{font-size:12px;color:#006494;display:none}
+.empty{text-align:center;color:#79747E;font-size:14px;padding:40px 20px}
+.btn-cancel{flex:1;padding:8px;border:1px solid #79747E;border-radius:20px;background:transparent;color:#6750A4;font-size:13px;font-weight:500;cursor:pointer}
+.btn-cancel:hover{background:#EDE7F6}
+.btn-ok{flex:2;padding:8px;border:none;border-radius:20px;background:#006494;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.btn-ok:hover{background:#004E73}
+.btn-ok:disabled{background:#79747E;cursor:default}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(28,27,31,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-box{background:#fff;border-radius:16px;padding:24px 24px 20px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.22)}
+.modal-title{font-size:15px;font-weight:600;color:#1C1B1F;margin-bottom:4px}
+.modal-sub{font-size:12px;color:#49454F;margin-bottom:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.modal-lbl{font-size:13px;color:#1C1B1F;flex-shrink:0}
+.modal-inp{width:90px;padding:8px 10px;border:1px solid #79747E;border-radius:8px;font-size:15px;text-align:right;background:#fff;outline:none}
+.modal-inp:focus{border-color:#006494;border-width:2px}
+.modal-jm{font-size:13px;color:#49454F}
+.modal-err{font-size:12px;color:#BA1A1A;background:#FFDAD6;border-radius:6px;padding:6px 10px;margin-top:8px;margin-bottom:0}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+.toast{display:flex;align-items:center;justify-content:center;height:100%;font-size:15px;font-weight:500;color:#0A1F0E;background:#C8F0CF;border-radius:14px;margin:10px 0}
+</style>
+</head>
+<body>
+<div class='hdr'>
+  <div class='srch-wrap'>
+    <input type='text' id='si' class='srch-inp' placeholder='Pretraži servisne naloge...'>
+    <button class='srch-clr' id='sc' onclick='clrSrch()'>×</button>
+  </div>
+  <div class='chips-row' id='stChips'>
+    <button class='chip s-otv sel' data-s='Otvoren' onclick='togS(this)'><span class='cdot d-otv'></span>Otvoren</button>
+    <button class='chip s-utu sel' data-s='U toku' onclick='togS(this)'><span class='cdot d-utu'></span>U toku</button>
+    <button class='chip s-zav' data-s='Završen' onclick='togS(this)'><span class='cdot d-zav'></span>Završen</button>
+    <button class='chip s-otk' data-s='Otkazano' onclick='togS(this)'><span class='cdot d-otk'></span>Otkazano</button>
+  </div>
+  <div class='chips-row' id='dtChips'>
+    <button class='chip' data-d='prije' onclick='togD(this)'>Prije</button>
+    <button class='chip' data-d='prosle' onclick='togD(this)'>Prošle sedmice</button>
+    <button class='chip' data-d='jucer' onclick='togD(this)'>Jučer</button>
+    <button class='chip' data-d='danas' onclick='togD(this)'>Danas</button>
+    <button class='chip' data-d='sutra' onclick='togD(this)'>Sutra</button>
+    <button class='chip' data-d='ove' onclick='togD(this)'>Ove sedmice</button>
+    <button class='chip' data-d='kasnije' onclick='togD(this)'>Kasnije</button>
+  </div>
+</div>
+<div class='list-wrap' id='lw'><ul id='sl' style='list-style:none;padding:0;margin:0'></ul></div>
+<div class='ftr'><span class='stxt' id='st'></span><span class='spin' id='sp'>Učitavanje...</span></div>
+<script>
+var stavkaCtx=" & JSONSetElement ( "{}" ;
+	["stavkaPK" ; JSONGetElement ( Globals::ServiceOrderSelector ; "stavkaPK" )        ; JSONString] ;
+	["qty"      ; JSONGetElement ( Globals::ServiceOrderSelector ; "qtyAvailable" )    ; JSONNumber] ;
+	["naziv"    ; JSONGetElement ( Globals::ServiceOrderSelector ; "nazivArtikla" )    ; JSONString] ;
+	["jm"       ; JSONGetElement ( Globals::ServiceOrderSelector ; "jm" )              ; JSONString]
+) & ";
+var pendingSO=null;
+var offset=0,limit=20,filter='',isLoad=false,reqGen=0,debTimer,totLoad=0;
+function isoD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function mon(ref){var d=new Date(ref),day=d.getDay(),diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d}
+function dtRanges(){
+  var sel=[].slice.call(document.querySelectorAll('#dtChips .chip.sel')).map(function(c){return c.dataset.d});
+  if(!sel.length)return[];
+  var now=new Date(),tod=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var mon0=mon(tod),sun0=new Date(mon0);sun0.setDate(mon0.getDate()+6);
+  var lmon=new Date(mon0);lmon.setDate(mon0.getDate()-7);
+  var lsun=new Date(mon0);lsun.setDate(mon0.getDate()-1);
+  var yes=new Date(tod);yes.setDate(tod.getDate()-1);
+  var tom=new Date(tod);tom.setDate(tod.getDate()+1);
+  var aft=new Date(sun0);aft.setDate(sun0.getDate()+1);
+  var r=[];
+  for(var i=0;i<sel.length;i++){
+    var k=sel[i];
+    if(k==='prije')   r.push({from:'2000-01-01',to:isoD(lsun)});
+    if(k==='prosle')  r.push({from:isoD(lmon),to:isoD(lsun)});
+    if(k==='jucer')   r.push({from:isoD(yes),to:isoD(yes)});
+    if(k==='danas')   r.push({from:isoD(tod),to:isoD(tod)});
+    if(k==='sutra')   r.push({from:isoD(tom),to:isoD(tom)});
+    if(k==='ove')     r.push({from:isoD(mon0),to:isoD(sun0)});
+    if(k==='kasnije') r.push({from:isoD(aft),to:'2099-12-31'});
+  }
+  return r;
+}
+function selSt(){return[].slice.call(document.querySelectorAll('#stChips .chip.sel')).map(function(c){return c.dataset.s})}
+function fetch(){
+  if(isLoad)return;
+  isLoad=true;reqGen++;
+  var gen=reqGen;
+  document.getElementById('sp').style.display='inline';
+  var p=JSON.stringify({filter:filter,statuses:selSt(),dateRanges:dtRanges(),offset:offset,limit:limit,requestGen:String(gen)});
+  FileMaker.PerformScript('SO__LoadSOPage',p);
+}
+function tryFetch(n){
+  n=n===undefined?10:n;
+  if(window.FileMaker&&typeof FileMaker.PerformScript==='function'){fetch();}
+  else if(n>0){setTimeout(function(){tryFetch(n-1);},200);}
+  else{document.getElementById('st').textContent='Greška: FileMaker nedostupan.';}
+}
+function reset(){offset=0;totLoad=0;document.getElementById('sl').innerHTML='';document.getElementById('st').textContent='';isLoad=false;fetch();}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function bCls(st){var m={'Otvoren':'b-otv','U toku':'b-utu','Završen':'b-zav','Otkazano':'b-otk'};return m[st]||'b-def';}
+function showModal(so){
+  pendingSO=so;
+  var overlay=document.createElement('div');overlay.id='moverlay';overlay.className='modal-overlay';
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closeModal();});
+  overlay.innerHTML='<div class=\\'modal-box\\'>'+
+    '<div class=\\'modal-title\\'>Nalog <strong>'+esc(so.number)+'</strong></div>'+
+    '<div class=\\'modal-sub\\'>'+esc(stavkaCtx.naziv)+'</div>'+
+    '<div class=\\'modal-row\\'>'+
+      '<span class=\\'modal-lbl\\'>Količina</span>'+
+      '<input type=\\'number\\' class=\\'modal-inp\\' id=\\'mqty\\' value=\\''+stavkaCtx.qty+'\\' min=\\'0.001\\' step=\\'any\\'>'+
+      '<span class=\\'modal-jm\\'>'+esc(stavkaCtx.jm)+'</span>'+
+    '</div>'+
+    '<div id=\\'merr\\' class=\\'modal-err\\' style=\\'display:none\\'></div>'+
+    '<div class=\\'modal-btns\\'>'+
+      '<button class=\\'btn-cancel\\' onclick=\\'closeModal()\\'>Odustani</button>'+
+      '<button class=\\'btn-ok\\' id=\\'mok\\' onclick=\\'doTransfer()\\'>Transferiši</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  var inp=document.getElementById('mqty');inp.focus();inp.select();
+}
+function closeModal(){var el=document.getElementById('moverlay');if(el)el.parentNode.removeChild(el);pendingSO=null;}
+function doTransfer(){
+  var qty=parseFloat(document.getElementById('mqty').value);
+  if(!qty||qty<=0){var err=document.getElementById('merr');err.textContent='Količina mora biti veća od nule.';err.style.display='block';return;}
+  var ok=document.getElementById('mok');ok.disabled=true;ok.textContent='Šalje se...';
+  FileMaker.PerformScript('SO__TransferStavka',JSON.stringify({stavkaPK:stavkaCtx.stavkaPK,targetSOPK:pendingSO.pk,qty:qty,soNumber:pendingSO.number}));
+}
+window.onTransferResult=function(json){
+  var d=typeof json==='string'?JSON.parse(json):json;
+  if(d.success){
+    closeModal();
+    document.getElementById('lw').innerHTML='<div class=\\'toast\\'>✓ Transferisano '+esc(String(d.qty))+' '+esc(d.jm)+' → '+esc(d.soNumber)+'</div>';
+    setTimeout(function(){FileMaker.PerformScript('SO__ClosePicker','');},1500);
+  }else{
+    var ok=document.getElementById('mok');if(ok){ok.disabled=false;ok.textContent='Transferiši';}
+    var err=document.getElementById('merr');if(err){err.textContent=d.message||d.error||'Greška';err.style.display='block';}
+  }
+};
+window.injectSOs=function(json){
+  try{
+    var data=typeof json==='string'?JSON.parse(json):json;
+    if(String(data.requestGen)!==String(reqGen))return;
+    isLoad=false;document.getElementById('sp').style.display='none';
+    var sl=document.getElementById('sl'),res=data.results||[];
+    if(!res.length&&!offset){sl.innerHTML='<li class=\\'empty\\'>Nema rezultata za odabrane filtere.</li>';document.getElementById('st').textContent='0 naloga';return;}
+    for(var i=0;i<res.length;i++){
+      var so=res[i];
+      var veh=[so.vehicleMake,so.vehicleModel].filter(Boolean).join(' ');
+      var cli=so.clientCompany||(((so.clientFirstName||'')+' '+(so.clientLastName||'')).trim());
+      var mech=((so.mechanicFirst||'')+' '+(so.mechanicLast||'')).trim();
+      var li=document.createElement('li');
+      li.innerHTML='<div class=\\'card\\'><div class=\\'r1\\'><span class=\\'son\\'>'+esc(so.number)+'</span><span class=\\'sod\\'>'+esc(so.date)+'</span><span class=\\'sbadge '+bCls(so.status)+'\\'>'+esc(so.status)+'</span></div><div class=\\'r2\\'>'+esc(veh)+(so.plate?' · '+esc(so.plate):'')+(cli?' · '+esc(cli):'')+'</div><div class=\\'r3\\'><span class=\\'desc\\'>'+esc(so.description)+'</span>'+(mech?'<span class=\\'mech\\'>'+esc(mech)+'</span>':'')+'</div></div>';
+      (function(so2,li2){li2.querySelector('.card').addEventListener('click',function(){
+        if(stavkaCtx.stavkaPK){
+          if(stavkaCtx.qty===1){FileMaker.PerformScript('SO__TransferStavka',JSON.stringify({stavkaPK:stavkaCtx.stavkaPK,targetSOPK:so2.pk,qty:1,soNumber:so2.number}));}
+          else{showModal(so2);}
+        }else{FileMaker.PerformScript('SO__PickerConfirm',JSON.stringify({pk:so2.pk,number:so2.number}));}
+      });})(so,li);
+      sl.appendChild(li);
+    }
+    offset+=res.length;totLoad+=res.length;
+    document.getElementById('st').textContent=totLoad+' naloga učitano'+(data.hasMore?'':' · kraj liste');
+  }catch(e){isLoad=false;document.getElementById('sp').style.display='none';document.getElementById('st').textContent='Greška: '+e.message;}
+};
+function togS(el){el.classList.toggle('sel');reset();}
+function togD(el){el.classList.toggle('sel');reset();}
+document.getElementById('si').addEventListener('input',function(e){
+  clearTimeout(debTimer);
+  var v=e.target.value.trim();
+  document.getElementById('sc').style.display=v?'block':'none';
+  debTimer=setTimeout(function(){filter=v;reset();},300);
+});
+function clrSrch(){document.getElementById('si').value='';document.getElementById('sc').style.display='none';filter='';reset();}
+document.getElementById('lw').addEventListener('scroll',function(){
+  var el=document.getElementById('lw');
+  if(el.scrollTop+el.clientHeight>=el.scrollHeight-5&&!isLoad)fetch();
+});
+tryFetch();
+</script>
+</body>
+</html>"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Open card window — web viewer reads $$SO_PICKER_HTML as its URL formula</Text>
+	</Step>
+	<Step enable="True" id="122" name="New Window">
+		<LayoutDestination value="SelectedLayout"/>
+		<Name>
+			<Calculation><![CDATA["SO Picker"]]></Calculation>
+		</Name>
+		<Height>
+			<Calculation><![CDATA[600]]></Calculation>
+		</Height>
+		<Width>
+			<Calculation><![CDATA[900]]></Calculation>
+		</Width>
+		<NewWndStyles DimParentWindow="Yes" Toolbars="No" MenuBar="No" Style="Card" Close="Yes" Minimize="No" Maximize="No" Resize="No" Styles="3221291024"/>
+		<Layout id="0" name="SO__SOPicker"/>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString )]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>
