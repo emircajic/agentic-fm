@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pretraga Stavki Primke</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Search bar ─────────────────────────────────────────── */
+    .search-bar {
+      background: #2c3e50;
+      padding: 10px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .search-bar label {
+      color: #bdc3c7;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .search-bar input {
+      border: 1px solid #4a6278;
+      background: #3d5166;
+      color: #ecf0f1;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      height: 26px;
+    }
+    .search-bar input::placeholder { color: #7f96ab; }
+    .search-bar input:focus { outline: none; border-color: #3498db; background: #445e75; }
+    .search-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+    .search-bar button {
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      padding: 0 16px;
+      height: 26px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .search-bar button:hover { background: #3498db; }
+    .search-bar button:active { background: #1a6a9a; }
+
+    /* ── Status bar ─────────────────────────────────────────── */
+    .status-bar {
+      background: #dde3ea;
+      border-bottom: 1px solid #c5cdd6;
+      padding: 4px 14px;
+      font-size: 11px;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .status-bar .total { font-weight: 600; color: #2c3e50; }
+
+    /* ── Table area ─────────────────────────────────────────── */
+    .table-wrap {
+      flex: 1;
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead th {
+      background: #34495e;
+      color: #ecf0f1;
+      padding: 6px 8px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+      font-weight: 600;
+      border-right: 1px solid #2c3e50;
+      user-select: none;
+    }
+    thead th:last-child { border-right: none; }
+    thead th.num { text-align: right; }
+    tbody tr:nth-child(odd)  { background: #fff; }
+    tbody tr:nth-child(even) { background: #f0f4f8; }
+    tbody tr:hover { background: #d5e8f5; }
+    td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #e2e8ee;
+      border-right: 1px solid #eaecef;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    td:last-child { border-right: none; }
+    td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    td.muted { color: #888; }
+
+    /* ── Nav buttons ────────────────────────────────────────── */
+    .nav-btn {
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+      margin-right: 3px;
+    }
+    .nav-btn:last-child { margin-right: 0; }
+    .nav-btn.inv { color: #1a7b3e; border-color: #27ae60; }
+    .nav-btn.inv:hover { background: #27ae60; color: #fff; border-color: #27ae60; }
+    .nav-btn.prm { color: #b05a00; border-color: #e67e22; }
+    .nav-btn.prm:hover { background: #e67e22; color: #fff; border-color: #e67e22; }
+
+    /* ── Empty/loading/error states ─────────────────────────── */
+    .state-box {
+      padding: 60px 20px;
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+    }
+    .state-box.error { color: #c0392b; }
+    .state-box .icon { font-size: 32px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Search bar ───────────────────────────────────────────── -->
+<div class="search-bar">
+  <label>Datum od
+    <input type="date" id="datumOd">
+  </label>
+  <label>Datum do
+    <input type="date" id="datumDo">
+  </label>
+  <label>Dobavljač
+    <input type="text" id="dobavljac" placeholder="naziv dobavljača" style="width:200px">
+  </label>
+  <label>Faktura (pattern)
+    <input type="text" id="fakturaPattern" placeholder="npr. A-03-%" style="width:130px">
+  </label>
+  <button onclick="search()">🔍 Pretraži</button>
+</div>
+
+<!-- ── Status bar ───────────────────────────────────────────── -->
+<div class="status-bar">
+  <span id="statusText">Unesite parametre i kliknite Pretraži.</span>
+  <span id="totalText" class="total"></span>
+</div>
+
+<!-- ── Results ──────────────────────────────────────────────── -->
+<div class="table-wrap">
+  <div id="stateBox" class="state-box">
+    <div class="icon">🔎</div>
+    Unesite parametre pretraživanja.
+  </div>
+  <table id="resultsTable" style="display:none">
+    <thead>
+      <tr>
+        <th>Datum primke</th>
+        <th>Dobavljač</th>
+        <th>Šifra</th>
+        <th>Naziv artikla</th>
+        <th>JM</th>
+        <th class="num">Količina</th>
+        <th class="num">Cijena (KM)</th>
+        <th class="num">Ukupno (KM)</th>
+        <th>Br. fakture</th>
+        <th>Datum fakture</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  // ── FM bridge ──────────────────────────────────────────────
+  function callFM(scriptName, param) {
+    var p = typeof param === 'string' ? param : JSON.stringify(param);
+    if (typeof FileMaker !== 'undefined') {
+      FileMaker.PerformScript(scriptName, p);
+    } else {
+      console.log('[FM →]', scriptName, p);
+    }
+  }
+
+  // ── Called by FM via Perform JavaScript in Web Viewer ──────
+  function receiveResults(jsonStr) {
+    var data;
+    try {
+      data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+    } catch (e) {
+      showError('Greška pri parsiranju rezultata: ' + e.message);
+      return;
+    }
+    if (data.error) { showError('Greška: ' + data.error); return; }
+
+    var rows = data.rows || [];
+
+    if (rows.length === 0) {
+      showState('📭', 'Nema rezultata za zadane parametre.');
+      document.getElementById('statusText').textContent = '0 stavki';
+      document.getElementById('totalText').textContent  = '';
+      return;
+    }
+
+    renderTable(rows);
+  }
+
+  function receiveError(msg) {
+    showError('Greška SQL upita: ' + msg);
+  }
+
+  // ── Search ─────────────────────────────────────────────────
+  function search() {
+    var datumOd        = document.getElementById('datumOd').value;
+    var datumDo        = document.getElementById('datumDo').value;
+    var dobavljac      = document.getElementById('dobavljac').value.trim();
+    var fakturaPattern = document.getElementById('fakturaPattern').value.trim();
+
+    if (!datumOd || !datumDo) {
+      showError('Molimo unesite Datum od i Datum do.');
+      return;
+    }
+
+    showState('⏳', 'Učitavanje...');
+    document.getElementById('statusText').textContent = 'Pretraživanje…';
+    document.getElementById('totalText').textContent  = '';
+
+    callFM('WV__QueryStavkePrimke', {
+      datumOd:        datumOd,
+      datumDo:        datumDo,
+      dobavljac:      dobavljac      || '',
+      fakturaPattern: fakturaPattern || '%'
+    });
+  }
+
+  // ── Navigation ─────────────────────────────────────────────
+  function goToInvoice(id) { callFM('WV__GoToInvoice', id); }
+  function goToPrimka(id)  { callFM('WV__GoToPrimka',  id); }
+
+  // ── Render ─────────────────────────────────────────────────
+  function renderTable(rows) {
+    var tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    var totalUkupno = 0;
+
+    rows.forEach(function(r) {
+      var ukupno = parseFloat(r.ukupno) || 0;
+      totalUkupno += ukupno;
+
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(r.datumPrimke)  + '</td>' +
+        '<td>' + esc(r.dobavljac)    + '</td>' +
+        '<td class="muted">' + esc(r.sifra) + '</td>' +
+        '<td>' + esc(r.naziv)        + '</td>' +
+        '<td class="muted">' + esc(r.jm) + '</td>' +
+        '<td class="num">' + fmtN(r.kolicina, 2)  + '</td>' +
+        '<td class="num">' + fmtN(r.cijena, 4)    + '</td>' +
+        '<td class="num">' + fmtN(ukupno, 2)      + '</td>' +
+        '<td>' + esc(r.brojFakture)  + '</td>' +
+        '<td class="muted">' + esc(r.datumFakture) + '</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button class="nav-btn inv" title="Otvori fakturu" onclick="goToInvoice(\'' + esc(r.invoiceID) + '\')">📋 Faktura</button>' +
+          '<button class="nav-btn prm" title="Otvori primku"  onclick="goToPrimka(\''  + esc(r.primkaID)  + '\')">📦 Primka</button>'  +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('resultsTable').style.display = '';
+    document.getElementById('stateBox').style.display     = 'none';
+    document.getElementById('statusText').textContent     = rows.length + ' stavki';
+    document.getElementById('totalText').textContent      = 'Ukupno: ' + fmtN(totalUkupno, 2) + ' KM';
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function showState(icon, msg) {
+    document.getElementById('resultsTable').style.display = 'none';
+    var box = document.getElementById('stateBox');
+    box.style.display = '';
+    box.className     = 'state-box';
+    box.innerHTML     = '<div class="icon">' + icon + '</div>' + esc(msg);
+  }
+
+  function showError(msg) {
+    document.getElementById('resultsTable').style.display = 'none';
+    var box = document.getElementById('stateBox');
+    box.style.display = '';
+    box.className     = 'state-box error';
+    box.innerHTML     = '<div class="icon">⚠️</div>' + esc(msg);
+    document.getElementById('statusText').textContent = 'Greška';
+    document.getElementById('totalText').textContent  = '';
+  }
+
+  function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmtN(v, dec) {
+    var n = parseFloat(v);
+    if (isNaN(n)) return '';
+    return n.toLocaleString('hr-HR', {
+      minimumFractionDigits: dec,
+      maximumFractionDigits: dec
+    });
+  }
+</script>
+</body>
+</html>

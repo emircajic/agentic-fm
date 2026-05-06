@@ -11,6 +11,35 @@ Cross-session journal. Updated by Claude Code as decisions are made, tasks compl
 - [ ] Push fresh xml_parsed snapshot — schema changes not yet reflected in index files
 - [ ] Run `Test__UFD_Flow` (id 692) and `Test__KMP_Flow` (id 693) to smoke-test the full chain
 
+### Duty #1 — Workflow Optimization: Service Order Operations
+
+**Phase 1 — SO Picker** ✅ Done
+- [x] `SO__OpenSOPicker` — orchestrator, injects MD3 HTML with stavkaCtx, opens card window
+- [x] `SO__LoadSOPage` — PSoS, SQL-paged, status + date chip filters, text search, scroll paging
+- [x] `SO__TransferStavka` — pure SQL service: 3 SELECTs + INSERT, no layout hops, callable externally
+- [x] `SO__ClosePicker` — close card, restore caller window, clear global state
+- [x] `CopyLineToOrder` (625) — stripped to PREPARE only; qty=1 instant transfer, qty>1 overlay modal
+- [x] `SO__SOPicker` layout — card window with `wv_SOPicker` web viewer
+
+**Phase 1b — Destination Routing at Receive Time**
+- [ ] Add `Destination` field to `StavkePrimke` (values: SO | Retail | Stock | Boss)
+- [ ] Build distribute card: at receive time, route each line to its destination
+- [ ] Wire routing to inventory / SO assignment as appropriate
+
+**Phase 2 — ServiceOrderDetails as Complete Hub**
+- [ ] Inline service line quick-add on SO detail layout
+- [ ] Prominent invoice button
+- [ ] Assigned-parts section showing transferred StavkePrimke lines with quantities
+
+**Phase 3 — Daily Operations Dashboard**
+- [ ] Vite web app: incoming goods + active SOs side-by-side, click-to-assign
+- [ ] Replaces the current manual cross-referencing between IncomingOrders and Calendar views
+
+### Unified Picker Framework
+- [ ] Audit all pickers (SO picker, PrimkaPicker, client/vehicle pickers, etc.)
+- [ ] Extract shared infrastructure: HTML/CSS base, FM↔JS bridge protocol (`injectData` / `onSelect` / `onCancel`), open/close orchestration, debounce + isLoad + reqGen race-condition guards
+- [ ] Migrate existing pickers to the framework; new pickers assembled from it
+
 ---
 
 ## Architecture decisions
@@ -177,3 +206,4 @@ Ran `DB__ConsumePreYearStock` (id 786) — created a dummy ServiceOrder dated 20
 | 2026-04-15 | PROJECT.md created, unignored, and pushed to repo for cross-session/cross-workspace sync |
 | 2026-04-16 | KMP creation chain reviewed end-to-end. KMP__CreateFromUlaznaFaktura and KMP__Post rewritten to framework. Schema: shared PK pattern applied to both KalkulacijaMP (PK=UFD PK) and StavkeKalkulacijeMP (PK=StavkaPrimke PK), redundant FK and ArtikalID fields dropped. UFD__Process patched (data.kalkulacijaID path, error message extraction). 3 boilerplate templates added to sandbox. |
 | 2026-04-18 | **KR__KretanjeRobe consumption flow not yet implemented.** `ForeignKeyStavkaUlazaID` (which StavkaPrimke was consumed) is only populated for 2 records — the tables and scripts exist but writing KretanjeRobe IZLAZ rows from ServiceOrderLines is not fully wired up. Do NOT query `KR__KretanjeRobe` to trace StavkePrimke consumed by Invoice/ServiceOrder until this is fixed. |
+| 2026-04-29 | SO picker built (SO__OpenSOPicker, SO__LoadSOPage, SO__TransferStavka, SO__ClosePicker). Architecture: CopyLineToOrder PREPARE stores stavka context in Globals::ServiceOrderSelector, opens MD3 web viewer picker. qty=1 transfers immediately on card click; qty>1 shows overlay modal. Transfer is pure SQL via SO__TransferStavka (no layout hops). Identified need for unified picker framework — logged as active task. |

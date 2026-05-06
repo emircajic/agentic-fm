@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Run StavkePrimke consumption query and push results to web viewer wv_stavkeQuery.</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMS: JSON object {
+  datumOd        (text, ISO date "YYYY-MM-DD", required)
+  datumDo        (text, ISO date "YYYY-MM-DD", required)
+  dobavljac      (text, exact supplier name — empty = all suppliers via LIKE %)
+  fakturaPattern (text, LIKE pattern — empty = all invoices via %)
+}</Text>
+    <Field>$README</Field>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Parse parameters</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Params.parse ( Get(ScriptParameter ); "datumOd|datumDo|dobavljac|fakturaPattern")]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[
+	If ( IsEmpty ($dobavljac) ; "%" ; $dobavljac )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$dobavljac</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[
+	If ( IsEmpty ( $fakturaPattern) ; "%" ; $fakturaPattern )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$fakturaPattern</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Convert ISO date strings (YYYY-MM-DD) to FM Date, then quote for SQL via epSQLQuoteDate</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+~datumFull = Substitute ( $datumOd ; "T" ; Char(13) );
+~datumDatum = GetValue ( ~datumFull ; 1 )
+];
+
+Date (
+	GetAsNumber ( Middle ( ~datumDatum ; 6 ; 2 ) ) ;
+	GetAsNumber ( Right  (~datumDatum ; 2 ) ) ;
+	GetAsNumber ( Left   ( ~datumDatum ; 4 ) )
+)
+
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$datumOd</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+~datumFull = Substitute ( $datumDo ; "T" ; Char(13) );
+~datumDatum = GetValue ( ~datumFull ; 1 )
+];
+
+Date (
+	GetAsNumber ( Middle ( ~datumDatum ; 6 ; 2 ) ) ;
+	GetAsNumber ( Right  (~datumDatum ; 2 ) ) ;
+	GetAsNumber ( Left   ( ~datumDatum ; 4 ) )
+)
+
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$datumDo</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Run query — dates inlined via epSQLQuoteDate (not ? params), text filters use ? params</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT" &
+	"  Primke.DatumPrimitka," &
+	"  Primke.BrojFaktureDobavljaca," &
+	"  Dobavljaci.NazivDobavljaca," &
+	"  Dobavljaci.PrimaryKey," &
+	"  Artikli.SifraArtikla," &
+	"  Artikli.NazivArtikla," &
+	"  Artikli.JedinicaMjere," &
+	"  StavkePrimke.Kolicina," &
+	"  StavkePrimke.NabavnaCijenaStavke," &
+	"  StavkePrimke.NabavnaTotal_Calculation," &
+	"  Invoices.BrojFakture," &
+	"  Invoices.Datum," &
+	"  StavkePrimke.PrimaryKey," &
+	"  Primke.PrimaryKey," &
+	"  Invoices.PrimaryKey," &
+	"  StavkePrimke.Fakturisana," &
+	"  StavkePrimke.ForeignKeyUlaznaFakturaID" &
+	" FROM StavkePrimke" &
+	" JOIN Primke            ON Primke.PrimaryKey                       = StavkePrimke.ForeignKeyPrimkaID" &
+	" JOIN Dobavljaci        ON Dobavljaci.PrimaryKey                   = Primke.ForeignKeyDobavljacID" &
+	" JOIN Artikli           ON Artikli.PrimaryKey                      = StavkePrimke.ForeignKeyArtikalID" &
+	" JOIN ServiceOrderLines ON ServiceOrderLines.ForeignKeyStavkaPrimkeID = StavkePrimke.PrimaryKey" &
+	" JOIN ServiceOrders     ON ServiceOrders.PrimaryKey                = ServiceOrderLines.ForeignKeyServiceOrder" &
+	" JOIN InvoiceLinks      ON InvoiceLinks.ForeignKeyServiceOrderID   = ServiceOrders.PrimaryKey" &
+	" JOIN Invoices          ON Invoices.PrimaryKey                     = InvoiceLinks.ForeignKeyInvoiceID" &
+	" WHERE Primke.DatumPrimitka       >= " & epSQLQuoteDate ( $datumOd ) &
+	"   AND Primke.DatumPrimitka       <= " & epSQLQuoteDate ( $datumDo ) &
+	"   AND Dobavljaci.NazivDobavljaca LIKE ?" &
+	"   AND Invoices.BrojFakture       LIKE ?" &
+	" ORDER BY Primke.DatumPrimitka, Artikli.SifraArtikla" ;
+	"useSQLResult=rs_sp" ;
+	$dobavljac ; $fakturaPattern
+)]]></Calculation>
+    </Value>
+    <Name>$sel</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $sel )]]></Calculation>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["wv_stavkeQuery"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["receiveFromFileMaker"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[JSONSetElement ( "{}" ; [ "error" ; $sel ; JSONString ] ; [ "rows" ; "[]" ; JSONArray ] ; [ "rowCount" ; 0 ; JSONNumber ] )]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $sel ; JSONString )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Build JSON rows array from result set</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$rowCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $rowCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "datumPrimke"           ; epSQLResult ( $i ; 0  ; "rs_sp" )                        ; JSONString ] ;
+	[ "brojFakturaDobavljaca" ; epSQLResult ( $i ; 1  ; "rs_sp" )                        ; JSONString ] ;
+	[ "dobavljac"             ; epSQLResult ( $i ; 2  ; "rs_sp" )                        ; JSONString ] ;
+	[ "dobavljacID"           ; epSQLResult ( $i ; 3  ; "rs_sp" )                        ; JSONString ] ;
+	[ "sifra"                 ; epSQLResult ( $i ; 4  ; "rs_sp" )                        ; JSONString ] ;
+	[ "naziv"                 ; epSQLResult ( $i ; 5  ; "rs_sp" )                        ; JSONString ] ;
+	[ "jm"                    ; epSQLResult ( $i ; 6  ; "rs_sp" )                        ; JSONString ] ;
+	[ "kolicina"              ; GetAsNumber ( epSQLResult ( $i ; 7  ; "rs_sp" ) )        ; JSONNumber ] ;
+	[ "cijena"                ; GetAsNumber ( epSQLResult ( $i ; 8  ; "rs_sp" ) )        ; JSONNumber ] ;
+	[ "ukupno"                ; GetAsNumber ( epSQLResult ( $i ; 9  ; "rs_sp" ) )        ; JSONNumber ] ;
+	[ "brojFakture"           ; epSQLResult ( $i ; 10 ; "rs_sp" )                        ; JSONString ] ;
+	[ "datumFakture"          ; epSQLResult ( $i ; 11 ; "rs_sp" )                        ; JSONString ] ;
+	[ "spID"                  ; epSQLResult ( $i ; 12 ; "rs_sp" )                        ; JSONString ] ;
+	[ "primkaID"              ; epSQLResult ( $i ; 13 ; "rs_sp" )                        ; JSONString ] ;
+	[ "invoiceID"             ; epSQLResult ( $i ; 14 ; "rs_sp" )                        ; JSONString ] ;
+	[ "fakturisana"           ; GetAsNumber ( epSQLResult ( $i ; 15 ; "rs_sp" ) )        ; JSONNumber ] ;
+	[ "ufdID"                 ; epSQLResult ( $i ; 16 ; "rs_sp" )                        ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$row</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Push payload to web viewer</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "rows"     ; $rows     ; JSONArray  ] ;
+	[ "rowCount" ; $rowCount ; JSONNumber ]
+)]]></Calculation>
+    </Value>
+    <Name>$payload</Name>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["wv_stavkeQuery"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["receiveFromFileMaker"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[$payload]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString )]]></Calculation>
+  </Step>
+</fmxmlsnippet>

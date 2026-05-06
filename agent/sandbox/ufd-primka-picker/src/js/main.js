@@ -4,11 +4,13 @@ import { initMockFileMaker } from './mock-filemaker.js';
 // ── State ─────────────────────────────────────────────────────────────────────
 let state = null;
 const sel = new Set();
+let filterText = '';
 
 // ── FileMaker entry point ─────────────────────────────────────────────────────
 window.receiveFromFileMaker = (data) => {
   state = typeof data === 'string' ? JSON.parse(data) : data;
   sel.clear();
+  filterText = '';
   render();
 };
 
@@ -19,6 +21,54 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderWaiting();
 });
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const pk = (v) => String(v == null ? '' : v);
+
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function fmt(n) {
+  if (n == null || n === '') return '—';
+  const num = Number(n);
+  return isNaN(num) ? esc(n) : num.toLocaleString('hr-HR');
+}
+
+function fmtPrice(n) {
+  if (n == null || n === '' || Number(n) === 0) return '—';
+  return Number(n).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function statusBadge(status) {
+  if (!status) return '';
+  const s = String(status).toLowerCase();
+  let cls = 'bg-gray-100 text-gray-500';
+  let dot = 'bg-gray-400';
+  if      (s.includes('slobod') || s.includes('free'))        { cls = 'bg-green-50 text-green-700';  dot = 'bg-green-500'; }
+  else if (s.includes('djelomi') || s.includes('part'))       { cls = 'bg-amber-50 text-amber-700';  dot = 'bg-amber-400'; }
+  else if (s.includes('prenesen') || s.includes('used'))      { cls = 'bg-gray-100 text-gray-400';   dot = 'bg-gray-300'; }
+  return `
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${cls}">
+      <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>
+      ${esc(status)}
+    </span>
+  `;
+}
+
+// ── Filter matching ───────────────────────────────────────────────────────────
+function matchesFilter(g) {
+  if (!filterText) return true;
+  const t = filterText.toLowerCase();
+  if (g.brojFakture?.toLowerCase().includes(t)) return true;
+  if (g.datum?.toLowerCase().includes(t)) return true;
+  return (g.stavke || []).some(s =>
+    s.sifra?.toLowerCase().includes(t) || s.naziv?.toLowerCase().includes(t)
+  );
+}
 
 // ── Render ─────────────────────────────────────────────────────────────────────
 function renderWaiting() {
@@ -36,17 +86,25 @@ function renderWaiting() {
 function render() {
   if (!state) return;
 
+  // Preserve scroll position across re-renders (bug 3)
+  const prevScrollTop = document.getElementById('ct')?.scrollTop ?? 0;
+
   const root      = document.getElementById('root');
   const groups    = state.groups || [];
   const selCount  = sel.size;
   const totalAvail = state.stavkeCount || 0;
+  const visible   = groups.filter(matchesFilter);
 
   root.innerHTML = '';
 
   // ── Topbar ──────────────────────────────────────────────────────────────────
   const tb = document.createElement('div');
-  tb.className = 'flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0 text-sm';
-  tb.innerHTML = `
+  tb.className = 'flex-shrink-0 bg-white border-b border-gray-200';
+
+  // Stats + action row
+  const statsRow = document.createElement('div');
+  statsRow.className = 'flex items-center gap-2 px-3 py-2 text-sm';
+  statsRow.innerHTML = `
     <span class="flex-1 text-gray-500">
       <strong class="text-gray-800">${groups.length}</strong> primke ·
       <strong class="text-gray-800">${totalAvail}</strong> stavki
@@ -62,13 +120,66 @@ function render() {
       </button>
     </div>
   `;
+  tb.appendChild(statsRow);
+
+  // Filter row
+  const filterRow = document.createElement('div');
+  filterRow.className = 'flex items-center gap-2 px-3 pb-2';
+  filterRow.innerHTML = `
+    <div class="relative flex-1">
+      <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input id="filter-input" type="text" placeholder="Pretraži primke, šifre, nazive…"
+        value="${esc(filterText)}"
+        class="w-full pl-8 pr-7 py-1.5 text-xs rounded-md border border-gray-200 bg-gray-50
+               focus:outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white placeholder-gray-400">
+      ${filterText ? `
+        <button id="btn-clear-filter"
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 leading-none">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      ` : ''}
+    </div>
+  `;
+  tb.appendChild(filterRow);
+
   root.appendChild(tb);
 
-  tb.querySelector('#btn-attach')?.addEventListener('click', attachSelected);
-  tb.querySelector('#btn-deselect')?.addEventListener('click', () => { sel.clear(); render(); });
+  // Wire topbar events
+  statsRow.querySelector('#btn-attach')?.addEventListener('click', attachSelected);
+  statsRow.querySelector('#btn-deselect')?.addEventListener('click', () => { sel.clear(); render(); });
+
+  const filterInput = filterRow.querySelector('#filter-input');
+  let debounceTimer;
+  filterInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      filterText = filterInput.value;
+      render();
+    }, 150);
+  });
+  // Keep cursor at end after re-render
+  filterInput.addEventListener('focus', () => {
+    const len = filterInput.value.length;
+    filterInput.setSelectionRange(len, len);
+  });
+  filterRow.querySelector('#btn-clear-filter')?.addEventListener('click', () => {
+    filterText = '';
+    render();
+  });
+
+  // Focus the filter input after render if it was focused before
+  if (document.activeElement?.id === 'filter-input' || filterText !== '') {
+    requestAnimationFrame(() => filterInput.focus());
+  }
 
   // ── Content ─────────────────────────────────────────────────────────────────
   const ct = document.createElement('div');
+  ct.id = 'ct';
   ct.className = 'flex-1 overflow-y-auto p-2';
 
   if (groups.length === 0) {
@@ -80,17 +191,29 @@ function render() {
         <p class="text-sm">Nema dostupnih stavki za ovog dobavljača.</p>
       </div>
     `;
+  } else if (visible.length === 0) {
+    ct.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-2 py-12">
+        <svg class="w-8 h-8 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <p class="text-sm">Nema rezultata za "<em>${esc(filterText)}</em>".</p>
+      </div>
+    `;
   } else {
-    groups.forEach(g => ct.appendChild(buildGroup(g)));
+    visible.forEach(g => ct.appendChild(buildGroup(g)));
   }
 
   root.appendChild(ct);
+
+  // Restore scroll position (bug 3)
+  ct.scrollTop = prevScrollTop;
 }
 
 // ── Group card ────────────────────────────────────────────────────────────────
 function buildGroup(g) {
   const stavke     = g.stavke || [];
-  const selN       = stavke.filter(s => sel.has(s.stavkaPK)).length;
+  const selN       = stavke.filter(s => sel.has(pk(s.stavkaPK))).length;
   const allSel     = selN === stavke.length && stavke.length > 0;
   const someSel    = selN > 0 && !allSel;
 
@@ -130,28 +253,31 @@ function buildGroup(g) {
     </table>
   `;
 
-  // Group checkbox
+  // Group checkbox: toggle all stavke without scrolling (bug 3 fix: render restores scroll)
   const cbGroup = card.querySelector('.cb-group');
   if (someSel) cbGroup.indeterminate = true;
   cbGroup.addEventListener('click', e => {
     e.stopPropagation();
-    stavke.forEach(s => cbGroup.checked ? sel.add(s.stavkaPK) : sel.delete(s.stavkaPK));
+    stavke.forEach(s => cbGroup.checked ? sel.add(pk(s.stavkaPK)) : sel.delete(pk(s.stavkaPK)));
     render();
   });
 
-  // Row clicks
+  // Row clicks (bug 2 fix: checkbox click now also calls toggleStavka)
   card.querySelectorAll('[data-stavka]').forEach(row => {
-    row.addEventListener('click', () => { toggleStavka(row.dataset.stavka); });
-    row.querySelector('input[type=checkbox]')?.addEventListener('click', e => e.stopPropagation());
+    row.addEventListener('click', () => toggleStavka(row.dataset.stavka));
+    row.querySelector('input[type=checkbox]')?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleStavka(row.dataset.stavka);
+    });
   });
 
   return card;
 }
 
 function buildRow(s) {
-  const isSel = sel.has(s.stavkaPK);
+  const isSel = sel.has(pk(s.stavkaPK));
   return `
-    <tr data-stavka="${esc(s.stavkaPK)}"
+    <tr data-stavka="${esc(pk(s.stavkaPK))}"
         class="cursor-pointer border-b border-gray-50 last:border-0 ${isSel ? 'bg-blue-50' : 'hover:bg-gray-50'}">
       <td class="px-2 py-1.5 text-center">
         <input type="checkbox" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer" ${isSel ? 'checked' : ''}>
@@ -167,8 +293,9 @@ function buildRow(s) {
 }
 
 // ── Interaction ───────────────────────────────────────────────────────────────
-function toggleStavka(pk) {
-  sel.has(pk) ? sel.delete(pk) : sel.add(pk);
+function toggleStavka(stavkaPK) {
+  const key = pk(stavkaPK);
+  sel.has(key) ? sel.delete(key) : sel.add(key);
   render();
 }
 
@@ -186,7 +313,6 @@ function attachSelected() {
 
 // Called by PICKER__Callback on domain script failure
 window.receiveError = (message) => {
-  loading = false;
   showError(message);
 };
 
@@ -206,43 +332,7 @@ function showError(message) {
     <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 font-bold leading-none">✕</button>
   `;
 
-  // Insert after topbar (first child) so it appears below the buttons
   const topbar = root.querySelector('.topbar');
   if (topbar) topbar.after(banner);
   else root.prepend(banner);
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function esc(v) {
-  return String(v == null ? '' : v)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function fmt(n) {
-  if (n == null || n === '') return '—';
-  const num = Number(n);
-  return isNaN(num) ? esc(n) : num.toLocaleString('hr-HR');
-}
-
-function fmtPrice(n) {
-  if (n == null || n === '' || Number(n) === 0) return '—';
-  return Number(n).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-}
-
-function statusBadge(status) {
-  if (!status) return '';
-  const s = String(status).toLowerCase();
-  let cls = 'bg-gray-100 text-gray-500';
-  let dot = 'bg-gray-400';
-  if      (s.includes('slobod') || s.includes('free'))        { cls = 'bg-green-50 text-green-700';  dot = 'bg-green-500'; }
-  else if (s.includes('djelomi') || s.includes('part'))       { cls = 'bg-amber-50 text-amber-700';  dot = 'bg-amber-400'; }
-  else if (s.includes('prenesen') || s.includes('used'))      { cls = 'bg-gray-100 text-gray-400';   dot = 'bg-gray-300'; }
-  return `
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${cls}">
-      <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>
-      ${esc(status)}
-    </span>
-  `;
 }

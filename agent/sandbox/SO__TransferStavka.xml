@@ -1,0 +1,288 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Transfer a single StavkaPrimke quantity into a ServiceOrderLine. Pure SQL — no layout hops.
+Callable from picker, OData, or Data API. Injects onTransferResult into wv_SOPicker if open (silently skipped otherwise).</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: JSON object
+  stavkaPK   (text, required) — PrimaryKey of the StavkaPrimke row
+  targetSOPK (text, required) — PrimaryKey of the destination ServiceOrder
+  qty        (number, required) — quantity to transfer; must be > 0 and ≤ available
+  soNumber   (text, optional) — SO display number echoed back in the picker result</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$p</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavkaPK</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $p ; "stavkaPK" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$targetSOPK</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $p ; "targetSOPK" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$qty</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $p ; "qty" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$soNumber</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $p ; "soNumber" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Validate required params</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $stavkaPK ) or IsEmpty ( $targetSOPK ) or $qty <= 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; False         ; JSONBoolean] ;
+	["error"   ; "MISSING_PARAM" ; JSONString] ;
+	["message" ; "stavkaPK, targetSOPK and qty > 0 are required" ; JSONString]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Look up StavkaPrimke + Artikli in one shot</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$selSt</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT sp.ForeignKeyArtikalID, sp.Kolicina, sp.ProdajnaCijena, sp.NabavnaCijenaStavke, sp.JM, sp.ForeignKeyPrimkaID, a.NazivArtikla
+	 FROM StavkePrimke sp
+	 LEFT JOIN Artikli a ON sp.ForeignKeyArtikalID = a.PrimaryKey
+	 WHERE sp.PrimaryKey = ?" ;
+	"useSQLResult=stavka" ;
+	$stavkaPK
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $selSt ) or epSQLResultRowCount ( "stavka" ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLResultDelete ( "stavka" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; False       ; JSONBoolean] ;
+	["error"   ; "NOT_FOUND" ; JSONString]  ;
+	["message" ; "Stavka not found: " & $stavkaPK ; JSONString]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$artikalPK</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "stavka" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$kolicina</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 1 ; "stavka" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$prodajnaCijena</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 2 ; "stavka" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nabavnaCijena</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 3 ; "stavka" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$jm</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 4 ; "stavka" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$primkaPK</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 5 ; "stavka" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$naziv</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 6 ; "stavka" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "stavka" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Compute available qty — transferred and returned are separate SELECT+SUM queries</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$selT</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(Qty) FROM ServiceOrderLines WHERE ForeignKeyStavkaPrimkeID = ?" ;
+	"useSQLResult=txfr" ;
+	$stavkaPK
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$transferred</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $selT ) or epSQLResultRowCount ( "txfr" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "txfr" ) )
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "txfr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$selR</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(Kolicina) FROM StavkePovrata WHERE ForeignKeyStavkaPrimkeID = ?" ;
+	"useSQLResult=rtrn" ;
+	$stavkaPK
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$returned</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $selR ) or epSQLResultRowCount ( "rtrn" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "rtrn" ) )
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rtrn" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$available</Name>
+		<Value><Calculation><![CDATA[Max ( 0 ; $kolicina - $transferred - $returned )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$qty > $available]]></Calculation>
+	</Step>
+		<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+			<ObjectName>
+				<Calculation><![CDATA["wv_SOPicker"]]></Calculation>
+			</ObjectName>
+			<FunctionName>
+				<Calculation><![CDATA["onTransferResult"]]></Calculation>
+			</FunctionName>
+			<Parameters Count="1">
+				<P>
+					<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; False              ; JSONBoolean] ;
+	["error"   ; "INSUFFICIENT_QTY" ; JSONString]  ;
+	["message" ; "Dostupno " & $available & " " & $jm & ", traženo " & $qty ; JSONString]
+)]]></Calculation>
+				</P>
+			</Parameters>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success"   ; False              ; JSONBoolean] ;
+	["error"     ; "INSUFFICIENT_QTY" ; JSONString]  ;
+	["available" ; $available         ; JSONNumber]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: INSERT ServiceOrderLine — all values explicit, no layout context needed</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$newLinePK</Name>
+		<Value><Calculation><![CDATA[Get ( UUID )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ins</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO ServiceOrderLines
+	 (PrimaryKey, ForeignKeyServiceOrder, ForeignKeyArtikalID, Description,
+	  Qty, Rate, NabavnaCijena_Stvarna, JM, ForeignKeyPrimkaID, ForeignKeyStavkaPrimkeID)
+	 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" ;
+	"" ;
+	$newLinePK ;
+	$targetSOPK ;
+	$artikalPK ;
+	$naziv ;
+	$qty ;
+	$prodajnaCijena ;
+	$nabavnaCijena ;
+	$jm ;
+	$primkaPK ;
+	$stavkaPK
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $ins )]]></Calculation>
+	</Step>
+		<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+			<ObjectName>
+				<Calculation><![CDATA["wv_SOPicker"]]></Calculation>
+			</ObjectName>
+			<FunctionName>
+				<Calculation><![CDATA["onTransferResult"]]></Calculation>
+			</FunctionName>
+			<Parameters Count="1">
+				<P>
+					<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; False           ; JSONBoolean] ;
+	["error"   ; "INSERT_FAILED" ; JSONString]  ;
+	["message" ; $ins            ; JSONString]
+)]]></Calculation>
+				</P>
+			</Parameters>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; False           ; JSONBoolean] ;
+	["error"   ; "INSERT_FAILED" ; JSONString]  ;
+	["message" ; $ins            ; JSONString]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Push success result to picker — silently no-ops if picker is not open</Text>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName>
+			<Calculation><![CDATA["wv_SOPicker"]]></Calculation>
+		</ObjectName>
+		<FunctionName>
+			<Calculation><![CDATA["onTransferResult"]]></Calculation>
+		</FunctionName>
+		<Parameters Count="1">
+			<P>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success"  ; True       ; JSONBoolean] ;
+	["linePK"   ; $newLinePK ; JSONString]  ;
+	["qty"      ; $qty       ; JSONNumber]  ;
+	["jm"       ; $jm        ; JSONString]  ;
+	["soNumber" ; $soNumber  ; JSONString]
+)]]></Calculation>
+			</P>
+		</Parameters>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["success" ; True       ; JSONBoolean] ;
+	["linePK"  ; $newLinePK ; JSONString]  ;
+	["qty"     ; $qty       ; JSONNumber]
+)]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

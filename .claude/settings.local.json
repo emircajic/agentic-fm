@@ -6,7 +6,9 @@
       "Bash(git stash:*)",
       "Bash(git push:*)",
       "Bash(find agent/xml_parsed -name *AGENT__*)",
-      "Bash(find /Users/emir/agenticfm/agent/sandbox -type f -exec grep -l \"InvoiceLine\\\\|ServiceOrderLine\" {} \\\\;)"
+      "Bash(find /Users/emir/agenticfm/agent/sandbox -type f -exec grep -l \"InvoiceLine\\\\|ServiceOrderLine\" {} \\\\;)",
+      "Bash(command -v osascript)",
+      "Bash(python3 -m agent.fmlint agent/sandbox/CopyLineToOrder.xml agent/sandbox/CopyToOrder.xml agent/sandbox/SO__OpenSOPicker.xml agent/sandbox/SO__LoadSOPage.xml agent/sandbox/SO__PickerConfirm.xml)"
     ]
   }
 }

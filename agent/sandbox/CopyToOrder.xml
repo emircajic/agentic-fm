@@ -1,0 +1,388 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$action</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$action = "prepare"]]></Calculation>
+	</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Store current context in shared global state</Text>
+		</Step>
+		<Step enable="True" id="76" name="Set Field">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["currentLayout"   ; Get ( LayoutName )    ; JSONString] ;
+	["currentRecordID" ; Primke::PrimaryKey     ; JSONString] ;
+	["currentWindow"   ; Get ( WindowName )     ; JSONString] ;
+	["selectedServiceOrder"       ; "" ; JSONString] ;
+	["selectedServiceOrderNumber" ; "" ; JSONString] ;
+	["callbackScript"  ; "CopyToOrder"          ; JSONString] ;
+	["pickerMode"      ; "Active"               ; JSONString]
+)]]></Calculation>
+			<Field table="Globals" id="0" name="ServiceOrderSelector"/>
+		</Step>
+
+		<Step enable="True" id="86" name="Set Error Capture">
+			<Set state="True"/>
+		</Step>
+		<Step enable="True" id="85" name="Allow User Abort">
+			<Set state="False"/>
+		</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Check that there are available StavkePrimke before opening picker</Text>
+		</Step>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="LayoutName">
+				<Layout id="0" name="Dev Stavke Ulaznih Otpremnica"/>
+			</LayoutDestination>
+			<Animation value="None"/>
+		</Step>
+		<Step enable="True" id="22" name="Enter Find Mode">
+			<Pause state="False"/>
+		</Step>
+		<Step enable="True" id="76" name="Set Field">
+			<Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "currentRecordID" )]]></Calculation>
+			<Field table="StavkePrimke" id="0" name="ForeignKeyPrimkaID"/>
+		</Step>
+		<Step enable="True" id="31" name="Perform Find"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$availableCount</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$totalAvailableQty</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="10" name="Go to Record/Request/Page">
+			<Go value="First"/>
+		</Step>
+		<Step enable="True" id="71" name="Loop">
+			<Flush state="Always"/>
+		</Step>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[StavkePrimke::PreostalaKolicina > 0]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$availableCount</Name>
+					<Value><Calculation><![CDATA[$availableCount + 1]]></Calculation></Value>
+				</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$totalAvailableQty</Name>
+					<Value><Calculation><![CDATA[$totalAvailableQty + StavkePrimke::PreostalaKolicina]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="10" name="Go to Record/Request/Page">
+				<Go value="Next"/>
+				<ExitAfterLast state="True"/>
+			</Step>
+		<Step enable="True" id="73" name="End Loop"/>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$availableCount = 0]]></Calculation>
+		</Step>
+			<Step enable="True" id="52" name="Show Custom Dialog">
+				<Title><Calculation><![CDATA["Nema dostupnih stavki"]]></Calculation></Title>
+				<Message><Calculation><![CDATA["Nema stavki s dostupnom količinom na ovoj primci."]]></Calculation></Message>
+				<Buttons>
+					<Button name="OK" IsDefault="True"/>
+				</Buttons>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONSetElement ( Globals::ServiceOrderSelector ; "pickerMode" ; "" ; JSONString )]]></Calculation>
+				<Field table="Globals" id="0" name="ServiceOrderSelector"/>
+			</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="LayoutName">
+					<Layout id="0" name="IncomingOrders"/>
+				</LayoutDestination>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="103" name="Exit Script">
+				<Calculation><![CDATA[""]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="LayoutName">
+				<Layout id="0" name="IncomingOrders"/>
+			</LayoutDestination>
+			<Animation value="None"/>
+		</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Open SO picker card — SO__PickerConfirm closes it and dispatches back to CONFIRM</Text>
+		</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="0" name="SO__OpenSOPicker"/>
+		</Step>
+
+	<Step enable="True" id="125" name="Else If">
+		<Calculation><![CDATA[$action = "confirm"]]></Calculation>
+	</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Recover context — PK+number stored by SO__PickerConfirm, window already selected</Text>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$serviceOrderNumber</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "selectedServiceOrderNumber" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$currentRecordID</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "currentRecordID" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="123" name="Select Window">
+			<LimitToWindowsOfCurrentFile state="True"/>
+			<Window value="ByName"/>
+			<Name>
+				<Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "currentWindow" )]]></Calculation>
+			</Name>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( JSONGetElement ( Globals::ServiceOrderSelector ; "selectedServiceOrder" ) )]]></Calculation>
+		</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONSetElement ( Globals::ServiceOrderSelector ; "pickerMode" ; "" ; JSONString )]]></Calculation>
+				<Field table="Globals" id="0" name="ServiceOrderSelector"/>
+			</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="LayoutName">
+					<Layout id="0" name="IncomingOrders"/>
+				</LayoutDestination>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="103" name="Exit Script">
+				<Calculation><![CDATA["Cancelled"]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$targetServiceOrderPK</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "selectedServiceOrder" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Loop StavkePrimke and build JSON items array</Text>
+		</Step>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="LayoutName">
+				<Layout id="0" name="Dev Stavke Ulaznih Otpremnica"/>
+			</LayoutDestination>
+			<Animation value="None"/>
+		</Step>
+		<Step enable="True" id="22" name="Enter Find Mode">
+			<Pause state="False"/>
+		</Step>
+		<Step enable="True" id="76" name="Set Field">
+			<Calculation><![CDATA[$currentRecordID]]></Calculation>
+			<Field table="StavkePrimke" id="0" name="ForeignKeyPrimkaID"/>
+		</Step>
+		<Step enable="True" id="31" name="Perform Find"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$copiedCount</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$copiedQty</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$recordCount</Name>
+			<Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$jsonData</Name>
+			<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[1]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="10" name="Go to Record/Request/Page">
+			<Go value="First"/>
+		</Step>
+		<Step enable="True" id="71" name="Loop">
+			<Flush state="Always"/>
+		</Step>
+			<Step enable="True" id="74" name="Exit Loop If">
+				<Calculation><![CDATA[$i > $recordCount]]></Calculation>
+			</Step>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[not IsEmpty ( StavkePrimke::ForeignKeyArtikalID ) and StavkePrimke::PreostalaKolicina > 0]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$itemJSON</Name>
+					<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["id"       ; StavkePrimke::PrimaryKey         ; JSONString] ;
+	["artikal"  ; StavkePrimke::ForeignKeyArtikalID ; JSONString] ;
+	["kolicina" ; StavkePrimke::PreostalaKolicina   ; JSONNumber] ;
+	["cijena"   ; StavkePrimke::ProdajnaCijena      ; JSONNumber] ;
+	["opis"     ; Artikli::NazivArtikla             ; JSONString] ;
+	["jm"       ; StavkePrimke::JM                  ; JSONString]
+)]]></Calculation></Value>
+				</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$jsonData</Name>
+					<Value><Calculation><![CDATA[JSONSetElement ( $jsonData ; "[" & $i - 1 & "]" ; $itemJSON ; JSONObject )]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$i</Name>
+				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="10" name="Go to Record/Request/Page">
+				<Go value="Next"/>
+				<ExitAfterLast state="True"/>
+			</Step>
+		<Step enable="True" id="73" name="End Loop"/>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Create ServiceOrderLines from JSON array</Text>
+		</Step>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="LayoutName">
+				<Layout id="0" name="Dev Service Order Lines"/>
+			</LayoutDestination>
+			<Animation value="None"/>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$arrayCount</Name>
+			<Value><Calculation><![CDATA[JSONListKeys ( $jsonData ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="71" name="Loop">
+			<Flush state="Always"/>
+		</Step>
+			<Step enable="True" id="74" name="Exit Loop If">
+				<Calculation><![CDATA[$i >= ValueCount ( $arrayCount )]]></Calculation>
+			</Step>
+			<Step enable="True" id="78" name="New Record/Request"/>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].artikal" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="ForeignKeyArtikalID"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].kolicina" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="Qty"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].cijena" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="Rate"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].opis" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="Description"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[$targetServiceOrderPK]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="ForeignKeyServiceOrder"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[$currentRecordID]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="ForeignKeyPrimkaID"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].id" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="ForeignKeyStavkaPrimkeID"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[JSONGetElement ( $jsonData ; "[" & $i & "].jm" )]]></Calculation>
+				<Field table="ServiceOrderLines" id="0" name="JM"/>
+			</Step>
+			<Step enable="True" id="75" name="Commit Records/Requests">
+				<NoInteract state="True"/>
+				<Option state="False"/>
+			</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$copiedCount</Name>
+				<Value><Calculation><![CDATA[$copiedCount + 1]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$copiedQty</Name>
+				<Value><Calculation><![CDATA[$copiedQty + JSONGetElement ( $jsonData ; "[" & $i & "].kolicina" )]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$i</Name>
+				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="73" name="End Loop"/>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$copiedCount > 0]]></Calculation>
+		</Step>
+			<Step enable="True" id="52" name="Show Custom Dialog">
+				<Title><Calculation><![CDATA["Uspjeh"]]></Calculation></Title>
+				<Message><Calculation><![CDATA["Kopirano " & $copiedCount & " stavki (ukupno " & $copiedQty & " kom) u servisni nalog " & $serviceOrderNumber & ".¶Želite li prikazati nalog?"]]></Calculation></Message>
+				<Buttons>
+					<Button name="Da" IsDefault="True"/>
+					<Button name="Ne"/>
+				</Buttons>
+			</Step>
+		<Step enable="True" id="67" name="Else"/>
+			<Step enable="True" id="52" name="Show Custom Dialog">
+				<Title><Calculation><![CDATA["Greška"]]></Calculation></Title>
+				<Message><Calculation><![CDATA["Kopiranje nije moguće"]]></Calculation></Message>
+				<Buttons>
+					<Button name="OK" IsDefault="True"/>
+				</Buttons>
+			</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="LayoutName">
+					<Layout id="0" name="IncomingOrders"/>
+				</LayoutDestination>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="103" name="Exit Script">
+				<Calculation><![CDATA["Error"]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[Get ( LastMessageChoice ) = 1]]></Calculation>
+		</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="LayoutName">
+					<Layout id="0" name="ServiceOrderDetails"/>
+				</LayoutDestination>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="22" name="Enter Find Mode">
+				<Pause state="False"/>
+			</Step>
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[$targetServiceOrderPK]]></Calculation>
+				<Field table="ServiceOrders" id="0" name="PrimaryKey"/>
+			</Step>
+			<Step enable="True" id="31" name="Perform Find"/>
+		<Step enable="True" id="67" name="Else"/>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="LayoutName">
+					<Layout id="0" name="IncomingOrders"/>
+				</LayoutDestination>
+				<Animation value="None"/>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="76" name="Set Field">
+			<Calculation><![CDATA[""]]></Calculation>
+			<Field table="Globals" id="0" name="ServiceOrderSelector"/>
+		</Step>
+
+	<Step enable="True" id="67" name="Else"/>
+		<Step enable="True" id="76" name="Set Field">
+			<Calculation><![CDATA[""]]></Calculation>
+			<Field table="Globals" id="0" name="ServiceOrderSelector"/>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+</fmxmlsnippet>

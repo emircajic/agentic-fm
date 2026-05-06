@@ -1,0 +1,82 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "Admin",
+      "department": "IT",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane@example.com",
+      "role": "User",
+      "department": "Sales",
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "Bob Johnson",
+      "email": "bob@example.com",
+      "role": "User",
+      "department": "Marketing",
+      "active": false
+    }
+  ],
+  "currentUser": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "permissions": ["read", "write", "delete"],
+    "preferences": {
+      "theme": "light",
+      "notifications": true
+    }
+  },
+  "records": [
+    {
+      "recordId": 101,
+      "title": "Project Alpha",
+      "description": "First major project",
+      "status": "Active",
+      "priority": "High",
+      "assignedTo": "John Doe",
+      "startDate": "2025-10-01",
+      "dueDate": "2025-12-31",
+      "progress": 45
+    },
+    {
+      "recordId": 102,
+      "title": "Project Beta",
+      "description": "Second phase implementation",
+      "status": "Pending",
+      "priority": "Medium",
+      "assignedTo": "Jane Smith",
+      "startDate": "2025-10-05",
+      "dueDate": "2025-11-30",
+      "progress": 20
+    },
+    {
+      "recordId": 103,
+      "title": "Project Gamma",
+      "description": "Completed initiative",
+      "status": "Completed",
+      "priority": "Low",
+      "assignedTo": "Bob Johnson",
+      "startDate": "2025-09-01",
+      "dueDate": "2025-09-28",
+      "progress": 100
+    }
+  ],
+  "settings": {
+    "appVersion": "1.0.0",
+    "environment": "development",
+    "features": {
+      "enableNotifications": true,
+      "enableDarkMode": false,
+      "maxRecordsPerPage": 50
+    }
+  }
+}

@@ -1,0 +1,146 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Create a new UFD from a WV selection and attach the chosen StavkePrimke. On success, re-runs the query to refresh the WV.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS: JSON object {
+  dobavljacID       (text, required)   — Dobavljaci::PrimaryKey
+  datumFakture      (text, optional)   — ISO date "YYYY-MM-DD"
+  napomena          (text, optional)
+  brojUlazneFakture (text, optional)
+  stavkePKs         (array, required)  — StavkePrimke::PrimaryKey[]
+}</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>MARK: Parse parameters</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$param</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$dobavljacID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "dobavljacID" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datumFaktureStr</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "datumFakture" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$napomena</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "napomena" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$brojUlazneFakture</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "brojUlazneFakture" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavkePKs</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "stavkePKs" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>MARK: Convert ISO date string to FM Date for UFD__Create</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datumFakture</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $datumFaktureStr ) ;
+	Let ( [
+		~s = Substitute ( $datumFaktureStr ; "T" ; Char ( 13 ) ) ;
+		~d = GetValue ( ~s ; 1 )
+	] ;
+		Date (
+			GetAsNumber ( Middle ( ~d ; 6 ; 2 ) ) ;
+			GetAsNumber ( Right  ( ~d ; 2 ) ) ;
+			GetAsNumber ( Left   ( ~d ; 4 ) )
+		)
+	)
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>MARK: Call UFD__Create</Text>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="677" name="UFD__Create"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "dobavljacID"       ; $dobavljacID       ; JSONString ] ;
+	[ "datumFakture"      ; $datumFakture      ; JSONString ] ;
+	[ "napomena"          ; $napomena          ; JSONString ] ;
+	[ "brojUlazneFakture" ; $brojUlazneFakture ; JSONString ]
+)]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$createResult</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[JSONGetElement ( $createResult ; "status" ) ≠ "success"]]></Calculation>
+	</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[$createResult]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ulaznaFakturaID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $createResult ; "ulaznaFakturaID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>MARK: Attach selected StavkePrimke</Text>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="678" name="UFD__AttachPrimke"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ulaznaFakturaID" ; $ulaznaFakturaID ; JSONString ] ;
+	[ "stavkePKs"       ; $stavkePKs       ; JSONArray  ]
+)]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>MARK: Refresh WV — re-run query with current global filter values</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$refreshParam</Name>
+		<Value><Calculation><![CDATA[Let ( [
+	~od = Globals::StavkePrimkeDatumOd ;
+	~do = Globals::StavkePrimkeDatumDo
+] ;
+	JSONSetElement ( "{}" ;
+		[ "datumOd"        ; Year ( ~od ) & "-" & Right ( "0" & Month ( ~od ) ; 2 ) & "-" & Right ( "0" & Day ( ~od ) ; 2 ) ; JSONString ] ;
+		[ "datumDo"        ; Year ( ~do ) & "-" & Right ( "0" & Month ( ~do ) ; 2 ) & "-" & Right ( "0" & Day ( ~do ) ; 2 ) ; JSONString ] ;
+		[ "dobavljac"      ; Globals::StavkePrimkeDobavljac       ; JSONString ] ;
+		[ "fakturaPattern" ; Globals::StavkePrimkeFakturaPattern   ; JSONString ]
+	)
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="822" name="WV__QueryStavkePrimke"/>
+		<Calculation><![CDATA[$refreshParam]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$createResult]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

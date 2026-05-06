@@ -107,6 +107,36 @@ Use typed variants when coercion is needed:
 
 **How to apply:** Never manually single-quote values in INSERT/UPDATE — always delegate to epSQLQuote.
 
+## Date values in WHERE clauses — use epSQLQuoteDate, not ? params
+
+When filtering by date in a WHERE clause, **do not pass FM Date values as `?` parameters** — epSQL does not reliably coerce them. Instead, inline the date using `epSQLQuoteDate()` directly in the SQL string:
+
+```
+// ✅ Correct
+epSQLExecute (
+    "SELECT ... WHERE MyTable.Datum >= " & epSQLQuoteDate ( $datumOd ) &
+    " AND MyTable.Datum <= " & epSQLQuoteDate ( $datumDo ) &
+    " AND MyTable.Name LIKE ?" ;
+    "useSQLResult=rs" ;
+    $nameParam   // text params still use ?
+)
+
+// ❌ Wrong — date ? params silently fail or miscompare
+epSQLExecute ( "SELECT ... WHERE Datum >= ? AND Datum <= ?" ; "" ; $datumOd ; $datumDo )
+```
+
+`epSQLQuoteDate ( date )` handles FM-version-appropriate CAST syntax automatically. It accepts FM Date values or date strings. Returns `NULL` for empty input — guard against that if the date is required.
+
+**How to convert an ISO string (YYYY-MM-DD) from a web viewer/JSON to an FM Date before quoting:**
+```
+$date = Date (
+    GetAsNumber ( Middle ( $isoStr ; 6 ; 2 ) ) ;  // month
+    GetAsNumber ( Right  ( $isoStr ; 2 ) ) ;       // day
+    GetAsNumber ( Left   ( $isoStr ; 4 ) )         // year
+)
+// then: epSQLQuoteDate ( $date )
+```
+
 ---
 
 ## Smart quotes
