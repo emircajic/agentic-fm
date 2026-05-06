@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="hr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stavke Primke Query</title>
+  <script type="module" src="/src/js/main.js"></script>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-gray-100 text-gray-800">
+
+  <!-- Status bar -->
+  <div class="flex-shrink-0 flex justify-between items-center px-3 py-1 bg-slate-200 border-b border-slate-300 text-xs text-slate-600">
+    <span id="status-text">Čeka podatke...</span>
+    <span id="total-text" class="font-semibold text-slate-700"></span>
+  </div>
+
+  <!-- Selection action bar (hidden until rows selected) -->
+  <div id="action-bar" class="hidden flex-shrink-0 flex items-center gap-3 px-3 py-1.5 bg-indigo-50 border-b border-indigo-200 text-xs">
+    <span id="selection-count" class="text-indigo-700 font-medium"></span>
+    <button id="btn-napravi-ufd"
+            class="px-3 py-1 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+      Napravi UFD
+    </button>
+    <button id="btn-clear-selection"
+            class="px-2 py-1 rounded text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 transition-colors">
+      Očisti odabir
+    </button>
+  </div>
+
+  <!-- Results area -->
+  <div class="flex-1 overflow-auto">
+
+    <!-- Empty / loading / error state -->
+    <div id="state-box" class="flex flex-col items-center justify-center h-full text-slate-400 select-none">
+      <div id="state-icon" class="text-4xl mb-3">⏳</div>
+      <div id="state-msg" class="text-sm">Čeka podatke iz FileMaker-a...</div>
+    </div>
+
+    <!-- Results table -->
+    <table id="results-table" class="hidden w-full border-collapse text-xs">
+      <thead>
+        <tr class="bg-slate-700 text-slate-100 text-left sticky top-0 z-10 select-none">
+          <th id="th-select" class="px-3 py-2.5 border-r border-slate-600 w-8 text-center">
+            <input id="select-all" type="checkbox" class="cursor-pointer accent-indigo-400 w-3.5 h-3.5">
+          </th>
+          <th data-col="datumPrimke"           class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Datum primke</th>
+          <th data-col="brojFakturaDobavljaca" class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Br. fakture dobavljača</th>
+          <th data-col="dobavljac"             class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Dobavljač</th>
+          <th data-col="sifra"                 class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Šifra</th>
+          <th data-col="naziv"                 class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Naziv artikla</th>
+          <th data-col="jm"                    class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">JM</th>
+          <th data-col="kolicina"              class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600 text-right">Količina</th>
+          <th data-col="cijena"                class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600 text-right">Cijena</th>
+          <th data-col="ukupno"                class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600 text-right">Ukupno</th>
+          <th data-col="brojFakture"           class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Br. fakture</th>
+          <th data-col="datumFakture"          class="px-3 py-2.5 font-semibold whitespace-nowrap border-r border-slate-600 cursor-pointer hover:bg-slate-600">Dat. fakture</th>
+          <th data-col="fakturisana"           class="px-3 py-2.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-slate-600 text-center">Fakt.</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+  </div>
+
+  <!-- ── Napravi UFD modal ─────────────────────────────────────────────────── -->
+  <div id="ufd-modal-backdrop"
+       class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 py-4 bg-indigo-600 text-white">
+        <h2 class="font-semibold text-sm">Napravi UFD</h2>
+        <button id="ufd-modal-close" class="text-indigo-200 hover:text-white text-lg leading-none">&times;</button>
+      </div>
+
+      <!-- Error banner (hidden until needed) -->
+      <div id="ufd-error" class="hidden px-5 py-2.5 bg-red-50 border-b border-red-200 text-xs text-red-700"></div>
+
+      <!-- Body -->
+      <div class="px-5 py-4 space-y-4 text-xs">
+
+        <!-- Pre-filled info -->
+        <div class="bg-slate-50 rounded-lg px-4 py-3 space-y-1">
+          <div class="flex gap-2">
+            <span class="text-slate-500 w-24 shrink-0">Dobavljač</span>
+            <span id="ufd-dobavljac" class="font-medium text-slate-800"></span>
+          </div>
+          <div class="flex gap-2">
+            <span class="text-slate-500 w-24 shrink-0">Stavke</span>
+            <span id="ufd-count" class="font-medium text-slate-800"></span>
+          </div>
+        </div>
+
+        <!-- Form fields -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-slate-600 mb-1" for="ufd-broj-fakture">Broj ulazne fakture</label>
+            <input id="ufd-broj-fakture" type="text" placeholder="npr. R-2025-0041"
+                   class="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          </div>
+          <div>
+            <label class="block text-slate-600 mb-1" for="ufd-datum-fakture">Datum fakture</label>
+            <input id="ufd-datum-fakture" type="date"
+                   class="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          </div>
+          <div>
+            <label class="block text-slate-600 mb-1" for="ufd-napomena">Napomena</label>
+            <textarea id="ufd-napomena" rows="2" placeholder="Opcionalno..."
+                      class="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-200">
+        <button id="ufd-modal-cancel"
+                class="px-4 py-1.5 rounded text-slate-600 hover:bg-slate-200 transition-colors text-xs">
+          Odustani
+        </button>
+        <button id="ufd-modal-submit"
+                class="px-4 py-1.5 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors text-xs">
+          Napravi UFD
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

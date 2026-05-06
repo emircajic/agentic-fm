@@ -1,11 +1,45 @@
 ---
 name: webviewer-build
-description: Generate a complete web application inside a FileMaker Web Viewer — self-contained HTML/CSS/JS styled with the FM theme, plus companion FM bridge scripts for bidirectional data flow. Use when the developer says "web viewer", "webviewer app", "HTML in FileMaker", "build web viewer", or when the layout-design skill delegates to the web-first output path. Recommended for modern, responsive UI, complex interactions (drag-and-drop, charts, rich text), or solutions considering future migration off FileMaker.
+description: Generate a complete web application inside a FileMaker Web Viewer — cloned from ExampleProject template, built with Vite/Tailwind, plus companion FM scripts for the data push. Use when the developer says "web viewer", "webviewer app", "HTML in FileMaker", "build web viewer", or when the layout-design skill delegates to the web-first output path. Recommended for modern, responsive UI, complex interactions (drag-and-drop, charts, rich text), or solutions considering future migration off FileMaker.
 ---
 
 # WebViewer Build
 
-Generate a complete web application that runs inside a FileMaker Web Viewer object, along with the companion FM scripts that connect it to FileMaker data. The output is a self-contained HTML file plus fmxmlsnippet scripts — together they form a bidirectional data bridge between the web UI and the FM solution.
+Generate a web application that runs inside a FileMaker Web Viewer, along with the companion FM scripts that push data into it.
+
+---
+
+## Architecture — read this first
+
+### The web viewer is purely reactive. It never initiates data requests.
+
+**All user controls (date pickers, text inputs, dropdowns, buttons) live on the FM layout as native FileMaker objects.** The web viewer receives data and renders it — nothing more. This eliminates the FM→WV→FM race condition entirely.
+
+```
+User interacts with FM native controls
+    ↓
+FM script runs (triggered by button / OnObjectSave / OnLayoutEnter)
+    ↓ Perform JavaScript in Web Viewer
+    ↓ calls window.receiveFromFileMaker(data)
+Web Viewer renders the result
+    ↓ FileMaker.PerformScript() — navigation/actions only
+FM handles navigation or side-effects
+```
+
+**The web viewer may call FM scripts only for:**
+- Navigating to a related record (Go to Related Record pattern)
+- Triggering a side-effect action (print, export, open a card window)
+
+**The web viewer must never call FM to fetch or refresh data.** If data needs to refresh, the FM script re-runs and pushes again.
+
+### Bridge functions
+
+| Direction | Mechanism | Function name |
+|-----------|-----------|---------------|
+| FM → WV | `Perform JavaScript in Web Viewer` | `window.receiveFromFileMaker(data)` |
+| WV → FM | `FileMaker.PerformScript()` | script name as string |
+
+Always use `window.receiveFromFileMaker` as the JS entry point — this matches the ExampleProject template and the mock FileMaker dev environment.
 
 ---
 
@@ -16,7 +50,7 @@ Read `agent/config/automation.json` and check `project_tier` (preferred) or `def
 - **Tier 1** — FM scripts go to clipboard with paste instructions
 - **Tier 2/3** — agent can deploy FM scripts via companion server automation
 
-Also read `companion_url` from `automation.json` for preview pushes.
+Also read `companion_url` for preview.
 
 ---
 
@@ -24,299 +58,306 @@ Also read `companion_url` from `automation.json` for preview pushes.
 
 1. Read `agent/CONTEXT.json` for:
    - `current_layout` — the layout where the Web Viewer will be placed
-   - `tables` — the data schema (fields, types, TOs) that the web app will display and edit
-   - `relationships` — related data the web app needs to access
-   - `scripts` — existing scripts the web app may need to call
-   - `value_lists` — for dropdowns, filters, and validation
-   - `custom_functions` — for any calculations the FM scripts need
+   - `tables` — schema for fields the FM push script will query
+   - `scripts` — existing scripts the WV may need to call for navigation/actions
+   - `value_lists` — if the FM layout needs dropdowns to drive the query
 
 2. If CONTEXT.json is absent or scoped to the wrong layout, ask the developer to run **Push Context** on the target layout.
 
-3. Read the theme data from `agent/context/{solution}/`:
+3. Read theme data from `agent/context/{solution}/`:
    ```bash
    cat agent/context/*/theme.css 2>/dev/null
    cat agent/context/*/theme-manifest.json 2>/dev/null
    ```
 
-   - `theme.css` — inline this into the HTML for visual consistency with the FM solution
-   - `theme-manifest.json` — color palette for matching FM's visual language
-
-4. If no theme data exists, note this and suggest running `python3 agent/scripts/extract_theme.py`. Proceed with a clean, neutral stylesheet if the developer wants to continue.
+4. Clarify the **data contract**: what JSON shape will FM push? What columns/fields? What does a row object look like? Document this before touching any code.
 
 ---
 
 ## Step 3: Design conversation
 
-Understand what the web app needs to do. Key questions:
+Before building, confirm with the developer:
 
-1. **What data does it display?** — Which tables, fields, and relationships? List view, detail view, or both?
-2. **What interactions does it support?** — Read-only display, inline editing, record creation, deletion, drag-and-drop, filtering, sorting?
-3. **Does it need charts or visualizations?** — Bar charts, line graphs, KPIs, gauges?
-4. **What actions trigger FM scripts?** — Save, delete, navigate, print, run a process?
-5. **Does FM need to push data updates to the web viewer?** — Real-time refresh when the user navigates records in FM?
+1. **What does the WV display?** — table, cards, chart, detail view?
+2. **What FM native controls drive it?** — which global fields on the layout feed the query?
+3. **What FM script pushes the data?** — is it a button trigger, OnLayoutEnter, or OnObjectSave?
+4. **What navigation actions does the WV need?** — which records to jump to, which layouts?
+5. **What does an empty/loading/error state look like?**
 
-If the developer provided a spec from `layout-spec` or a design brief, extract the answers from that.
-
----
-
-## Step 4: Generate the HTML application
-
-Build a single, self-contained HTML file. All CSS and JavaScript are inline — no external dependencies. The file must work when loaded via `Set Web Viewer` with a `data:text/html` URL or from a file path.
-
-### HTML structure
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{App Title}</title>
-  <style>
-    /* FM theme CSS for visual consistency */
-    {theme_css_content}
-
-    /* Application styles */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    /* ... app-specific styles ... */
-  </style>
-</head>
-<body>
-  <!-- Application markup -->
-  <div id="app">
-    <!-- Loading state shown until FM pushes data -->
-    <div id="loading">Loading...</div>
-    <!-- Main content hidden until data arrives -->
-    <div id="content" style="display: none;">
-      <!-- ... -->
-    </div>
-  </div>
-
-  <script>
-    // === FM Bridge ===
-
-    /**
-     * Called by FM via Perform JavaScript in Web Viewer.
-     * Receives JSON data from the FM data-loading script.
-     * @param {string} json — JSON string from FM
-     */
-    function fmCallback(json) {
-      try {
-        const data = JSON.parse(json);
-        renderApp(data);
-      } catch (e) {
-        console.error("fmCallback parse error:", e);
-      }
-    }
-
-    /**
-     * Call an FM script with a JSON parameter.
-     * Uses the FileMaker.PerformScript() JS-to-FM bridge.
-     * @param {string} scriptName — the FM script to call
-     * @param {object} param — parameter object (will be JSON-stringified)
-     */
-    function callFM(scriptName, param) {
-      if (typeof FileMaker !== "undefined") {
-        FileMaker.PerformScript(scriptName, JSON.stringify(param));
-      } else {
-        console.log("FM bridge not available. Would call:", scriptName, param);
-      }
-    }
-
-    // === Application Logic ===
-
-    function renderApp(data) {
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("content").style.display = "block";
-      // ... render data into the DOM ...
-    }
-
-    // ... event handlers, UI logic ...
-  </script>
-</body>
-</html>
-```
-
-### Design principles for FM Web Viewers
-
-- **Self-contained**: No external CDN links, no fetch() calls to third-party APIs. Everything is inline. FM Web Viewers run in a sandboxed context and external resources may be blocked.
-- **Theme-consistent**: Use the FM theme CSS so the web app looks like it belongs in the solution. Match colors, fonts, and spacing from the theme manifest.
-- **Responsive within the viewer**: Unlike native FM layouts, web content can use flexbox and responsive CSS. Design for the Web Viewer's container size but allow graceful resizing.
-- **Loading state**: Always show a loading indicator until FM pushes data via `fmCallback()`. The web viewer loads before FM can call JavaScript.
-- **Error resilience**: Handle missing data gracefully. If `fmCallback` receives incomplete JSON, render what is available and show placeholders for the rest.
-- **No FileMaker dependency for testing**: When `FileMaker.PerformScript()` is not available (opened in a browser outside FM), log calls to the console instead of crashing. This allows browser-based development and testing.
+If a spec from `layout-spec` exists, extract answers from that.
 
 ---
 
-## Step 5: Generate companion FM scripts
+## Step 4: Clone and customise the ExampleProject template
 
-The web viewer needs two FM scripts to function:
+The web viewer app is built from the template at `agent/library/ExampleProject/`. **Never write a self-contained HTML from scratch.** Clone the template, rename it, then customise.
 
-### Script 1: Data Loader
+### 4a — Clone
 
-This script gathers data from the FM solution and pushes it to the web viewer via `Perform JavaScript in Web Viewer`. It is called when:
-- The layout loads (via an OnLayoutEnter trigger)
-- The user navigates to a different record
-- Data changes and the web viewer needs a refresh
+```bash
+cp -r agent/library/ExampleProject agent/sandbox/{app-name}
+```
 
-**HR format outline:**
+Replace `{app-name}` with a kebab-case name matching the feature (e.g. `stavke-query`, `inventory-dashboard`).
+
+### 4b — Install dependencies
+
+```bash
+cd agent/sandbox/{app-name}
+npm install
+```
+
+### 4c — Edit the application files
+
+| File | What to change |
+|------|---------------|
+| `index.html` | Page structure, layout, Tailwind classes |
+| `src/js/main.js` | `receiveFromFileMaker(data)` handler, render logic, FM script calls |
+| `src/styles/main.css` | Custom CSS beyond Tailwind |
+| `src/js/mock-data.json` | Realistic sample data matching the real JSON shape FM will push |
+
+#### main.js patterns
+
+```javascript
+// FM pushes data here — this is the ONLY entry point
+window.receiveFromFileMaker = (data) => {
+  // data is already a parsed object (the mock) or a JSON string (real FM)
+  const payload = typeof data === 'string' ? JSON.parse(data) : data;
+  renderTable(payload.rows);
+};
+
+// WV calls FM only for navigation / side-effects — never for data
+function goToRecord(id) {
+  if (typeof FileMaker !== 'undefined') {
+    FileMaker.PerformScript('WV__GoToInvoice', id);
+  }
+}
+```
+
+#### mock-data.json
+
+Populate with realistic sample data that matches exactly the JSON shape the FM push script will produce. The dev server uses this to simulate FM pushes so the UI can be developed without FM open.
+
+### 4d — Build for production
+
+```bash
+cd agent/sandbox/{app-name}
+npm run build
+```
+
+Output: `agent/sandbox/{app-name}/dist/index.html` — a single self-contained HTML file with all CSS and JS inlined. This is what goes into the FM Web Viewer.
+
+### 4e — Develop iteratively
+
+Use the dev server for fast iteration:
+
+```bash
+npm run dev
+```
+
+The dev server includes the **Mock FileMaker Environment**: a panel in the bottom-right corner that lets you send mock data to the app and see script calls logged — no FM needed. When the UI looks right, run `npm run build` for the production artifact.
+
+---
+
+## Step 5: Generate the FM push script
+
+This script runs on the FM side — triggered by a button or script trigger — reads native FM field values, queries the data, builds a JSON payload, and pushes it to the web viewer.
+
+### Structure
 
 ```
-# Push data to web viewer
-Set Error Capture [ On ]
+PURPOSE: Query and push data to wv_{appName}.
+PARAMS: (none — reads from global fields on the layout)
+
 Allow User Abort [ Off ]
-#
-# Gather data as JSON
-Set Variable [ $json ; Value:
-  JSONSetElement ( "{}" ;
-    ["records" ; <related records or found set as JSON array> ; JSONArray] ;
-    ["meta" ; <metadata object> ; JSONObject]
-  )
-]
-#
-# Push to web viewer
-Perform JavaScript in Web Viewer [ Object Name: "{webviewer_object_name}" ;
-  Function Name: "fmCallback" ;
-  Parameters: $json ]
-```
-
-Generate this as fmxmlsnippet XML using the step catalog. The data-gathering logic depends on what the web app needs — typically a combination of:
-- Current record field values via `GetFieldName` / field references
-- Related records via `ExecuteSQL` or looping through a portal relationship
-- Value list values via `ValueListItems`
-
-### Script 2: Event Handler
-
-This script receives calls from the web viewer's `FileMaker.PerformScript()`. It parses the JSON parameter and dispatches to the appropriate action.
-
-**HR format outline:**
-
-```
-# Handle web viewer event
 Set Error Capture [ On ]
-Allow User Abort [ Off ]
-#
-Set Variable [ $param ; Value: Get ( ScriptParameter ) ]
-Set Variable [ $action ; Value: JSONGetElement ( $param ; "action" ) ]
-#
-If [ $action = "save" ]
-  # Parse fields from $param and set them
-  Set Field [ {TO}::{Field} ; JSONGetElement ( $param ; "fields.{fieldName}" ) ]
-  Commit Records/Requests [ With dialog: Off ]
-  # Refresh the web viewer with updated data
-  Perform Script [ "Data Loader Script" ; Parameter: "" ]
-Else If [ $action = "delete" ]
-  Delete Record/Request [ With dialog: Off ]
-Else If [ $action = "navigate" ]
-  Set Variable [ $layout ; Value: JSONGetElement ( $param ; "layout" ) ]
-  Go to Layout [ $layout ]
+
+# MARK: Read filter values from FM global fields
+Set Variable [ $datumOd  ; {GlobalTable}::g_DatumOd ]
+Set Variable [ $datumDo  ; {GlobalTable}::g_DatumDo ]
+Set Variable [ $filter   ; {GlobalTable}::g_Filter ]
+
+# MARK: Run query (epSQLExecute with named result set)
+Set Variable [ $sel ; epSQLExecute ( "SELECT ..." ; "useSQLResult=rs" ; params ) ]
+If [ not IsEmpty ( $sel ) ]   // error
+  Perform JavaScript in Web Viewer [ "wv_{appName}" ; "receiveFromFileMaker" ; $errPayload ]
+  Exit Script [ ... ]
 End If
+
+# MARK: Build JSON rows array
+Set Variable [ $rowCount ; epSQLResultRowCount ( "rs" ) ]
+Set Variable [ $i ; 0 ]
+Set Variable [ $rows ; "[]" ]
+Loop [ Flush: Always ]
+  Exit Loop If [ $i ≥ $rowCount ]
+  Set Variable [ $row ; JSONSetElement ( "{}" ; ... ) ]
+  Set Variable [ $rows ; JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject ) ]
+  Set Variable [ $i ; $i + 1 ]
+End Loop
+Set Variable [ $void ; epSQLResultDelete ( "rs" ) ]
+
+# MARK: Push to web viewer
+Set Variable [ $payload ; JSONSetElement ( "{}" ; [ "rows" ; $rows ; JSONArray ] ) ]
+Perform JavaScript in Web Viewer [ Object Name: "wv_{appName}" ;
+  Function Name: "receiveFromFileMaker" ; Parameters: $payload ]
+
+Exit Script [ JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString ) ]
 ```
 
-Generate this as fmxmlsnippet XML. The action cases depend on the web app's interaction design from Step 3.
+### Date handling in SQL
+
+**Always use `epSQLQuoteDate()` to inline date values — never pass FM Date values as `?` params.** See `memory/feedback_sql_plugin.md` for the full rule and the ISO-string-to-FM-Date conversion pattern.
+
+```
+// Correct — dates inlined via epSQLQuoteDate
+"WHERE MyTable.Datum >= " & epSQLQuoteDate ( $datumOd ) &
+" AND  MyTable.Datum <= " & epSQLQuoteDate ( $datumDo ) &
+" AND  MyTable.Name  LIKE ?"  ;  // text params still use ?
+"useSQLResult=rs" ; $nameParam
+```
 
 ### Script generation rules
 
-Follow all standard script creation rules from CLAUDE.md:
-1. Grep the step catalog for each step type
+1. Grep the step catalog for each step type used
 2. Resolve field/layout/script IDs from CONTEXT.json
-3. Follow coding conventions from `agent/docs/CODING_CONVENTIONS.md`
+3. Follow `agent/docs/CODING_CONVENTIONS.md`
 4. Write to `agent/sandbox/`
-5. Validate with `python3 agent/scripts/validate_snippet.py`
+5. Validate with `python3 -m agent.fmlint agent/sandbox/{script}.xml`
 
 ---
 
-## Step 6: Preview
+## Step 6: Generate navigation/action scripts (if needed)
 
-Push the HTML to the webviewer for the developer to preview:
+If the web viewer has buttons that navigate to related records, generate one lightweight script per destination:
 
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"type": "layout-preview", "content": "<html content>"}' \
-  {companion_url}/webviewer/push
+```
+PURPOSE: Navigate to Invoice record by PrimaryKey. Called from WV navigation button.
+PARAMS: PrimaryKey (text, UUID)
+
+Allow User Abort [ Off ]
+Set Error Capture [ On ]
+Set Variable [ $id ; Get ( ScriptParameter ) ]
+Go to Layout [ "TargetLayout" ]
+Enter Find Mode [ Pause: Off ]
+Set Field [ Table::PrimaryKey ; $id ]
+Perform Find
+Exit Script [ JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString ) ]
 ```
 
-If the companion server is not reachable, write the HTML to `agent/sandbox/{app-name}.html` and instruct the developer to open it in a browser.
-
-> The web viewer app has been pushed to the webviewer for preview. Note that FM bridge calls (`FileMaker.PerformScript`) will log to the browser console since there is no FM context — the UI and layout are what to review here.
-
-Iterate on feedback. Each revision generates an updated HTML file and a new push.
+These scripts are one-way — the web viewer calls them and does not expect a response.
 
 ---
 
-## Step 7: Output and deployment
+## Step 7: Preview and iterate
 
-Write all output files to `agent/sandbox/`:
+After `npm run build`:
 
-| File | Contents |
-|------|----------|
-| `{app-name}.html` | The self-contained web viewer HTML application |
-| `{app-name}-data-loader.xml` | fmxmlsnippet for the data-loading FM script |
-| `{app-name}-event-handler.xml` | fmxmlsnippet for the event-handling FM script |
+1. Open `agent/sandbox/{app-name}/dist/index.html` in a browser to verify the static shell.
+2. In FM, load it in the Web Viewer:
+   - Web Viewer URL: `"file:" & Get ( DocumentsPath ) & "{app-name}/index.html"`  
+     (place the `dist/index.html` in the Documents folder, or use the full path)
+3. Trigger the FM push script manually to push data and verify `receiveFromFileMaker` renders correctly.
 
-### Deploy FM scripts
+Iterate: edit source → `npm run build` → refresh the Web Viewer in FM (re-trigger push script).
 
-Deploy the companion FM scripts per the current tier:
+---
 
-**Tier 1:**
+## Step 8: Output and deployment
 
+### Files produced
+
+| Path | Purpose |
+|------|---------|
+| `agent/sandbox/{app-name}/` | Full Vite project — source of truth for future edits |
+| `agent/sandbox/{app-name}/dist/index.html` | Production artifact — loaded into `HTML::{fieldName}` |
+| `agent/sandbox/{push-script-name}.xml` | fmxmlsnippet — FM push script |
+| `agent/sandbox/{nav-script-name}.xml` | fmxmlsnippet — navigation/action scripts |
+
+### Preferred HTML deployment — `HTML` table + `displayHTMLfrom`
+
+**Never store the HTML in a global field.** Global fields cause multi-user initialisation problems and pollute the globals namespace. Instead, the solution has a dedicated single-record `HTML` table where each web viewer gets its own named field.
+
+**Check the `HTML` table first:**
 ```bash
-python3 agent/scripts/clipboard.py write agent/sandbox/{app-name}-data-loader.xml
+grep "^HTML|" agent/context/Autoklinika/fields.index
 ```
 
-> The data loader script is on your clipboard. To install it:
->
-> 1. Create a new script named **{Data Loader Script Name}** in Script Workspace
-> 2. **⌘V** — paste
+If a field matching your feature already exists (e.g. `StavkePrimkeQuery`), use it. If not, add a new `Text` field with a descriptive name (e.g. `InvoiceDashboard`) via `schema-build`.
 
-Repeat for the event handler script.
+**Web Viewer URL formula:**
+```
+displayHTMLfrom ( "HTML" ; "StavkePrimkeQuery" )
+```
 
-**Tier 2/3:** Deploy via `agent/scripts/deploy.py`.
+The `displayHTMLfrom` custom function (ID 96) does:
+```
+ExecuteSQL ( "SELECT HTML.{fieldName} FROM HTML FETCH FIRST 1 ROWS ONLY" ; "" ; "" )
+```
+and wraps the result as a `data:text/html,` URL. No globals, no initialization script, no multi-user conflict.
 
-### Install the Web Viewer
+**Load the HTML into the field:**
 
-Provide instructions for setting up the Web Viewer object:
+After `npm run build`, copy the contents of `dist/index.html` into `HTML::{fieldName}`.
 
-> To install the web viewer:
->
+Tier 1 — manual:
+> 1. Open the `HTML` table's admin layout (or any layout with `HTML::{fieldName}`)
+> 2. Select all content in the field and paste the contents of `dist/index.html`
+> 3. Commit the record
+
+Tier 2/3 — use the OData API to PATCH the field:
+```bash
+python3 agent/scripts/odata_patch.py \
+  --table HTML \
+  --field {fieldName} \
+  --file agent/sandbox/{app-name}/dist/index.html
+```
+(Check `agent/docs/AUTOMATION.md` for the OData patch pattern.)
+
+### Deploy FM scripts (Tier 1)
+
+```bash
+python3 agent/scripts/clipboard.py write agent/sandbox/{push-script-name}.xml
+```
+
+> Create new script **`{PushScriptName}`** in Script Workspace → **⌘V** paste
+
+Repeat for each navigation script.
+
+### Install the Web Viewer on the FM layout
+
 > 1. Open **{Layout Name}** in Layout Mode
-> 2. Add a **Web Viewer** object — size it to fill the desired area
-> 3. Set the Web Viewer's **Object Name** to **"{webviewer_object_name}"** (Inspector > Position > Name)
-> 4. Set the Web Viewer's **URL** to one of:
->    - **File path**: `"file:" & Get ( DocumentsPath ) & "{app-name}.html"` (place the HTML file in the Documents folder)
->    - **Data URL**: `"data:text/html," & {a global field or variable containing the HTML}` (for self-contained deployment)
-> 5. Set the **OnLayoutEnter** script trigger to run **{Data Loader Script Name}**
-> 6. Switch to Browse Mode and test
+> 2. Add native FM fields/buttons for each filter parameter (regular or global fields on the layout)
+> 3. Add a **Web Viewer** object sized to the display area
+> 4. Set the Web Viewer's **Object Name** to **`wv_{appName}`** (Inspector → Position → Name)
+> 5. Set the URL formula: `displayHTMLfrom ( "HTML" ; "{fieldName}" )`
+> 6. Wire the **Pretraži / Refresh button** to run **`{PushScriptName}`**
+> 7. Optionally set **OnLayoutEnter** trigger to also run the push script for auto-load
 
 ---
 
-## When to recommend the Web Viewer path
+## When to use the Web Viewer path
 
-The web viewer approach is stronger than native FM layout objects when:
+**Stronger than native FM when:**
+- Scrollable result tables with many columns
+- Data visualisations — charts, KPIs, Gantt, calendars
+- Complex row-level interactions — expandable rows, tooltips, inline icons
+- Future migration off FileMaker — the HTML/CSS/JS is portable
 
-- **Responsive layout** is needed — FM layouts are fixed-position; web content reflows
-- **Complex interactions** — drag-and-drop, sortable lists, rich text editing, inline search/filter
-- **Data visualizations** — charts, graphs, KPI dashboards, Gantt charts, calendars
-- **Modern UI patterns** — cards, accordions, modals, toast notifications, infinite scroll
-- **Future migration** — the HTML/CSS/JS is portable to any web platform if the solution moves off FM
-- **Rapid iteration** — CSS changes are instant; FM layout styling requires Layout Mode round-trips
-
-The native FM path is stronger when:
-
-- **Printing** — FM's print engine handles layout parts, sub-summaries, and page breaks natively
-- **Simple forms** — a standard detail or list view with fields and portals is faster to build natively
-- **Privilege-based field access** — FM's built-in security controls field-level access automatically; a web viewer must implement its own access checks
-- **Accessibility** — FM's native objects have built-in accessibility support; web content requires manual ARIA markup
+**Native FM is stronger when:**
+- Printing — FM's print engine handles sub-summaries and page breaks natively
+- Simple forms and detail views — native fields are faster to build
+- Privilege-based field access — FM security controls field visibility automatically
+- Accessibility — native FM objects have built-in a11y support
 
 ---
 
 ## Constraints
 
-- The HTML must be **fully self-contained** — no external scripts, stylesheets, or API calls. FM Web Viewers run in a sandboxed WebKit/Chromium instance.
-- The `FileMaker.PerformScript()` bridge is only available when the HTML is loaded inside a FileMaker Web Viewer — the code must handle its absence gracefully for browser testing.
-- `Perform JavaScript in Web Viewer` requires the Web Viewer object to have a **named Object Name** set in the Inspector — always specify what this name should be.
-- The data loader script must handle the case where the Web Viewer has not finished loading — consider a brief pause or a polling loop if needed.
-- All FM script output follows standard fmxmlsnippet conventions — steps only, no `<Script>` wrapper, validated before deployment.
+- **WV is purely reactive** — no user input controls inside the web viewer. All controls are native FM objects.
+- **No WV-initiated data fetch** — the WV never calls FM to request data. FM always pushes.
+- The `dist/index.html` must be fully self-contained — Vite's build step handles this automatically.
+- `Perform JavaScript in Web Viewer` requires the Web Viewer object to have a **named Object Name** set in the Inspector.
+- `window.receiveFromFileMaker` is the standard entry-point name — do not change it; it matches the ExampleProject template and mock environment.
+- All FM script output follows fmxmlsnippet conventions — steps only, no `<Script>` wrapper, validated with fmlint before delivery.
 - Field IDs and script IDs must come from CONTEXT.json — never invent references.
-- Follow coding conventions from `agent/docs/CODING_CONVENTIONS.md` for all FM script calculations.
+- Follow `agent/docs/CODING_CONVENTIONS.md` for all FM script calculations.
