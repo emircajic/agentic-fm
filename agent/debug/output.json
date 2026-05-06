@@ -2,7 +2,7 @@
   "label": "Test__KMP_Flow",
   "lastError": 0,
   "lastErrorLocation": "",
-  "timestamp": "4/16/2026 10:46:30 PM",
+  "timestamp": "4/24/2026 12:34:41 AM",
   "vars": {
     "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
     "log": [
@@ -21,41 +21,79 @@
         },
         "severity": "pass",
         "test": "Create kalkulacija",
-        "ts": "4/16/2026 10:30:46 PM"
+        "ts": "4/24/2026 12:34:26 AM"
       },
       {
         "note": "Expected: success + same kalkulacijaID. Script is idempotent — must not create a duplicate.",
         "result": {
-          "data": {
-            "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9"
-          },
+          "data": {},
           "messages": {
-            "error": [],
+            "error": [
+              {
+                "code": "COMMIT_FAILED",
+                "context": {},
+                "field": "",
+                "script": "KMP__CreateFromUlaznaFaktura",
+                "text": "Failed to commit KalkulacijaMP record (FM error 504)",
+                "timestamp": "4/24/2026 12:34:33 AM"
+              }
+            ],
             "info": [],
             "warning": []
           },
-          "status": "success"
+          "status": "fail"
         },
-        "severity": "pass",
+        "severity": "error",
         "test": "Create duplicate (idempotent)",
-        "ts": "4/16/2026 10:31:09 PM"
+        "ts": "4/24/2026 12:34:33 AM"
       },
       {
         "note": "",
         "result": {
-          "data": {
-            "generatedCount": 90
-          },
+          "data": {},
           "messages": {
-            "error": [],
+            "error": [
+              {
+                "code": "NONE_GENERATED",
+                "context": {
+                  "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+                  "traceID": "4D1DEB8F-94A2-47A7-A40E-6E65A1428191"
+                },
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "No StavkeKalkulacijeMP were created",
+                "timestamp": "4/24/2026 12:34:35 AM"
+              }
+            ],
             "info": [],
-            "warning": []
+            "warning": [
+              {
+                "code": "COMMIT_FAILED",
+                "context": {
+                  "stavkaPrimkeID": ""
+                },
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "Failed to create stavka for stavkaPrimkeID  (FM error 504)",
+                "timestamp": "4/24/2026 12:34:35 AM"
+              },
+              {
+                "code": "COMMIT_FAILED",
+                "context": {
+                  "stavkaPrimkeID": ""
+                },
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "Failed to create stavka for stavkaPrimkeID  (FM error 504)",
+                "timestamp": "4/24/2026 12:34:35 AM"
+              }
+            ]
           },
-          "status": "success"
+          "status": "fail"
         },
-        "severity": "pass",
+        "severity": "error",
         "test": "Generate stavke",
-        "ts": "4/16/2026 10:42:51 PM"
+        "ts": "4/24/2026 12:34:36 AM"
       },
       {
         "note": "Expected: fail — stavke already exist for this kalkulacija.",
@@ -64,12 +102,60 @@
           "messages": {
             "error": [
               {
-                "code": "ALREADY_GENERATED",
-                "context": {},
+                "code": "NONE_GENERATED",
+                "context": {
+                  "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+                  "traceID": "CF07EAEA-DCF5-487A-B779-D50A337EA221"
+                },
                 "field": "",
                 "script": "KMP__GenerateStavke",
-                "text": "Stavke already exist for kalkulacijaID: 8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
-                "timestamp": "4/16/2026 10:43:15 PM"
+                "text": "No StavkeKalkulacijeMP were created",
+                "timestamp": "4/24/2026 12:34:38 AM"
+              }
+            ],
+            "info": [],
+            "warning": [
+              {
+                "code": "COMMIT_FAILED",
+                "context": {
+                  "stavkaPrimkeID": ""
+                },
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "Failed to create stavka for stavkaPrimkeID  (FM error 504)",
+                "timestamp": "4/24/2026 12:34:38 AM"
+              },
+              {
+                "code": "COMMIT_FAILED",
+                "context": {
+                  "stavkaPrimkeID": ""
+                },
+                "field": "",
+                "script": "KMP__GenerateStavke",
+                "text": "Failed to create stavka for stavkaPrimkeID  (FM error 504)",
+                "timestamp": "4/24/2026 12:34:38 AM"
+              }
+            ]
+          },
+          "status": "fail"
+        },
+        "severity": "pass",
+        "test": "Generate again (guard: ALREADY_GENERATED)",
+        "ts": "4/24/2026 12:34:38 AM"
+      },
+      {
+        "note": "",
+        "result": {
+          "data": {},
+          "messages": {
+            "error": [
+              {
+                "code": "NO_STAVKE",
+                "context": {},
+                "field": "",
+                "script": "KMP__Post",
+                "text": "KalkulacijaMP has no lines: 8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+                "timestamp": "4/24/2026 12:34:39 AM"
               }
             ],
             "info": [],
@@ -77,27 +163,9 @@
           },
           "status": "fail"
         },
-        "severity": "pass",
-        "test": "Generate again (guard: ALREADY_GENERATED)",
-        "ts": "4/16/2026 10:43:20 PM"
-      },
-      {
-        "note": "",
-        "result": {
-          "data": {
-            "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
-            "ukupnoMP_Roba": 9281.17145704846
-          },
-          "messages": {
-            "error": [],
-            "info": [],
-            "warning": []
-          },
-          "status": "success"
-        },
-        "severity": "pass",
+        "severity": "error",
         "test": "Post kalkulacija",
-        "ts": "4/16/2026 10:44:15 PM"
+        "ts": "4/24/2026 12:34:39 AM"
       },
       {
         "note": "Expected: fail — Status is already Knjižena.",
@@ -106,12 +174,12 @@
           "messages": {
             "error": [
               {
-                "code": "INVALID_STATUS",
+                "code": "NO_STAVKE",
                 "context": {},
                 "field": "",
                 "script": "KMP__Post",
-                "text": "KalkulacijaMP is not Otvorena — current status: Knjižena",
-                "timestamp": "4/16/2026 10:44:32 PM"
+                "text": "KalkulacijaMP has no lines: 8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
+                "timestamp": "4/24/2026 12:34:40 AM"
               }
             ],
             "info": [],
@@ -121,30 +189,27 @@
         },
         "severity": "pass",
         "test": "Post again (guard: INVALID_STATUS)",
-        "ts": "4/16/2026 10:44:34 PM"
+        "ts": "4/24/2026 12:34:40 AM"
       },
       {
         "note": "",
         "result": {
-          "kalkulacijaID": "8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9",
-          "status": "Knjižena",
-          "stavkeCount": 90,
-          "ukupnoMP_Roba": 9281.17145704846
+          "error": "Record not found for PK: 8065F6AF-AB4C-4E19-82F3-CBE7C123F7E9"
         },
-        "severity": "pass",
+        "severity": "error",
         "test": "Verify final state",
-        "ts": "4/16/2026 10:45:23 PM"
+        "ts": "4/24/2026 12:34:40 AM"
       },
       {
         "note": "UkupnoMP_Roba must remain > 0 after RefreshTotals runs on a Knjižena record.",
         "result": {
-          "ukupnoMP_Roba": 9281.17145704846
+          "ukupnoMP_Roba": 0
         },
-        "severity": "pass",
+        "severity": "error",
         "test": "RefreshTotals (regression)",
-        "ts": "4/16/2026 10:46:04 PM"
+        "ts": "4/24/2026 12:34:41 AM"
       }
     ],
-    "stavkeCount": 90
+    "stavkeCount": 0
   }
 }

@@ -113,13 +113,17 @@ LOCK TRIGGERS (abort + lock all siblings):
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="OriginalLayout"/>
+			<Animation value="None"/>
+		</Step>
 		<Step enable="True" id="103" name="Exit Script">
 			<Calculation><![CDATA[Response_Finalize]]></Calculation>
 		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[StavkePrimke::LockedSelling = 1]]></Calculation>
+		<Calculation><![CDATA[ExecuteSQL ( "SELECT LockedSelling FROM StavkePrimke WHERE PrimaryKey = ?" ; "" ; "" ; $stavkaPrimkeID ) = 1]]></Calculation>
 	</Step>
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$void</Name>
@@ -133,6 +137,10 @@ LOCK TRIGGERS (abort + lock all siblings):
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="OriginalLayout"/>
+			<Animation value="None"/>
+		</Step>
 		<Step enable="True" id="103" name="Exit Script">
 			<Calculation><![CDATA[Response_Finalize]]></Calculation>
 		</Step>
@@ -319,6 +327,10 @@ LOCK TRIGGERS (abort + lock all siblings):
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="OriginalLayout"/>
+			<Animation value="None"/>
+		</Step>
 		<Step enable="True" id="103" name="Exit Script">
 			<Calculation><![CDATA[Response_Finalize]]></Calculation>
 		</Step>
@@ -528,6 +540,10 @@ LOCK TRIGGERS (abort + lock all siblings):
 		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
+	<Step enable="True" id="6" name="Go to Layout">
+		<LayoutDestination value="OriginalLayout"/>
+		<Animation value="None"/>
+	</Step>
 	<Step enable="True" id="103" name="Exit Script">
 		<Calculation><![CDATA[Response_Finalize]]></Calculation>
 	</Step>
