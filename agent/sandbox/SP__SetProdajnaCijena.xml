@@ -1,36 +1,25 @@
 <fmxmlsnippet type="FMObjectList">
 
 	<Step enable="True" id="89" name="# (comment)">
-		<Text>PURPOSE: Set ProdajnaCijena on a StavkePrimke batch and sync all attached ServiceOrderLines::Rate. Guards against changes once the batch is locked (KMP posted or customer invoice detected).</Text>
+		<Text>PURPOSE: Set ProdajnaCijena on a StavkePrimke and its siblings, then sync all attached ServiceOrderLines::Rate.
+Guards: LOCKED (KMP posted — LockedSelling calc = 1), BATCH_INVOICED (InvoiceLine detected for any sibling).
+All operations via epSQL — no layout navigation.</Text>
 	</Step>
+
 	<Step enable="False" id="61" name="Insert Text">
 		<SelectAll state="False"/>
 		<Text>PARAMS: stavkaPrimkeID (text, required) | newPrice (number, required)
 RETURNS: data.updated (number) — stavke updated; data.syncedLines (number) — SOL Rate fields synced
 
-PREREQUISITE: StavkePrimke must have a field "LockedSelling" (Number, regular).
-  Set by KMP__Post when the calculation is posted (scenario 1 — UFD flow).
-  Set by this script when a customer InvoiceLine is detected (scenario 2 — revers flow).
-
 SIBLING SCOPE:
   ForeignKeyUlaznaFakturaID set  →  same artikalID + same UFD
   ForeignKeyUlaznaFakturaID empty  →  same artikalID + same ForeignKeyPrimkaID
 
-LOCK TRIGGERS (abort + lock all siblings):
-  BATCH_LOCKED    — sibling already has LockedSelling = 1
-  BATCH_INVOICED  — InvoiceLines record found for any sibling (revers scenario)</Text>
+LOCK TRIGGERS (abort, no write):
+  LOCKED        — LockedSelling = 1 on the target (KMP is Knjižena)
+  BATCH_INVOICED — InvoiceLines record found for any sibling (revers scenario)</Text>
 		<Field>$README</Field>
 	</Step>
-
-	<Step enable="False" id="141" name="Set Variable">
-		<Name>$exampleCall</Name>
-		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "stavkaPrimkeID" ; StavkePrimke::PrimaryKey ; JSONString ] ;
-	[ "newPrice" ; 42.50 ; JSONNumber ]
-)]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="89" name="# (comment)"/>
 
 	<Step enable="True" id="85" name="Allow User Abort">
 		<Set state="False"/>
@@ -52,8 +41,8 @@ LOCK TRIGGERS (abort + lock all siblings):
 		<Value><Calculation><![CDATA[Log.add ( "info" ; "SP_SET_PRICE_START" ; "Setting ProdajnaCijena=" & $newPrice & " for stavka " & $stavkaPrimkeID ; $params )]]></Calculation></Value>
 	</Step>
 
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Validate</Text>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Validate ──────────────────────────────────────────────────────────────</Text>
 	</Step>
 
 	<Step enable="True" id="68" name="If">
@@ -66,7 +55,7 @@ LOCK TRIGGERS (abort + lock all siblings):
 		<Step enable="True" id="68" name="If">
 			<Calculation><![CDATA[$isRoot]]></Calculation>
 		</Step>
-			<Step enable="True" id="1" name="Perform Script">
+			<Step enable="True" id="25" name="Perform Script">
 				<Script id="780" name="UTIL__FlushLog"/>
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
@@ -76,31 +65,47 @@ LOCK TRIGGERS (abort + lock all siblings):
 		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Load stavka context</Text>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Guard: target must exist and not be locked ────────────────────────────</Text>
 	</Step>
 
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>Go to layout: Dev StavkePrimke (id 227)</Text>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ctxChk</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT ForeignKeyArtikalID, ForeignKeyUlaznaFakturaID, ForeignKeyPrimkaID
+	 FROM StavkePrimke WHERE PrimaryKey = ?" ;
+	"useSQLResult=ctxchk" ;
+	$stavkaPrimkeID
+)]]></Calculation></Value>
 	</Step>
-	<Step enable="True" id="6" name="Go to Layout">
-		<LayoutDestination value="SelectedLayout"/>
-		<Layout id="227" name="Dev StavkePrimke"/>
-		<Animation value="None"/>
-	</Step>
-	<Step enable="True" id="22" name="Enter Find Mode">
-		<UseCurrentRecord state="False"/>
-		<PauseForUser state="False"/>
-	</Step>
-	<Step enable="True" id="76" name="Set Field">
-		<Field table="StavkePrimke" id="1" name="PrimaryKey"/>
-		<Calculation><![CDATA[$stavkaPrimkeID]]></Calculation>
-	</Step>
-	<Step enable="True" id="28" name="Perform Find"/>
 
 	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
+		<Calculation><![CDATA[not IsEmpty ( $ctxChk )]]></Calculation>
 	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "SELECT failed: " & $ctxChk ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[epSQLResultRowCount ( "ctxchk" ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLResultDelete ( "ctxchk" )]]></Calculation></Value>
+		</Step>
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$void</Name>
 			<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND" ; "StavkePrimke not found: " & $stavkaPrimkeID ; "" ; "{}" ; "" )]]></Calculation></Value>
@@ -108,39 +113,11 @@ LOCK TRIGGERS (abort + lock all siblings):
 		<Step enable="True" id="68" name="If">
 			<Calculation><![CDATA[$isRoot]]></Calculation>
 		</Step>
-			<Step enable="True" id="1" name="Perform Script">
+			<Step enable="True" id="25" name="Perform Script">
 				<Script id="780" name="UTIL__FlushLog"/>
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
-		<Step enable="True" id="6" name="Go to Layout">
-			<LayoutDestination value="OriginalLayout"/>
-			<Animation value="None"/>
-		</Step>
-		<Step enable="True" id="103" name="Exit Script">
-			<Calculation><![CDATA[Response_Finalize]]></Calculation>
-		</Step>
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[ExecuteSQL ( "SELECT LockedSelling FROM StavkePrimke WHERE PrimaryKey = ?" ; "" ; "" ; $stavkaPrimkeID ) = 1]]></Calculation>
-	</Step>
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$void</Name>
-			<Value><Calculation><![CDATA[Response_AddError ( "LOCKED" ; "Selling price is locked for this batch" ; "LockedSelling" ; "{}" ; "" )]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="68" name="If">
-			<Calculation><![CDATA[$isRoot]]></Calculation>
-		</Step>
-			<Step enable="True" id="1" name="Perform Script">
-				<Script id="780" name="UTIL__FlushLog"/>
-				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-			</Step>
-		<Step enable="True" id="70" name="End If"/>
-		<Step enable="True" id="6" name="Go to Layout">
-			<LayoutDestination value="OriginalLayout"/>
-			<Animation value="None"/>
-		</Step>
 		<Step enable="True" id="103" name="Exit Script">
 			<Calculation><![CDATA[Response_Finalize]]></Calculation>
 		</Step>
@@ -148,275 +125,224 @@ LOCK TRIGGERS (abort + lock all siblings):
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$artikalID</Name>
-		<Value><Calculation><![CDATA[StavkePrimke::ForeignKeyArtikalID]]></Calculation></Value>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "ctxchk" )]]></Calculation></Value>
 	</Step>
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$ufdID</Name>
-		<Value><Calculation><![CDATA[StavkePrimke::ForeignKeyUlaznaFakturaID]]></Calculation></Value>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 ; "ctxchk" )]]></Calculation></Value>
 	</Step>
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$primkaID</Name>
-		<Value><Calculation><![CDATA[StavkePrimke::ForeignKeyPrimkaID]]></Calculation></Value>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 ; "ctxchk" )]]></Calculation></Value>
 	</Step>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Find siblings</Text>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "ctxchk" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$kmpStatusChk</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT KMP__KalkulacijaMP.Status FROM StavkePrimke, KMP__Stavke, KMP__KalkulacijaMP
+	 WHERE KMP__Stavke.PrimaryKey = StavkePrimke.PrimaryKey
+	   AND KMP__KalkulacijaMP.PrimaryKey = KMP__Stavke.ForeignKeyKalkulacijaID
+	   AND StavkePrimke.PrimaryKey = ?" ;
+	"useSQLResult=kmpchk" ;
+	$stavkaPrimkeID
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$locked</Name>
+		<Value><Calculation><![CDATA[GetAsNumber (
+	IsEmpty ( $kmpStatusChk )
+	and epSQLResultRowCount ( "kmpchk" ) > 0
+	and epSQLResult ( 0 ; 0 ; "kmpchk" ) = "Knjižena"
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "kmpchk" )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[not IsEmpty ( $ufdID )]]></Calculation>
+		<Calculation><![CDATA[$locked = 1]]></Calculation>
 	</Step>
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$siblingPKs</Name>
-			<Value><Calculation><![CDATA[ExecuteSQL (
-	"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyArtikalID = ? AND ForeignKeyUlaznaFakturaID = ?" ;
-	¶ ; "" ; $artikalID ; $ufdID
-)]]></Calculation></Value>
-		</Step>
-	<Step enable="True" id="69" name="Else"/>
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$siblingPKs</Name>
-			<Value><Calculation><![CDATA[ExecuteSQL (
-	"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyArtikalID = ? AND ForeignKeyPrimkaID = ?" ;
-	¶ ; "" ; $artikalID ; $primkaID
-)]]></Calculation></Value>
-		</Step>
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$siblingCount</Name>
-		<Value><Calculation><![CDATA[ValueCount ( $siblingPKs )]]></Calculation></Value>
-	</Step>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Check lock triggers</Text>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$i</Name>
-		<Value><Calculation><![CDATA[1]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$lockTrigger</Name>
-		<Value><Calculation><![CDATA[""]]></Calculation></Value>
-	</Step>
-
-	<Step enable="True" id="71" name="Loop">
-		<FlushType value="Always"/>
-	</Step>
-
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$sibPK</Name>
-			<Value><Calculation><![CDATA[GetValue ( $siblingPKs ; $i )]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="74" name="Exit Loop If">
-			<Calculation><![CDATA[IsEmpty ( $sibPK )]]></Calculation>
-		</Step>
-
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$sibLocked</Name>
-			<Value><Calculation><![CDATA[ExecuteSQL ( "SELECT LockedSelling FROM StavkePrimke WHERE PrimaryKey = ?" ; "" ; "" ; $sibPK )]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="68" name="If">
-			<Calculation><![CDATA[$sibLocked = 1]]></Calculation>
-		</Step>
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$lockTrigger</Name>
-				<Value><Calculation><![CDATA["BATCH_LOCKED"]]></Calculation></Value>
-			</Step>
-			<Step enable="True" id="74" name="Exit Loop If">
-				<Calculation><![CDATA[True]]></Calculation>
-			</Step>
-		<Step enable="True" id="70" name="End If"/>
-
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$invoiceCount</Name>
-			<Value><Calculation><![CDATA[ExecuteSQL ( "SELECT COUNT(*) FROM InvoiceLines WHERE ForeignKeyStavkaUlazneFakture = ?" ; "" ; "" ; $sibPK )]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="68" name="If">
-			<Calculation><![CDATA[$invoiceCount > 0]]></Calculation>
-		</Step>
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$lockTrigger</Name>
-				<Value><Calculation><![CDATA["BATCH_INVOICED"]]></Calculation></Value>
-			</Step>
-			<Step enable="True" id="74" name="Exit Loop If">
-				<Calculation><![CDATA[True]]></Calculation>
-			</Step>
-		<Step enable="True" id="70" name="End If"/>
-
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$i</Name>
-			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
-		</Step>
-
-	<Step enable="True" id="73" name="End Loop"/>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Apply lock if triggered — lock all siblings, abort</Text>
-	</Step>
-
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[not IsEmpty ( $lockTrigger )]]></Calculation>
-	</Step>
-
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$i</Name>
-			<Value><Calculation><![CDATA[1]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="71" name="Loop">
-			<FlushType value="Always"/>
-		</Step>
-
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$sibPK</Name>
-				<Value><Calculation><![CDATA[GetValue ( $siblingPKs ; $i )]]></Calculation></Value>
-			</Step>
-			<Step enable="True" id="74" name="Exit Loop If">
-				<Calculation><![CDATA[IsEmpty ( $sibPK )]]></Calculation>
-			</Step>
-
-			<Step enable="True" id="22" name="Enter Find Mode">
-				<UseCurrentRecord state="False"/>
-				<PauseForUser state="False"/>
-			</Step>
-			<Step enable="True" id="76" name="Set Field">
-				<Field table="StavkePrimke" id="1" name="PrimaryKey"/>
-				<Calculation><![CDATA[$sibPK]]></Calculation>
-			</Step>
-			<Step enable="True" id="28" name="Perform Find"/>
-
-			<Step enable="True" id="68" name="If">
-				<Calculation><![CDATA[Get ( FoundCount ) > 0 and StavkePrimke::LockedSelling ≠ 1]]></Calculation>
-			</Step>
-				<Step enable="True" id="76" name="Set Field">
-					<Field table="StavkePrimke" id="0" name="LockedSelling"/>
-					<Calculation><![CDATA[1]]></Calculation>
-				</Step>
-				<Step enable="True" id="75" name="Commit Records/Requests">
-					<NoInteract state="True"/>
-					<Option state="False"/>
-					<ESSForceCommit state="False"/>
-				</Step>
-			<Step enable="True" id="70" name="End If"/>
-
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$i</Name>
-				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
-			</Step>
-
-		<Step enable="True" id="73" name="End Loop"/>
-
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$void</Name>
-			<Value><Calculation><![CDATA[Response_AddError ( $lockTrigger ;
-	Case (
-		$lockTrigger = "BATCH_INVOICED" ; "Batch invoiced — selling price locked for all siblings" ;
-		"Selling price already locked for a sibling in this batch"
-	) ; "" ; "{}" ; "" )]]></Calculation></Value>
-		</Step>
-		<Step enable="True" id="141" name="Set Variable">
-			<Name>$void</Name>
-			<Value><Calculation><![CDATA[Log.add ( "warn" ; "SP_LOCK_APPLIED" ; "Lock triggered by " & $lockTrigger & " — artikalID=" & $artikalID ; $params )]]></Calculation></Value>
+			<Value><Calculation><![CDATA[Response_AddError ( "LOCKED" ; "Selling price is locked — KMP is Knjižena" ; "LockedSelling" ; "{}" ; "" )]]></Calculation></Value>
 		</Step>
 		<Step enable="True" id="68" name="If">
 			<Calculation><![CDATA[$isRoot]]></Calculation>
 		</Step>
-			<Step enable="True" id="1" name="Perform Script">
+			<Step enable="True" id="25" name="Perform Script">
 				<Script id="780" name="UTIL__FlushLog"/>
 				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 			</Step>
 		<Step enable="True" id="70" name="End If"/>
-		<Step enable="True" id="6" name="Go to Layout">
-			<LayoutDestination value="OriginalLayout"/>
-			<Animation value="None"/>
-		</Step>
 		<Step enable="True" id="103" name="Exit Script">
 			<Calculation><![CDATA[Response_Finalize]]></Calculation>
 		</Step>
-
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Set ProdajnaCijena on all siblings</Text>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Find siblings ─────────────────────────────────────────────────────────</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$updatedCount</Name>
+		<Name>$sibSel</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $ufdID ) ;
+	epSQLExecute (
+		"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyArtikalID = ? AND ForeignKeyUlaznaFakturaID = ?" ;
+		"useSQLResult=sibchk" ; $artikalID ; $ufdID
+	) ;
+	epSQLExecute (
+		"SELECT PrimaryKey FROM StavkePrimke WHERE ForeignKeyArtikalID = ? AND ForeignKeyPrimkaID = ?" ;
+		"useSQLResult=sibchk" ; $artikalID ; $primkaID
+	)
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $sibSel )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "Sibling SELECT failed: " & $sibSel ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sibCount</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "sibchk" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Guard: BATCH_INVOICED — reject if any sibling has an InvoiceLine ──────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
 		<Value><Calculation><![CDATA[0]]></Calculation></Value>
 	</Step>
 	<Step enable="True" id="141" name="Set Variable">
-		<Name>$i</Name>
-		<Value><Calculation><![CDATA[1]]></Calculation></Value>
+		<Name>$invoiced</Name>
+		<Value><Calculation><![CDATA[False]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="71" name="Loop">
 		<FlushType value="Always"/>
 	</Step>
-
+		<Step enable="True" id="74" name="Exit Loop If">
+			<Calculation><![CDATA[$i >= $sibCount or $invoiced]]></Calculation>
+		</Step>
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$sibPK</Name>
-			<Value><Calculation><![CDATA[GetValue ( $siblingPKs ; $i )]]></Calculation></Value>
+			<Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "sibchk" )]]></Calculation></Value>
 		</Step>
-		<Step enable="True" id="74" name="Exit Loop If">
-			<Calculation><![CDATA[IsEmpty ( $sibPK )]]></Calculation>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$invCount</Name>
+			<Value><Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT COUNT(*) FROM InvoiceLines WHERE ForeignKeyStavkaUlazneFakture = ?" ; "" ; "" ; $sibPK ) )]]></Calculation></Value>
 		</Step>
-
-		<Step enable="True" id="22" name="Enter Find Mode">
-			<UseCurrentRecord state="False"/>
-			<PauseForUser state="False"/>
-		</Step>
-		<Step enable="True" id="76" name="Set Field">
-			<Field table="StavkePrimke" id="1" name="PrimaryKey"/>
-			<Calculation><![CDATA[$sibPK]]></Calculation>
-		</Step>
-		<Step enable="True" id="28" name="Perform Find"/>
-
 		<Step enable="True" id="68" name="If">
-			<Calculation><![CDATA[Get ( FoundCount ) > 0]]></Calculation>
+			<Calculation><![CDATA[$invCount > 0]]></Calculation>
 		</Step>
-			<Step enable="True" id="76" name="Set Field">
-				<Field table="StavkePrimke" id="11" name="ProdajnaCijena"/>
-				<Calculation><![CDATA[$newPrice]]></Calculation>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$invoiced</Name>
+				<Value><Calculation><![CDATA[True]]></Calculation></Value>
 			</Step>
-			<Step enable="True" id="75" name="Commit Records/Requests">
-				<NoInteract state="True"/>
-				<Option state="False"/>
-				<ESSForceCommit state="False"/>
-			</Step>
-			<Step enable="True" id="68" name="If">
-				<Calculation><![CDATA[Get ( LastError ) = 0]]></Calculation>
-			</Step>
-				<Step enable="True" id="141" name="Set Variable">
-					<Name>$updatedCount</Name>
-					<Value><Calculation><![CDATA[$updatedCount + 1]]></Calculation></Value>
-				</Step>
-			<Step enable="True" id="69" name="Else"/>
-				<Step enable="True" id="141" name="Set Variable">
-					<Name>$void</Name>
-					<Value><Calculation><![CDATA[Response_AddWarning ( "COMMIT_FAILED" ; "Failed to set ProdajnaCijena (FM error " & Get ( LastError ) & ")" ; "" ; JSONSetElement ( "{}" ; "stavkaPK" ; $sibPK ; JSONString ) ; "" )]]></Calculation></Value>
-				</Step>
-			<Step enable="True" id="70" name="End If"/>
 		<Step enable="True" id="70" name="End If"/>
-
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$i</Name>
 			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
 		</Step>
-
 	<Step enable="True" id="73" name="End Loop"/>
 
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Sync ServiceOrderLines</Text>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$invoiced]]></Calculation>
 	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLResultDelete ( "sibchk" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "BATCH_INVOICED" ; "Batch invoiced — selling price is locked for all siblings" ; "" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Log.add ( "warn" ; "SP_BATCH_INVOICED" ; "artikalID=" & $artikalID ; $params )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="25" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="89" name="# (comment)">
-		<Text>Go to layout: Dev Service Order Lines (id 31)</Text>
+		<Text>── Set ProdajnaCijena on all siblings ────────────────────────────────────</Text>
 	</Step>
-	<Step enable="True" id="6" name="Go to Layout">
-		<LayoutDestination value="SelectedLayout"/>
-		<Layout id="31" name="Dev Service Order Lines"/>
-		<Animation value="None"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$updatedCount</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="74" name="Exit Loop If">
+			<Calculation><![CDATA[$i >= $sibCount]]></Calculation>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$sibPK</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "sibchk" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$upd</Name>
+			<Value><Calculation><![CDATA[epSQLExecute ( "UPDATE StavkePrimke SET ProdajnaCijena = ? WHERE PrimaryKey = ?" ; "" ; $newPrice ; $sibPK )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( $upd )]]></Calculation>
+		</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$updatedCount</Name>
+				<Value><Calculation><![CDATA[$updatedCount + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="69" name="Else"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$void</Name>
+				<Value><Calculation><![CDATA[Response_AddWarning ( "UPDATE_FAILED" ; "Failed to set ProdajnaCijena: " & $upd ; "" ; JSONSetElement ( "{}" ; "stavkaPK" ; $sibPK ; JSONString ) ; "" )]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Sync ServiceOrderLines::Rate ──────────────────────────────────────────</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
@@ -424,106 +350,58 @@ LOCK TRIGGERS (abort + lock all siblings):
 		<Value><Calculation><![CDATA[0]]></Calculation></Value>
 	</Step>
 
-	<Step enable="True" id="68" name="If">
-		<Calculation><![CDATA[$siblingCount > 0]]></Calculation>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
 	</Step>
 
-		<Step enable="True" id="22" name="Enter Find Mode">
-			<UseCurrentRecord state="False"/>
-			<PauseForUser state="False"/>
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="74" name="Exit Loop If">
+			<Calculation><![CDATA[$i >= $sibCount]]></Calculation>
 		</Step>
-		<Step enable="True" id="76" name="Set Field">
-			<Field table="ServiceOrderLines" id="52" name="ForeignKeyStavkaPrimkeID"/>
-			<Calculation><![CDATA[GetValue ( $siblingPKs ; 1 )]]></Calculation>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$sibPK</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "sibchk" )]]></Calculation></Value>
 		</Step>
-
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$solUpd</Name>
+			<Value><Calculation><![CDATA[epSQLExecute ( "UPDATE ServiceOrderLines SET Rate = ? WHERE ForeignKeyStavkaPrimkeID = ?" ; "" ; $newPrice ; $sibPK )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( $solUpd )]]></Calculation>
+		</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$syncedLines</Name>
+				<Value><Calculation><![CDATA[$syncedLines + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="69" name="Else"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$void</Name>
+				<Value><Calculation><![CDATA[Response_AddWarning ( "SOL_SYNC_FAILED" ; "Failed to sync Rate: " & $solUpd ; "" ; JSONSetElement ( "{}" ; "stavkaPK" ; $sibPK ; JSONString ) ; "" )]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
 		<Step enable="True" id="141" name="Set Variable">
 			<Name>$i</Name>
-			<Value><Calculation><![CDATA[2]]></Calculation></Value>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
 		</Step>
-		<Step enable="True" id="71" name="Loop">
-			<FlushType value="Always"/>
-		</Step>
-			<Step enable="True" id="74" name="Exit Loop If">
-				<Calculation><![CDATA[$i > $siblingCount]]></Calculation>
-			</Step>
-			<Step enable="True" id="7" name="New Record/Request"/>
-			<Step enable="True" id="76" name="Set Field">
-				<Field table="ServiceOrderLines" id="52" name="ForeignKeyStavkaPrimkeID"/>
-				<Calculation><![CDATA[GetValue ( $siblingPKs ; $i )]]></Calculation>
-			</Step>
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$i</Name>
-				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
-			</Step>
-		<Step enable="True" id="73" name="End Loop"/>
+	<Step enable="True" id="73" name="End Loop"/>
 
-		<Step enable="True" id="28" name="Perform Find"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "sibchk" )]]></Calculation></Value>
+	</Step>
 
-		<Step enable="True" id="68" name="If">
-			<Calculation><![CDATA[Get ( FoundCount ) > 0]]></Calculation>
-		</Step>
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$solCount</Name>
-				<Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
-			</Step>
-			<Step enable="True" id="141" name="Set Variable">
-				<Name>$j</Name>
-				<Value><Calculation><![CDATA[0]]></Calculation></Value>
-			</Step>
-			<Step enable="True" id="16" name="Go to Record/Request/Page">
-				<RowPageLocation value="First"/>
-			</Step>
-			<Step enable="True" id="71" name="Loop">
-				<FlushType value="Always"/>
-			</Step>
-				<Step enable="True" id="76" name="Set Field">
-					<Field table="ServiceOrderLines" id="34" name="Rate"/>
-					<Calculation><![CDATA[$newPrice]]></Calculation>
-				</Step>
-				<Step enable="True" id="75" name="Commit Records/Requests">
-					<NoInteract state="True"/>
-					<Option state="False"/>
-					<ESSForceCommit state="False"/>
-				</Step>
-				<Step enable="True" id="68" name="If">
-					<Calculation><![CDATA[Get ( LastError ) = 0]]></Calculation>
-				</Step>
-					<Step enable="True" id="141" name="Set Variable">
-						<Name>$syncedLines</Name>
-						<Value><Calculation><![CDATA[$syncedLines + 1]]></Calculation></Value>
-					</Step>
-				<Step enable="True" id="69" name="Else"/>
-					<Step enable="True" id="141" name="Set Variable">
-						<Name>$void</Name>
-						<Value><Calculation><![CDATA[Response_AddWarning ( "SOL_SYNC_FAILED" ; "Failed to sync Rate (FM error " & Get ( LastError ) & ")" ; "" ; JSONSetElement ( "{}" ; "solPK" ; ServiceOrderLines::PrimaryKey ; JSONString ) ; "" )]]></Calculation></Value>
-					</Step>
-				<Step enable="True" id="70" name="End If"/>
-				<Step enable="True" id="141" name="Set Variable">
-					<Name>$j</Name>
-					<Value><Calculation><![CDATA[$j + 1]]></Calculation></Value>
-				</Step>
-				<Step enable="True" id="74" name="Exit Loop If">
-					<Calculation><![CDATA[$j >= $solCount]]></Calculation>
-				</Step>
-				<Step enable="True" id="16" name="Go to Record/Request/Page">
-					<Exit state="False"/>
-					<RowPageLocation value="Next"/>
-				</Step>
-			<Step enable="True" id="73" name="End Loop"/>
-		<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="True" id="70" name="End If"/>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Result</Text>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Success ───────────────────────────────────────────────────────────────</Text>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
 		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
-	[ "updated" ; $updatedCount ; JSONNumber ] ;
-	[ "syncedLines" ; $syncedLines ; JSONNumber ]
+	[ "updated"      ; $updatedCount ; JSONNumber ] ;
+	[ "syncedLines"  ; $syncedLines  ; JSONNumber ]
 ) )]]></Calculation></Value>
 	</Step>
 	<Step enable="True" id="141" name="Set Variable">
@@ -534,16 +412,12 @@ LOCK TRIGGERS (abort + lock all siblings):
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[$isRoot]]></Calculation>
 	</Step>
-		<Step enable="True" id="1" name="Perform Script">
+		<Step enable="True" id="25" name="Perform Script">
 			<Script id="780" name="UTIL__FlushLog"/>
 			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
 		</Step>
 	<Step enable="True" id="70" name="End If"/>
 
-	<Step enable="True" id="6" name="Go to Layout">
-		<LayoutDestination value="OriginalLayout"/>
-		<Animation value="None"/>
-	</Step>
 	<Step enable="True" id="103" name="Exit Script">
 		<Calculation><![CDATA[Response_Finalize]]></Calculation>
 	</Step>

@@ -61,6 +61,22 @@ If `PROJECT.md` exists at the project root, read it at session start. It contain
 
 - When writing docs for this project, default audience is END-USERS who download the repo as a tool, NOT collaborative developers/contributors, unless explicitly told otherwise.
 
+## FileMaker SQL Conventions
+
+- ALWAYS use `epSQLQuote` for value quoting and `epFMNameID` for identifier wrapping when constructing SQL with the epSQL plugin
+- Read `.claude/` project-local memory files BEFORE writing any FileMaker SQL or scripts — they contain project-specific conventions
+- Prefer `epSQLExecute` with the epSQL plugin over context-switching approaches (Go to Layout/Find/Commit) for portal/calculation updates
+
+## FileMaker Script Linting
+
+- Every `Perform Find` step MUST include a `Restore` child element to pass S009 lint
+- Every `If` block MUST have a matching `End If` — verify before considering a script complete
+- Run lint checks on generated FileMaker scripts before declaring them done
+
+## Git Remotes
+
+- This project uses both `origin` and `upstream` — when pulling/syncing commits the user means `upstream` unless stated otherwise
+
 # Overview
 
 This project is designed to create FileMaker objects — primarily scripts and calculations — in the clipboard-supported fmxmlsnippet format. Developers reference and use the HR (human-readable) format for scripts. The following folders are used.

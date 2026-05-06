@@ -8,7 +8,15 @@
       "Bash(find agent/xml_parsed -name *AGENT__*)",
       "Bash(find /Users/emir/agenticfm/agent/sandbox -type f -exec grep -l \"InvoiceLine\\\\|ServiceOrderLine\" {} \\\\;)",
       "Bash(command -v osascript)",
-      "Bash(python3 -m agent.fmlint agent/sandbox/CopyLineToOrder.xml agent/sandbox/CopyToOrder.xml agent/sandbox/SO__OpenSOPicker.xml agent/sandbox/SO__LoadSOPage.xml agent/sandbox/SO__PickerConfirm.xml)"
+      "Bash(python3 -m agent.fmlint agent/sandbox/CopyLineToOrder.xml agent/sandbox/CopyToOrder.xml agent/sandbox/SO__OpenSOPicker.xml agent/sandbox/SO__LoadSOPage.xml agent/sandbox/SO__PickerConfirm.xml)",
+      "Bash(python3 agent/scripts/deploy.py agent/sandbox/UTIL__FlushLog.xml)",
+      "WebFetch(domain:docs.ottomatic.cloud)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "WebFetch(domain:www.ottomatic.cloud)",
+      "WebFetch(domain:www.proof.sh)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:ottofms.com)"
     ]
   }
 }

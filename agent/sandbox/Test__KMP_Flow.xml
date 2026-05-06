@@ -3,7 +3,9 @@
 
   <Step enable="True" id="89" name="# (comment)">
     <Text>PURPOSE: Regression test for the KMP creation chain.
-Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), KMP__Post (guard), KMP__RefreshTotals.</Text>
+Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (ProdajnaCijena write-back, ALREADY_GENERATED guard),
+KMP__Post (LockedSelling calc, INVALID_STATUS guard), SP__SetProdajnaCijena (LOCKED guard),
+KMP__RefreshTotals (regression), KMP__Delete (LockedSelling self-clear, NOT_FOUND guard).</Text>
   </Step>
 
   <Step enable="True" id="85" name="Allow User Abort">
@@ -18,24 +20,28 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
   </Step>
 
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA["7231C091-8058-4D83-833A-ECF7FEBB9D2B"]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$ulaznaFakturaID</Name>
+    <Value><Calculation><![CDATA["7231C091-8058-4D83-833A-ECF7FEBB9D2B"]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$$log</Name>
+    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[""]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[""]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[""]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$kalkulacijaID</Name>
+    <Value><Calculation><![CDATA[""]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$stavkeCount</Name>
+    <Value><Calculation><![CDATA[0]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$sampleStavkaPK</Name>
+    <Value><Calculation><![CDATA[""]]></Calculation></Value>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
@@ -47,21 +53,19 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="679" name="KMP__CreateFromUlaznaFaktura"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Create kalkulacija"                                                                         ; JSONString ] ;
+	[ "test"     ; "Create kalkulacija"                                                                                                                   ; JSONString ] ;
 	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and not IsEmpty ( JSONGetElement ( $result ; "data.kalkulacijaID" ) ) ; "pass" ; "error" ) ; JSONString ] ;
-	[ "result"   ; $result                                                                                      ; JSONObject ]
+	[ "result"   ; $result                                                                                                                                ; JSONObject ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
 
   <Step enable="True" id="68" name="If">
-    <Restore state="False"/>
     <Calculation><![CDATA[JSONGetElement ( $result ; "status" ) ≠ "success"]]></Calculation>
   </Step>
     <Step enable="True" id="87" name="Show Custom Dialog">
@@ -77,9 +81,8 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
   <Step enable="True" id="70" name="End If"/>
 
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[JSONGetElement ( $result ; "data.kalkulacijaID" )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$kalkulacijaID</Name>
+    <Value><Calculation><![CDATA[JSONGetElement ( $result ; "data.kalkulacijaID" )]]></Calculation></Value>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
@@ -91,16 +94,15 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="679" name="KMP__CreateFromUlaznaFaktura"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Create duplicate (idempotent)"                                                                                                                        ; JSONString ] ;
-	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and JSONGetElement ( $result ; "data.kalkulacijaID" ) = $kalkulacijaID ; "pass" ; "error" )   ; JSONString ] ;
-	[ "result"   ; $result                                                                                                                                                ; JSONObject ] ;
-	[ "note"     ; "Expected: success + same kalkulacijaID. Script is idempotent — must not create a duplicate."                                                         ; JSONString ]
+	[ "test"     ; "Create duplicate (idempotent)"                                                                                                        ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and JSONGetElement ( $result ; "data.kalkulacijaID" ) = $kalkulacijaID ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result"   ; $result                                                                                                                                ; JSONObject ] ;
+	[ "note"     ; "Expected: success + same kalkulacijaID. Must not create a duplicate."                                                                 ; JSONString ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
@@ -114,26 +116,73 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="683" name="KMP__GenerateStavke"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $result ; "data.generatedCount" ) )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$stavkeCount</Name>
+    <Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $result ; "data.generatedCount" ) )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Generate stavke"                                                                                                          ; JSONString ] ;
-	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and $stavkeCount > 0 ; "pass" ; "error" )                        ; JSONString ] ;
-	[ "result"   ; $result                                                                                                                    ; JSONObject ]
+	[ "test"     ; "Generate stavke"                                                                                     ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and $stavkeCount > 0 ; "pass" ; "error" )   ; JSONString ] ;
+	[ "result"   ; $result                                                                                               ; JSONObject ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
-    <Text>── Test 4: Generate again (guard: ALREADY_GENERATED) ────────────────────</Text>
+    <Text>── Sample one stavkaPK for LockedSelling assertions later ────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$void</Name>
+    <Value><Calculation><![CDATA[epSQLExecute ( "SELECT PrimaryKey FROM KMP__Stavke WHERE ForeignKeyKalkulacijaID = ?" ; "useSQLResult=smpchk" ; $kalkulacijaID )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$sampleStavkaPK</Name>
+    <Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "smpchk" )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$void</Name>
+    <Value><Calculation><![CDATA[epSQLResultDelete ( "smpchk" )]]></Calculation></Value>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 4: Verify ProdajnaCijena set on all stavke ──────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$pdcChk</Name>
+    <Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT(*) FROM KMP__Stavke s, KMP__SKMP_StavkePrimke sp
+	 WHERE s.PrimaryKey = sp.PrimaryKey AND s.ForeignKeyKalkulacijaID = ?
+	 AND (sp.ProdajnaCijena IS NULL OR sp.ProdajnaCijena <= 0)" ;
+	"useSQLResult=pdcchk" ;
+	$kalkulacijaID
+)]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$badPDC</Name>
+    <Value><Calculation><![CDATA[If ( IsEmpty ( $pdcChk ) ; GetAsNumber ( epSQLResult ( 0 ; 0 ; "pdcchk" ) ) ; -1 )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$void</Name>
+    <Value><Calculation><![CDATA[epSQLResultDelete ( "pdcchk" )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "Verify ProdajnaCijena set on all stavke"                                                            ; JSONString ] ;
+	[ "severity" ; Case ( $badPDC = 0 ; "pass" ; "error" )                                                             ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ; "stavkeWithBadProdajnaCijena" ; $badPDC ; JSONNumber )                       ; JSONObject ] ;
+	[ "note"     ; "Expected: 0 stavke with null or zero ProdajnaCijena. GenerateStavke must write-back when correcting below-cost." ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 5: Generate again (guard: ALREADY_GENERATED) ────────────────────</Text>
   </Step>
 
   <Step enable="True" id="1" name="Perform Script">
@@ -141,22 +190,21 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="683" name="KMP__GenerateStavke"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Generate again (guard: ALREADY_GENERATED)"                                    ; JSONString ] ;
-	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" ; "pass" ; "error" )    ; JSONString ] ;
-	[ "result"   ; $result                                                                         ; JSONObject ] ;
-	[ "note"     ; "Expected: fail — stavke already exist for this kalkulacija."                  ; JSONString ]
+	[ "test"     ; "Generate again (guard: ALREADY_GENERATED)"                                       ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" ; "pass" ; "error" )       ; JSONString ] ;
+	[ "result"   ; $result                                                                            ; JSONObject ] ;
+	[ "note"     ; "Expected: fail — stavke already exist for this kalkulacija."                     ; JSONString ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
-    <Text>── Test 5: Post kalkulacija ──────────────────────────────────────────────</Text>
+    <Text>── Test 6: Post kalkulacija ──────────────────────────────────────────────</Text>
   </Step>
 
   <Step enable="True" id="1" name="Perform Script">
@@ -164,21 +212,77 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="684" name="KMP__Post"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Post kalkulacija"                                                                                                                              ; JSONString ] ;
-	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and GetAsNumber ( JSONGetElement ( $result ; "data.ukupnoMP_Roba" ) ) > 0 ; "pass" ; "error" ) ; JSONString ] ;
-	[ "result"   ; $result                                                                                                                                         ; JSONObject ]
+	[ "test"     ; "Post kalkulacija"                                                                                                                                               ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and GetAsNumber ( JSONGetElement ( $result ; "data.ukupnoMP_Roba" ) ) > 0 ; "pass" ; "error" )         ; JSONString ] ;
+	[ "result"   ; $result                                                                                                                                                          ; JSONObject ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
-    <Text>── Test 6: Post again (guard: INVALID_STATUS) ───────────────────────────</Text>
+    <Text>── Test 7: Verify LockedSelling = 1 after Post ───────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$kmpStatusAfterPost</Name>
+    <Value><Calculation><![CDATA[ExecuteSQL ( "SELECT Status FROM KMP__KalkulacijaMP WHERE PrimaryKey = ?" ; "" ; "" ; $kalkulacijaID )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "LockedSelling = 1 after Post"                                                                                   ; JSONString ] ;
+	[ "severity" ; Case ( $kmpStatusAfterPost = "Knjižena" ; "pass" ; "error" )                                                    ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ; "kmpStatus" ; $kmpStatusAfterPost ; JSONString )                                         ; JSONObject ] ;
+	[ "note"     ; "Expected: KMP Status = Knjižena — LockedSelling calc derives from this."                                        ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 8: SP__SetProdajnaCijena (guard: LOCKED) ────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$prodajnaBeforeSP</Name>
+    <Value><Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT ProdajnaCijena FROM StavkePrimke WHERE PrimaryKey = ?" ; "" ; "" ; $sampleStavkaPK ) )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaPrimkeID" ; $sampleStavkaPK ; JSONString ] ;
+	[ "newPrice"       ; 99,99           ; JSONNumber ]
+)]]></Calculation>
+    <Script id="810" name="SP__SetProdajnaCijena"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$prodajnaAfterSP</Name>
+    <Value><Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT ProdajnaCijena FROM StavkePrimke WHERE PrimaryKey = ?" ; "" ; "" ; $sampleStavkaPK ) )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "SP__SetProdajnaCijena (guard: LOCKED)"                                                                ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" and $prodajnaAfterSP ≠ 99,99 ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ;
+		[ "spStatus"      ; JSONGetElement ( $result ; "status" )                       ; JSONString ] ;
+		[ "errorCode"     ; JSONGetElement ( $result ; "messages.error[0].code" )       ; JSONString ] ;
+		[ "prodajnaBefore" ; $prodajnaBeforeSP                                         ; JSONNumber ] ;
+		[ "prodajnaAfter"  ; $prodajnaAfterSP                                          ; JSONNumber ] ;
+		[ "sampleStavkaPK" ; $sampleStavkaPK                                           ; JSONString ]
+	)                                                                                                                     ; JSONObject ] ;
+	[ "note"     ; "Expected: SP fails + ProdajnaCijena not changed to 99,99."                                            ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 9: Post again (guard: INVALID_STATUS) ───────────────────────────</Text>
   </Step>
 
   <Step enable="True" id="1" name="Perform Script">
@@ -186,77 +290,71 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Script id="684" name="KMP__Post"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Post again (guard: INVALID_STATUS)"                                         ; JSONString ] ;
-	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" ; "pass" ; "error" )  ; JSONString ] ;
-	[ "result"   ; $result                                                                        ; JSONObject ] ;
-	[ "note"     ; "Expected: fail — Status is already Knjižena."                               ; JSONString ]
+	[ "test"     ; "Post again (guard: INVALID_STATUS)"                                              ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" ; "pass" ; "error" )       ; JSONString ] ;
+	[ "result"   ; $result                                                                            ; JSONObject ] ;
+	[ "note"     ; "Expected: fail — Status is already Knjižena."                                   ; JSONString ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
 
   <Step enable="True" id="89" name="# (comment)">
-    <Text>── Test 7: Verify final KalkulacijaMP state ──────────────────────────────</Text>
+    <Text>── Test 10: Verify final KalkulacijaMP state ─────────────────────────────</Text>
   </Step>
 
   <Step enable="True" id="6" name="Go to Layout">
     <LayoutDestination value="SelectedLayout"/>
     <Layout id="241" name="KMP__KalkulacijaMP"/>
+    <Animation value="None"/>
   </Step>
   <Step enable="True" id="22" name="Enter Find Mode">
-    <Pause state="False"/>
-    <Restore state="False"/>
+    <UseCurrentRecord state="False"/>
+    <PauseForUser state="False"/>
   </Step>
   <Step enable="True" id="76" name="Set Field">
     <Calculation><![CDATA[$kalkulacijaID]]></Calculation>
     <Field table="KMP__KalkulacijaMP" id="1" name="PrimaryKey"/>
   </Step>
-  <Step enable="True" id="28" name="Perform Find">
-    <Restore state="False"/>
-  </Step>
+  <Step enable="True" id="28" name="Perform Find"/>
 
   <Step enable="True" id="68" name="If">
-    <Restore state="False"/>
     <Calculation><![CDATA[Get ( FoundCount ) = 1]]></Calculation>
   </Step>
     <Step enable="True" id="141" name="Set Variable">
+      <Name>$verify</Name>
       <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
 	[ "kalkulacijaID"  ; KMP__KalkulacijaMP::PrimaryKey    ; JSONString ] ;
 	[ "status"         ; KMP__KalkulacijaMP::Status        ; JSONString ] ;
 	[ "ukupnoMP_Roba"  ; KMP__KalkulacijaMP::UkupnoMP_Roba ; JSONNumber ] ;
 	[ "stavkeCount"    ; $stavkeCount                       ; JSONNumber ]
 )]]></Calculation></Value>
-      <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
-      <Name>$verify</Name>
     </Step>
     <Step enable="True" id="1" name="Perform Script">
       <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Verify final state"                                                                                                                                  ; JSONString ] ;
-	[ "severity" ; Case ( KMP__KalkulacijaMP::Status = "Knjižena" and KMP__KalkulacijaMP::UkupnoMP_Roba > 0 ; "pass" ; "error" )                                        ; JSONString ] ;
-	[ "result"   ; $verify                                                                                                                                               ; JSONObject ]
+	[ "test"     ; "Verify final state"                                                                                                                  ; JSONString ] ;
+	[ "severity" ; Case ( KMP__KalkulacijaMP::Status = "Knjižena" and KMP__KalkulacijaMP::UkupnoMP_Roba > 0 ; "pass" ; "error" )                        ; JSONString ] ;
+	[ "result"   ; $verify                                                                                                                               ; JSONObject ]
 )]]></Calculation>
       <Script id="694" name="TEST__Log"/>
     </Step>
-  <Step enable="True" id="69" name="Else">
-    <Restore state="False"/>
-  </Step>
+  <Step enable="True" id="69" name="Else"/>
     <Step enable="True" id="1" name="Perform Script">
       <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "Verify final state"                                                           ; JSONString ] ;
-	[ "severity" ; "error"                                                                         ; JSONString ] ;
-	[ "result"   ; JSONSetElement ( "{}" ; "error" ; "Record not found for PK: " & $kalkulacijaID ; JSONString ) ; JSONObject ]
+	[ "test"     ; "Verify final state"                                                                                  ; JSONString ] ;
+	[ "severity" ; "error"                                                                                               ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ; "error" ; "Record not found for PK: " & $kalkulacijaID ; JSONString )         ; JSONObject ]
 )]]></Calculation>
       <Script id="694" name="TEST__Log"/>
     </Step>
   <Step enable="True" id="70" name="End If"/>
 
   <Step enable="True" id="89" name="# (comment)">
-    <Text>── Test 8: RefreshTotals (regression) ───────────────────────────────────</Text>
+    <Text>── Test 11: RefreshTotals (regression) ──────────────────────────────────</Text>
   </Step>
 
   <Step enable="True" id="1" name="Perform Script">
@@ -266,24 +364,85 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
   <Step enable="True" id="6" name="Go to Layout">
     <LayoutDestination value="SelectedLayout"/>
     <Layout id="241" name="KMP__KalkulacijaMP"/>
+    <Animation value="None"/>
   </Step>
   <Step enable="True" id="22" name="Enter Find Mode">
-    <Pause state="False"/>
-    <Restore state="False"/>
+    <UseCurrentRecord state="False"/>
+    <PauseForUser state="False"/>
   </Step>
   <Step enable="True" id="76" name="Set Field">
     <Calculation><![CDATA[$kalkulacijaID]]></Calculation>
     <Field table="KMP__KalkulacijaMP" id="1" name="PrimaryKey"/>
   </Step>
-  <Step enable="True" id="28" name="Perform Find">
-    <Restore state="False"/>
+  <Step enable="True" id="28" name="Perform Find"/>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "RefreshTotals (regression)"                                                                          ; JSONString ] ;
+	[ "severity" ; Case ( Get ( FoundCount ) = 1 and KMP__KalkulacijaMP::UkupnoMP_Roba > 0 ; "pass" ; "error" )         ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ; "ukupnoMP_Roba" ; KMP__KalkulacijaMP::UkupnoMP_Roba ; JSONNumber )            ; JSONObject ] ;
+	[ "note"     ; "UkupnoMP_Roba must remain > 0 after RefreshTotals runs on a Knjižena record."                        ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 12: Delete kalkulacija ───────────────────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "kalkulacijaID" ; $kalkulacijaID ; JSONString )]]></Calculation>
+    <Script id="811" name="KMP__Delete"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "test"     ; "RefreshTotals (regression)"                                                                     ; JSONString ] ;
-	[ "severity" ; Case ( Get ( FoundCount ) = 1 and KMP__KalkulacijaMP::UkupnoMP_Roba > 0 ; "pass" ; "error" )   ; JSONString ] ;
-	[ "result"   ; JSONSetElement ( "{}" ; "ukupnoMP_Roba" ; KMP__KalkulacijaMP::UkupnoMP_Roba ; JSONNumber )       ; JSONObject ] ;
-	[ "note"     ; "UkupnoMP_Roba must remain > 0 after RefreshTotals runs on a Knjižena record."                   ; JSONString ]
+	[ "test"     ; "Delete kalkulacija"                                                                                                                          ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "success" and not IsEmpty ( JSONGetElement ( $result ; "data.kalkulacijaID" ) ) ; "pass" ; "error" ) ; JSONString ] ;
+	[ "result"   ; $result                                                                                                                                       ; JSONObject ] ;
+	[ "note"     ; "Expected: success + data.kalkulacijaID returned."                                                                                            ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 13: Verify LockedSelling cleared after Delete ────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$kmpStatusAfterDelete</Name>
+    <Value><Calculation><![CDATA[ExecuteSQL ( "SELECT Status FROM KMP__KalkulacijaMP WHERE PrimaryKey = ?" ; "" ; "" ; $kalkulacijaID )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "LockedSelling cleared after Delete"                                                                                         ; JSONString ] ;
+	[ "severity" ; Case ( $kmpStatusAfterDelete ≠ "Knjižena" ; "pass" ; "error" )                                                              ; JSONString ] ;
+	[ "result"   ; JSONSetElement ( "{}" ; "kmpStatus" ; $kmpStatusAfterDelete ; JSONString )                                                   ; JSONObject ] ;
+	[ "note"     ; "Expected: KMP record gone — Status empty, LockedSelling calc = 0."                                                          ; JSONString ]
+)]]></Calculation>
+    <Script id="694" name="TEST__Log"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>── Test 14: Delete again (guard: NOT_FOUND) ─────────────────────────────</Text>
+  </Step>
+
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "kalkulacijaID" ; $kalkulacijaID ; JSONString )]]></Calculation>
+    <Script id="811" name="KMP__Delete"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Name>$result</Name>
+    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "test"     ; "Delete again (guard: NOT_FOUND)"                                                 ; JSONString ] ;
+	[ "severity" ; Case ( JSONGetElement ( $result ; "status" ) = "fail" ; "pass" ; "error" )       ; JSONString ] ;
+	[ "result"   ; $result                                                                            ; JSONObject ] ;
+	[ "note"     ; "Expected: fail — KalkulacijaMP was already deleted."                             ; JSONString ]
 )]]></Calculation>
     <Script id="694" name="TEST__Log"/>
   </Step>
@@ -296,9 +455,10 @@ Covers: KMP__CreateFromUlaznaFaktura (idempotent), KMP__GenerateStavke (guard), 
     <Calculation><![CDATA[JSONSetElement ( "{}" ;
 	[ "label" ; "Test__KMP_Flow" ; JSONString ] ;
 	[ "vars"  ; JSONSetElement ( "{}" ;
-		[ "kalkulacijaID" ; $kalkulacijaID ; JSONString ] ;
-		[ "stavkeCount"   ; $stavkeCount   ; JSONNumber ] ;
-		[ "log"           ; $$log          ; JSONRaw    ]
+		[ "kalkulacijaID"   ; $kalkulacijaID   ; JSONString ] ;
+		[ "stavkeCount"     ; $stavkeCount     ; JSONNumber ] ;
+		[ "sampleStavkaPK" ; $sampleStavkaPK  ; JSONString ] ;
+		[ "log"             ; $$log            ; JSONRaw    ]
 	) ; JSONRaw ]
 )]]></Calculation>
     <Script id="749" name="Agentic-fm Debug"/>

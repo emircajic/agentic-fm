@@ -82,7 +82,7 @@ When `epSQLExecute` UPDATE is called from a script triggered by `OnObjectSave` (
 
 Always double-quote table occurrence names and field names in SQL: `SELECT "MyTable"."MyField" FROM "MyTable"`. Mandatory when names contain spaces or match FM keywords (e.g. `"Date"`). Field double-quotes come after the alias: `alias."My Field"`.
 
-Use `epFMNameID` to future-proof against renames: `Quote(epFMNameID("303"; "F"))` for field ID 303, `Quote(epFMNameID("505"; "T"))` for table ID 505.
+Most field and table names in this solution are SQL-safe — use them as plain strings in queries. Only quote identifiers that contain spaces or collide with SQL reserved words. Use `epSQLQuote` for values, not for identifiers. Avoid `epFMNameID` in SQL strings — it obscures queries and is hard to debug.
 
 **Why:** SQL silently breaks if a table/field name is renamed and bare strings were used.
 

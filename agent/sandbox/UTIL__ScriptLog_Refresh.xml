@@ -1,0 +1,73 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Build the LogJSON viewer HTML for the current ScriptLog record and refresh the LogViewer web viewer.
+Called from OnRecordLoad and OnLayoutEnter triggers. No params. No return value.</Text>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Read current record fields ────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$log</Name>
+		<Value><Calculation><![CDATA[Let ( ~v = ScriptLog::LogJSON ; If ( JSONIsValid ( ~v ) and not IsEmpty ( ~v ) ; ~v ; "[]" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$meta</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "root"  ; ScriptLog::RootScript ; JSONString ] ;
+	[ "sess"  ; ScriptLog::SessionID  ; JSONString ] ;
+	[ "trace" ; ScriptLog::TraceID    ; JSONString ] ;
+	[ "rc"    ; ScriptLog::RowCount   ; JSONNumber ] ;
+	[ "ts"    ; ScriptLog::CreatedAt  ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Build HTML ────────────────────────────────────────────────────────────────</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$css</Name>
+		<Value><Calculation><![CDATA["*{box-sizing:border-box;margin:0;padding:0}body{font-family:ui-monospace,'SF Mono',Monaco,monospace;font-size:11px;background:#1e1e2e;color:#cdd6f4;display:flex;flex-direction:column;height:100vh;overflow:hidden}.hdr{padding:8px 10px;background:#181825;border-bottom:1px solid #313244;flex-shrink:0;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}.hdr-root{font-size:13px;font-weight:700;color:#cba6f7}.hdr-meta{font-size:10px;color:#6c7086}.hdr-rc{color:#f9e2af}.hdr-ts{color:#a6e3a1}.bar{display:flex;gap:6px;padding:6px 10px;background:#181825;border-bottom:1px solid #313244;flex-shrink:0;align-items:center}.bar input{flex:1;padding:4px 8px;border:1px solid #45475a;border-radius:4px;background:#313244;color:#cdd6f4;font-size:11px;font-family:inherit;outline:none}.bar input:focus{border-color:#89b4fa}.bar select{padding:4px 6px;border:1px solid #45475a;border-radius:4px;background:#313244;color:#cdd6f4;font-size:11px;font-family:inherit;outline:none}.cnt{font-size:10px;color:#6c7086;flex-shrink:0}.wrap{flex:1;overflow-y:auto}table{width:100%;border-collapse:collapse}thead th{position:sticky;top:0;background:#181825;padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#6c7086;border-bottom:1px solid #313244;white-space:nowrap}tbody tr.row{cursor:pointer;border-bottom:1px solid #181825}tbody tr.row:hover{background:#252538}tbody tr.row.open{background:#252538}td{padding:5px 8px;vertical-align:top}.lv{font-weight:600;white-space:nowrap}.le{color:#f38ba8}.lw{color:#f9e2af}.li{color:#89b4fa}.la{color:#6c7086}.sc{color:#cba6f7}.cd{color:#a6e3a1}.ms{color:#cdd6f4;word-break:break-word}.tm{color:#6c7086;white-space:nowrap;font-size:10px}.ctx-row td{padding:0;background:#11111b}.ctx-pre{margin:0;padding:8px 10px;white-space:pre-wrap;font-size:10px;color:#cdd6f4;border-left:3px solid #313244;overflow-x:auto}.empty{text-align:center;color:#6c7086;padding:40px;font-size:12px}"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$js</Name>
+		<Value><Calculation><![CDATA["var M=meta,D=log,xr=-1;function init(){var q=document.getElementById('q');var f=document.getElementById('f');q.addEventListener('input',draw);f.addEventListener('change',draw);draw();}function draw(){var q=document.getElementById('q').value.toLowerCase();var f=document.getElementById('f').value;var rows=D.filter(function(r,i){r._i=i;if(q&&(r.script||'').toLowerCase().indexOf(q)<0&&(r.msg||'').toLowerCase().indexOf(q)<0&&(r.code||'').toLowerCase().indexOf(q)<0)return false;if(f&&r.level!==f)return false;return true;});document.getElementById('cnt').textContent=rows.length+'/'+D.length+' entries';var lc={error:'le',warning:'lw',info:'li',trace:'la'};var tb=document.getElementById('tb');tb.innerHTML='';if(!rows.length){tb.innerHTML='<tr><td colspan=\'5\' class=\'empty\'>No entries match filter</td></tr>';return;}rows.forEach(function(r){var tr=document.createElement('tr');tr.className='row'+(xr===r._i?' open':'');tr.setAttribute('data-i',r._i);var cx=r.ctx&&JSON.stringify(r.ctx)!=='{}';tr.innerHTML='<td class=\'lv '+lc[r.level]+'\'>'+r.level+'</td><td class=\'sc\'>'+esc(r.script)+'</td><td class=\'cd\'>'+esc(r.code)+'</td><td class=\'ms\'>'+esc(r.msg)+'</td><td class=\'tm\'>'+(r.ts||'').replace(/.*?(\d{1,2}:\d{2}:\d{2}).*/,'$1')+'</td>';if(cx)tr.style.cursor='pointer';tr.onclick=function(){if(!cx)return;xr=xr===r._i?-1:r._i;draw();};tb.appendChild(tr);if(cx&&xr===r._i){var dr=document.createElement('tr');dr.className='ctx-row';var td=document.createElement('td');td.colSpan=5;var pre=document.createElement('pre');pre.className='ctx-pre';pre.textContent=JSON.stringify(r.ctx,null,2);td.appendChild(pre);dr.appendChild(td);tb.appendChild(dr);}});}function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}window.addEventListener('DOMContentLoaded',init);"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$$~LOG_VIEWER_HTML</Name>
+		<Value><Calculation><![CDATA["data:text/html,<!DOCTYPE html><html><head><meta charset='UTF-8'><style>" & $css & "</style></head><body>" &
+"<div class='hdr'><span class='hdr-root'>" & ScriptLog::RootScript & "</span><span class='hdr-meta hdr-rc'>" & ScriptLog::RowCount & " entries</span><span class='hdr-meta hdr-ts'>" & ScriptLog::CreatedAt & "</span><span class='hdr-meta' title='" & ScriptLog::TraceID & "'>trace " & Left ( ScriptLog::TraceID ; 8 ) & "</span><span class='hdr-meta' title='" & ScriptLog::SessionID & "'>session " & Left ( ScriptLog::SessionID ; 8 ) & "</span></div>" &
+"<div class='bar'><input id='q' placeholder='Search script / code / message…'><select id='f'><option value=''>All levels</option><option value='error'>error</option><option value='warning'>warning</option><option value='info'>info</option><option value='trace'>trace</option></select><span class='cnt' id='cnt'></span></div>" &
+"<div class='wrap'><table><thead><tr><th>Level</th><th>Script</th><th>Code</th><th>Message</th><th>Time</th></tr></thead><tbody id='tb'></tbody></table></div>" &
+"<script>var meta=" & $meta & ";var log=" & $log & ";" & $js & "</script>" &
+"</body></html>"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="167" name="Refresh Object">
+		<ObjectName>
+			<Calculation><![CDATA["LogViewer"]]></Calculation>
+		</ObjectName>
+		<Repetition>
+			<Calculation><![CDATA[1]]></Calculation>
+		</Repetition>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[""]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

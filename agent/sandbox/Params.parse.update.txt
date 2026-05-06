@@ -1,0 +1,94 @@
+/**
+ * Params.parse ( raw ; schema )
+ *
+ * CHANGED in this version:
+ *   $$~SESSION_ID    — set once per FM session (first Params.parse call after launch).
+ *                      Persists until FM quits. Use to group all ScriptLog rows from
+ *                      one work session together.
+ *   $$~ROOT_SCRIPT_NAME — set to Get(ScriptName) when $isRoot = True (new call chain).
+ *                      Cleared by UTIL__FlushLog after it writes the DB row.
+ *                      UTIL__FlushLog uses this for the RootScript column — reliable
+ *                      even when the root script doesn't call Log.add before sub-scripts.
+ *
+ * PASTE THIS ENTIRE BLOCK into the Params.parse custom function calculation.
+ */
+
+Let ( [
+	// ── 1. Detect format ─────────────────────────────────────────────────────
+	~trimmed = Trim ( raw ) ;
+	~isJSON  = Left ( ~trimmed ; 1 ) = "{" ;
+	~hasPipe = not ~isJSON and Position ( ~trimmed ; "|" ; 1 ; 1 ) > 0 ;
+
+	// ── 2. Parse pipe format (positional, mapped by schema) ──────────────────
+	~fromPipe = While ( [
+		~keys  = Substitute ( schema ; "|" ; ¶ ) ;
+		~vals  = Substitute ( ~trimmed ; "|" ; ¶ ) ;
+		~n     = ValueCount ( ~keys ) ;
+		~i     = 0 ;
+		~out   = "{}"
+	] ;
+		~i < ~n ;
+	[
+		~i   = ~i + 1 ;
+		~k   = Trim ( GetValue ( ~keys ; ~i ) ) ;
+		~v   = Trim ( GetValue ( ~vals ; ~i ) ) ;
+		~out = If ( not IsEmpty ( ~k ) ;
+			JSONSetElement ( ~out ; ~k ; ~v ; JSONString ) ;
+			~out
+		)
+	] ;
+		~out
+	) ;
+
+	// ── 3. Parse key=value format (fallback) ──────────────────────────────────
+	~fromKV = While ( [
+		~pairs = Substitute ( ~trimmed ; ";" ; ¶ ) ;
+		~count = ValueCount ( ~pairs ) ;
+		~i     = 0 ;
+		~out   = "{}"
+	] ;
+		~i < ~count ;
+	[
+		~i    = ~i + 1 ;
+		~pair = Trim ( GetValue ( ~pairs ; ~i ) ) ;
+		~eq   = Position ( ~pair ; "=" ; 1 ; 1 ) ;
+		~k    = Trim ( Left ( ~pair ; ~eq - 1 ) ) ;
+		~v    = Trim ( Middle ( ~pair ; ~eq + 1 ; Length ( ~pair ) ) ) ;
+		~out  = If ( ~eq > 0 and not IsEmpty ( ~k ) ;
+			JSONSetElement ( ~out ; ~k ; ~v ; JSONString ) ;
+			~out
+		)
+	] ;
+		~out
+	) ;
+
+	// ── 4. Pick the normalized JSON ───────────────────────────────────────────
+	~json = Case (
+		~isJSON  ; ~trimmed ;
+		~hasPipe ; ~fromPipe ;
+		~fromKV
+	) ;
+
+	// ── 5. Trace ID: receive or generate ──────────────────────────────────────
+	~incoming = JSONGetElement ( ~json ; "traceID" ) ;
+
+	$isRoot  = IsEmpty ( ~incoming ) ;
+	$traceID = If ( not IsEmpty ( ~incoming ) ; ~incoming ; Get ( UUID ) ) ;
+
+	// Stamp traceID into the normalized JSON so it is always present
+	~json = JSONSetElement ( ~json ; "traceID" ; $traceID ; JSONString ) ;
+
+	// ── 6. Session ID: generated once per FM session, persists until FM quits ─
+	$$~SESSION_ID = If ( IsEmpty ( $$~SESSION_ID ) ; Get ( UUID ) ; $$~SESSION_ID ) ;
+
+	// ── 7. Root script name: captured at the top of each call chain ───────────
+	// Only update when this IS the root (new traceID generated here).
+	// Sub-scripts receiving an incoming traceID leave $$~ROOT_SCRIPT_NAME alone.
+	$$~ROOT_SCRIPT_NAME = If ( IsEmpty ( ~incoming ) ; Get ( ScriptName ) ; $$~ROOT_SCRIPT_NAME ) ;
+
+	// ── 8. Expose normalized params and unpack all keys as $variables ─────────
+	$params = ~json ;
+	~void   = jsonToVars ( ~json ; "local" )
+] ;
+	~json
+)

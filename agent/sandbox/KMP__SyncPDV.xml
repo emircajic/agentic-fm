@@ -27,7 +27,7 @@ NOTE: PDV base = nabavnaTotal + RUCIznos  (prodajna cijena bez PDV)
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$void</Name>
-		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "stavkaID|kalkulacijaID|mode" )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "stavkaID|kalkulacijaID|mpIznosBezPDV|mpCijenaBezPDV|pdvPostotak|skipRefresh|skipCommit" )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
@@ -124,22 +124,30 @@ NOTE: PDV base = nabavnaTotal + RUCIznos  (prodajna cijena bez PDV)
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$prodajnaBezPDV</Name>
-		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 1 ) )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ) )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$pdvPostotak</Name>
-		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 2 ) )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 1 ) )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="141" name="Set Variable">
 		<Name>$pdvIznos</Name>
-		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 1 ; 3 ) )]]></Calculation></Value>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 2 ) )]]></Calculation></Value>
 	</Step>
 
 	<Step enable="True" id="89" name="# (comment)">
 		<Text>── Compute and update ────────────────────────────────────────────────────</Text>
 	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not $skipCommit]]></Calculation>
+	</Step>
+		<Step enable="True" id="75" name="Commit Records/Requests">
+			<NoInteract state="True"/>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="68" name="If">
 		<Calculation><![CDATA[$mode = "postotak"]]></Calculation>
@@ -189,10 +197,14 @@ NOTE: PDV base = nabavnaTotal + RUCIznos  (prodajna cijena bez PDV)
 		<Text>── Chain totals ──────────────────────────────────────────────────────────</Text>
 	</Step>
 
-	<Step enable="True" id="25" name="Perform Script">
-		<Script id="696" name="KMP__RefreshTotals"/>
-		<Calculation><![CDATA[$kalkulacijaID]]></Calculation>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not $skipRefresh]]></Calculation>
 	</Step>
+		<Step enable="True" id="25" name="Perform Script">
+			<Script id="696" name="KMP__RefreshTotals"/>
+			<Calculation><![CDATA[$kalkulacijaID]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
 
 	<Step enable="True" id="89" name="# (comment)">
 		<Text>── Success ───────────────────────────────────────────────────────────────</Text>

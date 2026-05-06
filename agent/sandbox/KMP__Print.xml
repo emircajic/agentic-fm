@@ -1,0 +1,560 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Generate, regenerate, print, or save the PDF for a KalkulacijaMP record.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS:&#xD;  kalkulacijaID (text, required) — PrimaryKey of the KMP__KalkulacijaMP record&#xD;  operation   (text, required) — "generate-pdf" | "regenerate-pdf" | "print-pdf" | "save-pdf"&#xD;&#xD;RETURNS: raw API response JSON { status: "success"|"error", ... }&#xD;  generate/regenerate success: pdfBase64 stripped, PDF stored in KMP__KalkulacijaMP::PDFFile&#xD;&#xD;EXAMPLE:&#xD;  Perform Script [ "KMP__Print" ; Parameter: JSONSetElement ( "{}" ;&#xD;      [ "kalkulacijaID" ; KMP__KalkulacijaMP::PrimaryKey ; JSONString ] ;&#xD;      [ "operation" ; "generate-pdf" ; JSONString ]&#xD;  ) ]</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Init</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$params</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$kalkulacijaID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "kalkulacijaID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$operation</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $params ; "operation" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $kalkulacijaID ) or IsEmpty ( $operation )]]></Calculation>
+	</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "error" ; JSONString ] ;
+	[ "error" ; "kalkulacijaID and operation are required" ; JSONString ]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Load record</Text>
+	</Step>
+
+	<Step enable="True" id="6" name="Go to Layout">
+		<LayoutDestination value="SelectedLayout"/>
+		<Layout id="241" name="KMP__KalkulacijaMP"/>
+		<Animation value="None"/>
+	</Step>
+
+	<Step enable="True" id="22" name="Enter Find Mode">
+		<Pause state="False"/>
+	</Step>
+
+	<Step enable="True" id="76" name="Set Field">
+		<Calculation><![CDATA[$kalkulacijaID]]></Calculation>
+		<Field table="KMP__KalkulacijaMP" id="1" name="PrimaryKey"/>
+	</Step>
+
+	<Step enable="True" id="28" name="Perform Find">
+		<Restore state="False"/>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[Get ( FoundCount ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="OriginalLayout"/>
+			<Animation value="None"/>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "error" ; JSONString ] ;
+	[ "error" ; "KalkulacijaMP not found: " & $kalkulacijaID ; JSONString ]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Read header fields</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$brojKalkulacije</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::BrojKalkulacije]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datumKalkulacije</Name>
+		<Value><Calculation><![CDATA[Let ( [~d = KMP__KalkulacijaMP::DatumKalkulacije] ;
+	Right ( "0" & Day ( ~d ) ; 2 ) & "." & Right ( "0" & Month ( ~d ) ; 2 ) & "." & Year ( ~d )
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyID</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::ForeignKeyCompanyID]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoFakturna</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoFakturnaVrijednost]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoRabat</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoRabat]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoZavisni</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoZavisniTroskovi]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoRUC</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoRazlikaUCijeni]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoPDV</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoPDV]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$ukupnoMaloprodajna</Name>
+		<Value><Calculation><![CDATA[KMP__KalkulacijaMP::UkupnoMaloprVrijednostBezPDV]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Dispatch on operation</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$operation = "generate-pdf" or $operation = "regenerate-pdf"]]></Calculation>
+	</Step>
+
+		<Step enable="False" id="89" name="# (comment)">
+			<Text>MARK: Build payload</Text>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── Company ────────────────────────────────────────────────────────────────</Text>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT CompanyName, Address, City, PostalCode FROM Company WHERE PrimaryKey = ?" ;
+	"useSQLResult=Yes" ;
+	$companyID
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kompanijaNaziv</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kompanijaAdresa</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kompanijaMjesto</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kompanijaPostanskiBroj</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 3 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── UFD (otpremnica + dobavljač FK) ──────────────────────────────────────</Text>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT BrojUlazneFakture, DatumFakture, ForeignKeyDobavljacID FROM KMP__UlaznaFakturaDobavljaca WHERE PrimaryKey = ?" ;
+	"useSQLResult=Yes" ;
+	$kalkulacijaID
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$otpremnica</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$datumOtpremnice</Name>
+			<Value><Calculation><![CDATA[Let ( [~d = GetAsDate ( epSQLResult ( 0 ; 1 ) )] ;
+	Right ( "0" & Day ( ~d ) ; 2 ) & "." & Right ( "0" & Month ( ~d ) ; 2 ) & "." & Year ( ~d )
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$dobavljacID</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── Dobavljač ────────────────────────────────────────────────────────────</Text>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT NazivDobavljaca, JIB FROM Dobavljaci WHERE PrimaryKey = ?" ;
+	"useSQLResult=Yes" ;
+	$dobavljacID
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$dobavljacNaziv</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$dobavljacJIB</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── Stavke — single join query, loop is pure index reads (no SQL inside) ───</Text>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT art.SifraArtikla, art.NazivArtikla," &
+	" sp.JM, sp.Kolicina, sp.NabavnaCijenaStavke," &
+	" s.RabatPostotak, s.RabatIznos, s.ZavisniTroskovi," &
+	" s.NabavnaCijenaBezPDV_Calculation, s.NabavnaTotalEfektivno_Calculation, s.RUCPostotak," &
+	" s.RUCIznos, s.MPIznosBezPDV, s.PDVPostotak," &
+	" s.PDVIznos, s.MPCijena, s.IznosMP" &
+	" FROM KMP__Stavke s, KMP__SKMP_StavkePrimke sp, KMP__SKMP_StavkePrimke_Artikli art" &
+	" WHERE s.PrimaryKey = sp.PrimaryKey" &
+	" AND sp.ForeignKeyArtikalID = art.PrimaryKey" &
+	" AND s.ForeignKeyKalkulacijaID = ?" &
+	" ORDER BY sp.SortKey, s.PrimaryKey" ;
+	"useSQLResult=rs_stavke" ;
+	$kalkulacijaID
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$rowCount</Name>
+			<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_stavke" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[0]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$stavkeJSON</Name>
+			<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="71" name="Loop">
+			<FlushType value="Always"/>
+		</Step>
+
+			<Step enable="True" id="72" name="Exit Loop If">
+				<Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$stavkaObj</Name>
+				<Value><Calculation><![CDATA[Let ( [
+	~kolicina    = GetAsNumber ( epSQLResult ( $i ; 3  ; "rs_stavke" ) ) ;
+	~nabavnaCij  = GetAsNumber ( epSQLResult ( $i ; 4  ; "rs_stavke" ) )
+] ;
+	JSONSetElement ( "{}" ;
+		[ "sifra"                   ; epSQLResult ( $i ; 0  ; "rs_stavke" )                            ; JSONString ] ;
+		[ "naziv"                   ; epSQLResult ( $i ; 1  ; "rs_stavke" )                            ; JSONString ] ;
+		[ "jm"                      ; epSQLResult ( $i ; 2  ; "rs_stavke" )                            ; JSONString ] ;
+		[ "kolicina"                ; ~kolicina                                                         ; JSONString ] ;
+		[ "fakturnaCijena"          ; ~nabavnaCij                                                       ; JSONString ] ;
+		[ "fakturnaVrijednost"      ; ~nabavnaCij * ~kolicina                                           ; JSONString ] ;
+		[ "rabatPostotak"           ; GetAsNumber ( epSQLResult ( $i ; 5  ; "rs_stavke" ) ) & "%"      ; JSONString ] ;
+		[ "rabatVrijednost"         ; GetAsNumber ( epSQLResult ( $i ; 6  ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "zavisniTroskovi"         ; GetAsNumber ( epSQLResult ( $i ; 7  ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "nabavnaCijenaBezPDV"     ; GetAsNumber ( epSQLResult ( $i ; 8  ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "nabavnaVrijednostBezPDV" ; GetAsNumber ( epSQLResult ( $i ; 9  ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "RUCPostotak"             ; GetAsNumber ( epSQLResult ( $i ; 10 ; "rs_stavke" ) ) & "%"      ; JSONString ] ;
+		[ "RUCVrijednost"           ; GetAsNumber ( epSQLResult ( $i ; 11 ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "prodajnaVrijednostBezPDV"; GetAsNumber ( epSQLResult ( $i ; 12 ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "PDVPostotak"             ; GetAsNumber ( epSQLResult ( $i ; 13 ; "rs_stavke" ) ) & "%"      ; JSONString ] ;
+		[ "PDVVrijednost"           ; GetAsNumber ( epSQLResult ( $i ; 14 ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "mpcSaPDV"                ; GetAsNumber ( epSQLResult ( $i ; 15 ; "rs_stavke" ) )            ; JSONString ] ;
+		[ "prodajnaVrijednostSaPDV" ; GetAsNumber ( epSQLResult ( $i ; 16 ; "rs_stavke" ) )            ; JSONString ]
+	)
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$stavkeJSON</Name>
+				<Value><Calculation><![CDATA[JSONSetElement ( $stavkeJSON ; "[" & $i & "]" ; $stavkaObj ; JSONObject )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$i</Name>
+				<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+			</Step>
+
+		<Step enable="True" id="73" name="End Loop"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_stavke" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── Assemble payload ────────────────────────────────────────────────────</Text>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kompanijaObj</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "naziv" ; $kompanijaNaziv ; JSONString ] ;
+	[ "adresa" ; $kompanijaAdresa ; JSONString ] ;
+	[ "mjesto" ; $kompanijaMjesto ; JSONString ] ;
+	[ "postanskiBroj" ; $kompanijaPostanskiBroj ; JSONString ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$dobavljacObj</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "id" ; $dobavljacJIB ; JSONString ] ;
+	[ "naziv" ; $dobavljacNaziv ; JSONString ] ;
+	[ "otpremnica" ; $otpremnica ; JSONString ] ;
+	[ "datumOtpremnice" ; $datumOtpremnice ; JSONString ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$zbirObj</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "fakturnaVrijednost" ; GetAsNumber ( $ukupnoFakturna ) ; JSONString ] ;
+	[ "rabat" ; GetAsNumber ( $ukupnoRabat ) ; JSONString ] ;
+	[ "zavisniTroskovi" ; GetAsNumber ( $ukupnoZavisni ) ; JSONString ] ;
+	[ "RUC" ; GetAsNumber ( $ukupnoRUC ) ; JSONString ] ;
+	[ "PDV" ; GetAsNumber ( $ukupnoPDV ) ; JSONString ] ;
+	[ "maloprodajnaVrijednost" ; GetAsNumber ( $ukupnoMaloprodajna ) ; JSONString ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$json</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "brojKalkulacije" ; $brojKalkulacije ; JSONString ] ;
+	[ "datumKalkulacije" ; $datumKalkulacije ; JSONString ] ;
+	[ "kompanija" ; $kompanijaObj ; JSONObject ] ;
+	[ "dobavljac" ; $dobavljacObj ; JSONObject ] ;
+	[ "valuta" ; "KM" ; JSONString ] ;
+	[ "stavke" ; $stavkeJSON ; JSONArray ] ;
+	[ "zbir" ; $zbirObj ; JSONObject ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$endpoint</Name>
+			<Value><Calculation><![CDATA["/api/generate-kalkulacija"]]></Calculation></Value>
+		</Step>
+
+	<Step enable="True" id="69" name="Else If">
+		<Calculation><![CDATA[$operation = "print-pdf"]]></Calculation>
+	</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( KMP__KalkulacijaMP::PDFFile )]]></Calculation>
+		</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="OriginalLayout"/>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="103" name="Exit Script">
+				<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "error" ; JSONString ] ;
+	[ "error" ; "PDF ne postoji. Molimo prvo generišite kalkulaciju." ; JSONString ]
+)]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$pdfBase64</Name>
+			<Value><Calculation><![CDATA[Base64Encode ( KMP__KalkulacijaMP::PDFFile )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$json</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "pdfBase64" ; $pdfBase64 ; JSONString ] ;
+	[ "printerName" ; "" ; JSONString ] ;
+	[ "scale" ; "noscale" ; JSONString ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$endpoint</Name>
+			<Value><Calculation><![CDATA["/api/print-pdf"]]></Calculation></Value>
+		</Step>
+
+	<Step enable="True" id="69" name="Else If">
+		<Calculation><![CDATA[$operation = "save-pdf"]]></Calculation>
+	</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( KMP__KalkulacijaMP::PDFFile )]]></Calculation>
+		</Step>
+			<Step enable="True" id="6" name="Go to Layout">
+				<LayoutDestination value="OriginalLayout"/>
+				<Animation value="None"/>
+			</Step>
+			<Step enable="True" id="103" name="Exit Script">
+				<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "error" ; JSONString ] ;
+	[ "error" ; "PDF ne postoji. Molimo prvo generišite kalkulaciju." ; JSONString ]
+)]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$pdfBase64</Name>
+			<Value><Calculation><![CDATA[Base64Encode ( KMP__KalkulacijaMP::PDFFile )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$json</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "pdfBase64" ; $pdfBase64 ; JSONString ] ;
+	[ "filename" ; $brojKalkulacije & ".pdf" ; JSONString ]
+)]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$endpoint</Name>
+			<Value><Calculation><![CDATA["/api/save-pdf"]]></Calculation></Value>
+		</Step>
+
+	<Step enable="True" id="69" name="Else">
+	</Step>
+
+		<Step enable="True" id="6" name="Go to Layout">
+			<LayoutDestination value="OriginalLayout"/>
+			<Animation value="None"/>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "error" ; JSONString ] ;
+	[ "error" ; "Nepoznata operacija: " & $operation ; JSONString ]
+)]]></Calculation>
+		</Step>
+
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Call API</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$apiParams</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "endpoint" ; $endpoint ; JSONString ] ;
+	[ "payload" ; $json ; JSONObject ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="596" name="Call Fiscal API"/>
+		<Calculation><![CDATA[$apiParams]]></Calculation>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$response</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$status</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $response ; "status" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Store PDF on success (generate/regenerate only)</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[( $operation = "generate-pdf" or $operation = "regenerate-pdf" ) and $status = "success"]]></Calculation>
+	</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$pdfBase64</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( $response ; "pdfBase64" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[not IsEmpty ( $pdfBase64 )]]></Calculation>
+		</Step>
+
+			<Step enable="True" id="76" name="Set Field">
+				<Calculation><![CDATA[Base64Decode ( $pdfBase64 ; $brojKalkulacije & ".pdf" )]]></Calculation>
+				<Field table="KMP__KalkulacijaMP" id="0" name="PDFFile"/>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$response</Name>
+				<Value><Calculation><![CDATA[JSONDeleteElement ( $response ; "pdfBase64" )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="75" name="Commit Records/Requests">
+				<NoInteract state="True"/>
+			</Step>
+
+		<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="6" name="Go to Layout">
+		<LayoutDestination value="OriginalLayout"/>
+		<Animation value="None"/>
+	</Step>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$response]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>
