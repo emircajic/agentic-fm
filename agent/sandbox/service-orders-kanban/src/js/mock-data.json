@@ -1,0 +1,92 @@
+{
+  "orders": [
+    {
+      "id": "A1B2C3D4-0001-0001-0001-000000000001",
+      "number": "SO-2026-041",
+      "status": "U toku",
+      "clientName": "Mirko Petrović",
+      "vehicle": "VW Golf VII 2018 - BA123CD",
+      "description": "Zamjena ulja i filtera zraka",
+      "date": "2026-05-07",
+      "timeStart": "08:00",
+      "timeEnd": "09:30"
+    },
+    {
+      "id": "A1B2C3D4-0002-0002-0002-000000000002",
+      "number": "SO-2026-042",
+      "status": "U toku",
+      "clientName": "Jasmina Hodžić",
+      "vehicle": "Škoda Octavia 2020 - BA456EF",
+      "description": "Kočioni sistem — pregled i zamjena pločica",
+      "date": "2026-05-07",
+      "timeStart": "09:00",
+      "timeEnd": "11:00"
+    },
+    {
+      "id": "A1B2C3D4-0003-0003-0003-000000000003",
+      "number": "SO-2026-043",
+      "status": "Zakazan",
+      "clientName": "Edin Begović",
+      "vehicle": "BMW 320d 2019 - SA789GH",
+      "description": "Dijagnostika motora + servis klime",
+      "date": "2026-05-07",
+      "timeStart": "10:00",
+      "timeEnd": "12:30"
+    },
+    {
+      "id": "A1B2C3D4-0004-0004-0004-000000000004",
+      "number": "SO-2026-044",
+      "status": "Zakazan",
+      "clientName": "Autopark d.o.o.",
+      "vehicle": "Mercedes Vito 2021 - K001IJ",
+      "description": "",
+      "date": "2026-05-07",
+      "timeStart": "13:00",
+      "timeEnd": ""
+    },
+    {
+      "id": "A1B2C3D4-0005-0005-0005-000000000005",
+      "number": "SO-2026-045",
+      "status": "Otvoren",
+      "clientName": "Sanel Mujić",
+      "vehicle": "Renault Megane 2017 - BA321KL",
+      "description": "Zamjena amortizera — prednja osovina",
+      "date": "2026-05-07",
+      "timeStart": "",
+      "timeEnd": ""
+    },
+    {
+      "id": "A1B2C3D4-0006-0006-0006-000000000006",
+      "number": "SO-2026-046",
+      "status": "Otvoren",
+      "clientName": "Marta Kovač",
+      "vehicle": "Ford Focus 2016 - BA654MN",
+      "description": "Redovni godišnji servis",
+      "date": "2026-05-07",
+      "timeStart": "14:00",
+      "timeEnd": "15:30"
+    },
+    {
+      "id": "A1B2C3D4-0007-0007-0007-000000000007",
+      "number": "SO-2026-047",
+      "status": "Završen",
+      "clientName": "Igor Lazić",
+      "vehicle": "Audi A4 2015 - BA987OP",
+      "description": "Popravka električne instalacije",
+      "date": "2026-05-07",
+      "timeStart": "07:30",
+      "timeEnd": "09:00"
+    },
+    {
+      "id": "A1B2C3D4-0008-0008-0008-000000000008",
+      "number": "SO-2026-048",
+      "status": "Otkazan",
+      "clientName": "Lejla Zukić",
+      "vehicle": "Toyota Yaris 2022 - BA111QR",
+      "description": "Klijent otkazao dan ranije",
+      "date": "2026-05-07",
+      "timeStart": "11:00",
+      "timeEnd": "12:00"
+    }
+  ]
+}

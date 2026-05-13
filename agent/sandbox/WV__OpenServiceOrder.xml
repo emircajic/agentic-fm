@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Open ServiceOrderDetails card window for a given order. Called from the kanban web viewer on card click.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAMS: PrimaryKey (text, UUID)</Text>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$id</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $id )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; "Missing PrimaryKey parameter" ; JSONString )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Open card window on ServiceOrderDetails</Text>
+  </Step>
+  <Step enable="True" id="122" name="New Window">
+    <LayoutDestination value="SelectedLayout"/>
+    <Name>
+      <Calculation><![CDATA["Servisni nalog"]]></Calculation>
+    </Name>
+    <Height>
+      <Calculation><![CDATA[700]]></Calculation>
+    </Height>
+    <Width>
+      <Calculation><![CDATA[900]]></Calculation>
+    </Width>
+    <NewWndStyles DimParentWindow="Yes" Toolbars="No" MenuBar="No" Style="Card" Close="Yes" Minimize="No" Maximize="No" Resize="No" Styles="1076299266"/>
+    <Layout id="186" name="ServiceOrderDetails"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Find the record by PrimaryKey</Text>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <NoInteract state="True"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$id]]></Calculation>
+    <Field table="ServiceOrders" id="1" name="PrimaryKey"/>
+  </Step>
+  <Step enable="True" id="31" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( LastError )]]></Calculation>
+    </Value>
+    <Name>$findError</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$findError = 401]]></Calculation>
+  </Step>
+  <Step enable="True" id="23" name="Close Window">
+    <Window value="Current"/>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; "Order not found: " & $id ; JSONString )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString )]]></Calculation>
+  </Step>
+</fmxmlsnippet>

@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+/* ── Reset ──────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── MD3 baseline tokens ────────────────────────────────────────── */
+
+:root {
+  --md-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Surface hierarchy */
+  --md-bg:                   #f2eff7;
+  --md-surface:              #fffbfe;
+  --md-surface-container:    #ede8f3;
+  --md-surface-container-hi: #e6e0ed;
+
+  /* Text */
+  --md-on-surface:         #1c1b1f;
+  --md-on-surface-variant: #49454f;
+  --md-outline-variant:    #cac4d0;
+
+  /* Primary (accent for time chips, drag highlight) */
+  --md-primary:           #6750a4;
+  --md-primary-container: #eaddff;
+  --md-on-primary:        #ffffff;
+
+  /* Elevation shadows — MD3 level 1 and 2 */
+  --md-shadow-1: 0 1px 2px rgba(0,0,0,0.12), 0 1px 3px 1px rgba(0,0,0,0.08);
+  --md-shadow-2: 0 1px 2px rgba(0,0,0,0.15), 0 2px 6px 2px rgba(0,0,0,0.12);
+}
+
+/* ── Root layout ────────────────────────────────────────────────── */
+
+body {
+  font-family: var(--md-font);
+  background: var(--md-bg);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--md-on-surface-variant);
+  font-size: 14px;
+}
+
+/* ── Kanban board ───────────────────────────────────────────────── */
+
+.kanban-board {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  height: 100%;
+  overflow-x: auto;
+  align-items: stretch; /* columns fill full height */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) transparent;
+}
+
+.kanban-board::-webkit-scrollbar { height: 6px; }
+.kanban-board::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 3px;
+}
+
+/* ── Column ─────────────────────────────────────────────────────── */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 252px;
+  /* height comes from align-items:stretch on board — no max-height */
+  background: var(--md-surface-container);
+  border-radius: 16px;        /* MD3 large shape */
+  overflow: hidden;
+  transition: background 0.18s, outline 0.12s;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.column.drag-over {
+  background: var(--md-primary-container);
+  outline-color: var(--md-primary);
+}
+
+/* ── Column header ──────────────────────────────────────────────── */
+
+.column-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px;
+  flex-shrink: 0;
+}
+
+/* coloured accent bar — driven by CSS custom property set per column */
+.column-accent {
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--col-accent, var(--md-primary));
+}
+
+.column-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;           /* MD3 title-small */
+  letter-spacing: 0.1px;
+  color: var(--md-on-surface);
+}
+
+/* MD3 badge */
+.column-count {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  background: var(--col-accent, var(--md-primary));
+  color: #fff;
+  letter-spacing: 0;
+}
+
+/* ── Column body — fills all remaining column height ────────────── */
+
+.column-body {
+  flex: 1 1 0;               /* fills remaining height */
+  min-height: 0;             /* allows shrinking below content size */
+  overflow-y: auto;
+  padding: 4px 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) transparent;
+}
+
+.column-body::-webkit-scrollbar { width: 4px; }
+.column-body::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 2px;
+}
+
+/* Empty-column placeholder */
+.empty-column {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-on-surface-variant);
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ── Card — MD3 filled card ─────────────────────────────────────── */
+
+/* Wrapper sits outside the draggable div so the button can receive clicks */
+.card-wrap {
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.card {
+  background: var(--md-surface);
+  border-radius: 12px;        /* MD3 medium shape */
+  padding: 12px;
+  cursor: grab;
+  user-select: none;
+  box-shadow: var(--md-shadow-1);
+  transition: box-shadow 0.15s, opacity 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3 state layer — hover */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-on-surface);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.card:hover::after  { opacity: 0.04; }
+
+.card:hover {
+  box-shadow: var(--md-shadow-2);
+}
+
+.card.dragging {
+  opacity: 0.38;              /* MD3 disabled opacity */
+  cursor: grabbing;
+  box-shadow: var(--md-shadow-2);
+}
+
+/* Block child events so dragleave doesn't misfire at card text boundaries */
+.card * { pointer-events: none; }
+
+/* ── Card layout ────────────────────────────────────────────────── */
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.card-number {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.card-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--col-accent, var(--md-primary));
+}
+
+.card-client {
+  font-size: 13px;
+  font-weight: 600;           /* MD3 body-medium emphasis */
+  color: var(--md-on-surface);
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+
+.card-vehicle {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 3px;
+}
+
+.card-description {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+/* Open button — revealed on card hover */
+.card-open-btn {
+  pointer-events: auto;        /* override .card * { pointer-events: none } */
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: none;
+  background: var(--col-accent, var(--md-primary));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.card-wrap:hover .card-open-btn { opacity: 1; }
+
+/* MD3 label chip for time */
+.card-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--md-primary-container);
+  color: var(--md-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}

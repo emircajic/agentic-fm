@@ -1,0 +1,36 @@
+{
+  "day": {
+    "grandTotal": 1847.50,
+    "robaRevenue": 1284.00,
+    "uslugaRevenue": 563.50,
+    "profitKnown": 312.80,
+    "missingCostRev": 186.00,
+    "missingCostCount": 3,
+    "komSold": 14,
+    "returnCount": 1,
+    "returnQty": 2
+  },
+  "week": {
+    "grandTotal": 9423.00,
+    "robaRevenue": 6148.50,
+    "uslugaRevenue": 3274.50,
+    "profitKnown": 1892.40,
+    "missingCostRev": 724.00,
+    "missingCostCount": 8,
+    "komSold": 67,
+    "returnCount": 3,
+    "returnQty": 5
+  },
+  "month": {
+    "grandTotal": 34210.00,
+    "robaRevenue": 22840.00,
+    "uslugaRevenue": 11370.00,
+    "profitKnown": 7124.60,
+    "missingCostRev": 2880.00,
+    "missingCostCount": 24,
+    "komSold": 248,
+    "returnCount": 7,
+    "returnQty": 12
+  },
+  "generatedAt": "08.05.2026. 14:32"
+}

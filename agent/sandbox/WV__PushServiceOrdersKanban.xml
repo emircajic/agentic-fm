@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Query today's ServiceOrders and push JSON to the kanban web viewer wv_ServiceOrdersKanban.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAMS: (none)</Text>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Run SQL query</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT" &
+	"  ServiceOrders.PrimaryKey," &
+	"  ServiceOrders.ServiceOrderNumber," &
+	"  ServiceOrders.Status," &
+	"  ServiceOrders.ClientName_Calculation," &
+	"  ServiceOrders.VehicleName_Display," &
+	"  ServiceOrders.Description," &
+	"  ServiceOrders.JobDate," &
+	"  ServiceOrders.JobTime," &
+	"  ServiceOrders.JobTimeEnd" &
+	" FROM ServiceOrders" &
+	" WHERE ServiceOrders.JobDate = " & epSQLQuoteDate ( Get ( CurrentDate ) ) &
+	" ORDER BY ServiceOrders.JobTime" ;
+	"useSQLResult=rs_kanban"
+)]]></Calculation>
+    </Value>
+    <Name>$sel</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $sel )]]></Calculation>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["wv_ServiceOrdersKanban"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["receiveFromFileMaker"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "orders" ; "[]"  ; JSONArray  ] ;
+	[ "error"  ; $sel  ; JSONString ]
+)]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $sel ; JSONString )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Build JSON rows array from result set</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_kanban" )]]></Calculation>
+    </Value>
+    <Name>$rowCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $rowCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "id"          ; epSQLResult ( $i ; 0 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "number"      ; epSQLResult ( $i ; 1 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "status"      ; epSQLResult ( $i ; 2 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "clientName"  ; epSQLResult ( $i ; 3 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "vehicle"     ; epSQLResult ( $i ; 4 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "description" ; epSQLResult ( $i ; 5 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "date"        ; epSQLResult ( $i ; 6 ; "rs_kanban" )                           ; JSONString ] ;
+	[ "timeStart"   ; GetAs24Time ( epSQLResult ( $i ; 7 ; "rs_kanban" ) )           ; JSONString ] ;
+	[ "timeEnd"     ; GetAs24Time ( epSQLResult ( $i ; 8 ; "rs_kanban" ) )           ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$row</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$rows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_kanban" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Push to web viewer</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "orders" ; $rows ; JSONArray  ] ;
+	[ "status" ; "ok"  ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$payload</Name>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["wv_ServiceOrdersKanban"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["receiveFromFileMaker"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[$payload]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$payload]]></Calculation>
+  </Step>
+</fmxmlsnippet>

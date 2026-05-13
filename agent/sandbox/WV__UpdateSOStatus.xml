@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Update ServiceOrders.Status for one record, then refresh the kanban web viewer.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAMS: JSON {"id": "&lt;PrimaryKey&gt;", "status": "&lt;NewStatus&gt;"}</Text>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$params</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $params ; "id" )]]></Calculation>
+    </Value>
+    <Name>$id</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $params ; "status" )]]></Calculation>
+    </Value>
+    <Name>$status</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $id ) or IsEmpty ( $status )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; "Missing id or status parameter" ; JSONString )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: UPDATE Status (+ time fields when moving to "U toku")</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$status = "U toku"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"UPDATE ServiceOrders" &
+	" SET Status = ?, JobTime = ?, JobTimeEnd = ?" &
+	" WHERE ServiceOrders.PrimaryKey = ?" ;
+	"" ;
+	$status ; Get ( CurrentTime ) ; "" ; $id
+)]]></Calculation>
+    </Value>
+    <Name>$sel</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"UPDATE ServiceOrders" &
+	" SET Status = ?" &
+	" WHERE ServiceOrders.PrimaryKey = ?" ;
+	"" ;
+	$status ; $id
+)]]></Calculation>
+    </Value>
+    <Name>$sel</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $sel )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "error"  ; $sel  ; JSONString ] ;
+	[ "id"     ; $id   ; JSONString ] ;
+	[ "status" ; $status ; JSONString ]
+)]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Refresh kanban — FM pushes new data back to the web viewer</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Script id="0" name="WV__PushServiceOrdersKanban"/>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "status" ; "ok" ; JSONString )]]></Calculation>
+  </Step>
+</fmxmlsnippet>
