@@ -49,3 +49,108 @@ body {
 
 
 /* ── Profit breakdown and error state are rendered with Tailwind utility classes in JS. */
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-window {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%; max-width: 1000px;
+  max-height: calc(100vh - 32px);
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: 15px; font-weight: 600; color: var(--text);
+}
+
+.modal-close {
+  background: transparent; border: 0; color: var(--muted);
+  font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+}
+.modal-close:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+.modal-body {
+  padding: 14px 18px 18px; overflow: auto; flex: 1;
+}
+
+.modal-hint {
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.modal-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.modal-table th, .modal-table td {
+  padding: 8px 10px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.modal-table th {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  color: var(--muted); letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.02); position: sticky; top: 0;
+}
+.modal-table td.num, .modal-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.modal-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.modal-table tfoot td {
+  font-weight: 600; border-top: 2px solid var(--border); border-bottom: 0;
+  background: rgba(255,255,255,0.02);
+}
+.modal-table tr.saving { opacity: 0.5; }
+
+.cost-input {
+  width: 110px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cost-input:focus { outline: none; border-color: var(--accent); }
+.cost-input:disabled { opacity: 0.5; }
+
+/* ── Services expandable rows ─────────────────────────────────────────── */
+.modal-table tr.expandable { cursor: pointer; }
+.modal-table tr.expandable:hover { background: rgba(255,255,255,0.04); }
+.modal-table .caret {
+  display: inline-block; width: 14px; color: var(--muted);
+  font-size: 10px; user-select: none;
+}
+.modal-table tr.subrow-wrap > td { padding: 0 0 6px 24px; background: var(--bg); }
+.subtable {
+  width: 100%; border-collapse: collapse;
+  font-size: 11px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden;
+}
+.subtable th, .subtable td {
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+  color: var(--text); vertical-align: middle;
+}
+.subtable th {
+  font-size: 9px; font-weight: 600; text-transform: uppercase;
+  color: var(--muted); letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.02);
+}
+.subtable td.num, .subtable th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.subtable tbody tr:last-child td { border-bottom: 0; }
+.subrow-empty td { padding: 8px 12px; color: var(--muted); font-style: italic; }
