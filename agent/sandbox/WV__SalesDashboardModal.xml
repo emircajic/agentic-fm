@@ -1,0 +1,480 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Query data for one of three SalesDashboard modals and push to wv_salesDashboard.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Param: JSON {modal: "returns"|"missingCost"|"services", scope: "day"|"week"|"month"}</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Pushes { modal, rows[], generatedAt } to window.receiveModalData in the WV.</Text>
+  </Step>
+
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Parse parameter and compute date range</Text>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $param ; "modal" )]]></Calculation></Value>
+    <Name>$modal</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[If ( IsEmpty ( JSONGetElement ( $param ; "scope" ) ) ; "day" ; JSONGetElement ( $param ; "scope" ) )]]></Calculation></Value>
+    <Name>$scope</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( CurrentDate )]]></Calculation></Value>
+    <Name>$today</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[$today - Mod ( DayOfWeek ( $today ) + 5 ; 7 )]]></Calculation></Value>
+    <Name>$weekStart</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Date ( Month ( $today ) ; 1 ; Year ( $today ) )]]></Calculation></Value>
+    <Name>$monthStart</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Case (
+	$scope = "week"  ; $weekStart ;
+	$scope = "month" ; $monthStart ;
+	$today
+)]]></Calculation></Value>
+    <Name>$start</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Right ( "0" & Day ( $today ) ; 2 ) & "." & Right ( "0" & Month ( $today ) ; 2 ) & "." & Year ( $today ) & ". " & Right ( "0" & Hour ( Get ( CurrentTime ) ) ; 2 ) & ":" & Right ( "0" & Minute ( Get ( CurrentTime ) ) ; 2 )]]></Calculation></Value>
+    <Name>$genAt</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+    <Name>$rows</Name>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Branch — returns</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$modal = "returns"]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA["SELECT sp.PrimaryKey, sp.Kolicina, sol.Description, sol.Rate, so.ServiceOrderNumber, so.JobDate " &
+"FROM StavkePovrata sp " &
+"INNER JOIN ServiceOrderLines sol ON sp.ForeignKeyServiceOrderLineID = sol.PrimaryKey " &
+"INNER JOIN ServiceOrders so ON sol.ForeignKeyServiceOrder = so.PrimaryKey " &
+"WHERE (so.Status = " & epSQLQuote ( "Fakturisan" ) & " OR so.Status = " & epSQLQuote ( "Naplaćen" ) & ") " &
+"AND so.JobDate >= " & epSQLQuoteDate ( $start ) & " AND so.JobDate <= " & epSQLQuoteDate ( $today ) & " " &
+"ORDER BY so.JobDate DESC"]]></Calculation></Value>
+      <Name>$sql</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLExecute ( $sql ; "useSQLResult=rs" ; "" )]]></Calculation></Value>
+      <Name>$err</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+    </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal" ; $modal ; JSONString] ;
+	["error" ; $err   ; JSONString] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+        <Name>$payload</Name>
+      </Step>
+      <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+        <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+        <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+        <Parameters Count="1">
+          <P><Calculation><![CDATA[$payload]]></Calculation></P>
+        </Parameters>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultRowCount ( "rs" )]]></Calculation></Value>
+      <Name>$rowCount</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[0]]></Calculation></Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["id"                 ; epSQLResult ( $i ; 0 ; "rs" ) ; JSONString] ;
+	["kolicina"           ; GetAsNumber ( epSQLResult ( $i ; 1 ; "rs" ) ) ; JSONNumber] ;
+	["description"        ; epSQLResult ( $i ; 2 ; "rs" ) ; JSONString] ;
+	["rate"               ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs" ) ) ; JSONNumber] ;
+	["serviceOrderNumber" ; epSQLResult ( $i ; 4 ; "rs" ) ; JSONString] ;
+	["jobDate"            ; epSQLResult ( $i ; 5 ; "rs" ) ; JSONString]
+)]]></Calculation></Value>
+        <Name>$row</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject )]]></Calculation></Value>
+        <Name>$rows</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+        <Name>$i</Name>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultDelete ( "rs" )]]></Calculation></Value>
+      <Name>$void</Name>
+    </Step>
+
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$modal = "missingCost"]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>StavkePrimke with no NabavnaCijenaStavke, scoped by Primke.DatumPrimitka.</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA["SELECT sp.PrimaryKey, sp.Kolicina, sp.JM, sp.ProdajnaCijena, a.NazivArtikla, a.SifraArtikla, p.BrojFaktureDobavljaca, p.DatumPrimitka " &
+"FROM StavkePrimke sp " &
+"INNER JOIN Primke p ON sp.ForeignKeyPrimkaID = p.PrimaryKey " &
+"LEFT OUTER JOIN Artikli a ON sp.ForeignKeyArtikalID = a.PrimaryKey " &
+"WHERE (sp.NabavnaCijenaStavke IS NULL OR sp.NabavnaCijenaStavke = 0) " &
+"AND p.DatumPrimitka >= " & epSQLQuoteDate ( $start ) & " AND p.DatumPrimitka <= " & epSQLQuoteDate ( $today ) & " " &
+"ORDER BY p.DatumPrimitka ASC"]]></Calculation></Value>
+      <Name>$sql</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLExecute ( $sql ; "useSQLResult=rs" ; "" )]]></Calculation></Value>
+      <Name>$err</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+    </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal" ; $modal ; JSONString] ;
+	["error" ; $err   ; JSONString] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+        <Name>$payload</Name>
+      </Step>
+      <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+        <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+        <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+        <Parameters Count="1">
+          <P><Calculation><![CDATA[$payload]]></Calculation></P>
+        </Parameters>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultRowCount ( "rs" )]]></Calculation></Value>
+      <Name>$rowCount</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[0]]></Calculation></Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["id"             ; epSQLResult ( $i ; 0 ; "rs" ) ; JSONString] ;
+	["kolicina"       ; GetAsNumber ( epSQLResult ( $i ; 1 ; "rs" ) ) ; JSONNumber] ;
+	["jm"             ; epSQLResult ( $i ; 2 ; "rs" ) ; JSONString] ;
+	["prodajnaCijena" ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs" ) ) ; JSONNumber] ;
+	["nazivArtikla"   ; epSQLResult ( $i ; 4 ; "rs" ) ; JSONString] ;
+	["sifraArtikla"   ; epSQLResult ( $i ; 5 ; "rs" ) ; JSONString] ;
+	["brojFakture"    ; epSQLResult ( $i ; 6 ; "rs" ) ; JSONString] ;
+	["datumPrimitka"  ; epSQLResult ( $i ; 7 ; "rs" ) ; JSONString]
+)]]></Calculation></Value>
+        <Name>$row</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject )]]></Calculation></Value>
+        <Name>$rows</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+        <Name>$i</Name>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultDelete ( "rs" )]]></Calculation></Value>
+      <Name>$void</Name>
+    </Step>
+
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$modal = "services"]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Service lines (no ForeignKeyArtikalID), aggregated by ForeignKeyServiceItem. Each group keeps its raw lines for drill-down.</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA["SELECT sol.ForeignKeyServiceItem, sol.Description, sol.Qty, sol.Rate, so.ServiceOrderNumber, so.JobDate " &
+"FROM ServiceOrderLines sol " &
+"INNER JOIN ServiceOrders so ON sol.ForeignKeyServiceOrder = so.PrimaryKey " &
+"WHERE (so.Status = " & epSQLQuote ( "Fakturisan" ) & " OR so.Status = " & epSQLQuote ( "Naplaćen" ) & ") " &
+"AND so.JobDate >= " & epSQLQuoteDate ( $start ) & " AND so.JobDate <= " & epSQLQuoteDate ( $today ) & " " &
+"AND (sol.ForeignKeyArtikalID IS NULL OR sol.ForeignKeyArtikalID = '') " &
+"ORDER BY so.JobDate ASC"]]></Calculation></Value>
+      <Name>$sql</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLExecute ( $sql ; "useSQLResult=rs" ; "" )]]></Calculation></Value>
+      <Name>$err</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+    </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal" ; $modal ; JSONString] ;
+	["error" ; $err   ; JSONString] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+        <Name>$payload</Name>
+      </Step>
+      <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+        <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+        <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+        <Parameters Count="1">
+          <P><Calculation><![CDATA[$payload]]></Calculation></P>
+        </Parameters>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Aggregate raw rows into a JSON dictionary keyed by ForeignKeyServiceItem.</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+      <Name>$dict</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultRowCount ( "rs" )]]></Calculation></Value>
+      <Name>$rowCount</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[0]]></Calculation></Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs" )]]></Calculation></Value>
+        <Name>$key</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 1 ; "rs" )]]></Calculation></Value>
+        <Name>$desc</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( $i ; 2 ; "rs" ) )]]></Calculation></Value>
+        <Name>$qty</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( $i ; 3 ; "rs" ) )]]></Calculation></Value>
+        <Name>$rate</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 4 ; "rs" )]]></Calculation></Value>
+        <Name>$soNum</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 5 ; "rs" )]]></Calculation></Value>
+        <Name>$soDate</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[If ( IsEmpty ( $key ) ; "_NONE_" ; $key )]]></Calculation></Value>
+        <Name>$key</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["serviceOrderNumber" ; $soNum  ; JSONString] ;
+	["jobDate"            ; $soDate ; JSONString] ;
+	["description"        ; $desc   ; JSONString] ;
+	["qty"                ; $qty    ; JSONNumber] ;
+	["rate"               ; $rate   ; JSONNumber]
+)]]></Calculation></Value>
+        <Name>$line</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONGetElement ( $dict ; $key )]]></Calculation></Value>
+        <Name>$existing</Name>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[IsEmpty ( $existing )]]></Calculation>
+      </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["key"         ; $key          ; JSONString] ;
+	["description" ; $desc         ; JSONString] ;
+	["qty"         ; $qty          ; JSONNumber] ;
+	["lineCount"   ; 1             ; JSONNumber] ;
+	["revenue"     ; $qty * $rate  ; JSONNumber] ;
+	["lines"       ; "[]"          ; JSONArray]
+)]]></Calculation></Value>
+          <Name>$entry</Name>
+        </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[0]]></Calculation></Value>
+          <Name>$existingCount</Name>
+        </Step>
+      <Step enable="True" id="69" name="Else">
+        <Restore state="False"/>
+      </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $existing ; "lineCount" ) )]]></Calculation></Value>
+          <Name>$existingCount</Name>
+        </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[JSONSetElement ( $existing ;
+	["qty"       ; GetAsNumber ( JSONGetElement ( $existing ; "qty" ) ) + $qty ; JSONNumber] ;
+	["lineCount" ; $existingCount + 1 ; JSONNumber] ;
+	["revenue"   ; GetAsNumber ( JSONGetElement ( $existing ; "revenue" ) ) + ( $qty * $rate ) ; JSONNumber]
+)]]></Calculation></Value>
+          <Name>$entry</Name>
+        </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( $entry ; "lines[" & $existingCount & "]" ; $line ; JSONObject )]]></Calculation></Value>
+        <Name>$entry</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( $dict ; $key ; $entry ; JSONObject )]]></Calculation></Value>
+        <Name>$dict</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+        <Name>$i</Name>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultDelete ( "rs" )]]></Calculation></Value>
+      <Name>$void</Name>
+    </Step>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Convert dict to rows array.</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[JSONListKeys ( $dict ; "" )]]></Calculation></Value>
+      <Name>$keys</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[ValueCount ( $keys )]]></Calculation></Value>
+      <Name>$keyCount</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[1]]></Calculation></Value>
+      <Name>$j</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[$j > $keyCount]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[GetValue ( $keys ; $j )]]></Calculation></Value>
+        <Name>$key</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONGetElement ( $dict ; $key )]]></Calculation></Value>
+        <Name>$entry</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[" & ( $j - 1 ) & "]" ; $entry ; JSONObject )]]></Calculation></Value>
+        <Name>$rows</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[$j + 1]]></Calculation></Value>
+        <Name>$j</Name>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal" ; If ( IsEmpty ( $modal ) ; "unknown" ; $modal ) ; JSONString] ;
+	["error" ; "Unknown modal kind: " & $modal ; JSONString] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+      <Name>$payload</Name>
+    </Step>
+    <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+      <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+      <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+      <Parameters Count="1">
+        <P><Calculation><![CDATA[$payload]]></Calculation></P>
+      </Parameters>
+    </Step>
+    <Step enable="True" id="103" name="Exit Script"/>
+
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Push payload to WV</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal"       ; $modal ; JSONString] ;
+	["rows"        ; $rows  ; JSONArray] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+    <Name>$payload</Name>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+    <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+    <Parameters Count="1">
+      <P><Calculation><![CDATA[$payload]]></Calculation></P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script"/>
+
+</fmxmlsnippet>
