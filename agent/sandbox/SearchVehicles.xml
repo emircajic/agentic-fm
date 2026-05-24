@@ -1,0 +1,125 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Build the GenericSearch config for the Vehicles pane of the Client/Vehicle picker and dispatch it. Owned vehicles sort to the top; scope="owned" filters to the selected client only. Results return to JS receiveVehicleData on the clientvehiclepicker web viewer.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMETER (JSON): offset, limit, search, clientId, scope (owned|all)</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$json</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$offset</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "offset" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$limit</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "limit" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$search</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "search" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$clientId</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "clientId" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$scope</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "scope" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Owned-on-top ordering</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $clientId )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$orderBy</Name>
+		<Value><Calculation><![CDATA["CASE WHEN ForeignKeyClient = '" & Substitute ( $clientId ; "'" ; "''" ) & "' THEN 0 ELSE 1 END, Manufacturer ASC, Model ASC"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="69" name="Else"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$orderBy</Name>
+		<Value><Calculation><![CDATA["Manufacturer ASC, Model ASC"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Owned-only scope → customWhere (folds search in, since customWhere overrides search)</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$customWhere</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$scope = "owned" and not IsEmpty ( $clientId )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$term</Name>
+		<Value><Calculation><![CDATA[Substitute ( Lower ( $search ) ; "'" ; "''" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$searchClause</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $search ) ;
+	"" ;
+	" AND (LOWER(Manufacturer) LIKE '%" & $term & "%' OR LOWER(Model) LIKE '%" & $term & "%' OR LOWER(VIN) LIKE '%" & $term & "%' OR LOWER(PlateNumber) LIKE '%" & $term & "%')"
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$customWhere</Name>
+		<Value><Calculation><![CDATA["WHERE ForeignKeyClient = '" & Substitute ( $clientId ; "'" ; "''" ) & "'" & $searchClause]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$config</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "table" ; "Vehicles" ; JSONString ] ;
+	[ "fields" ; JSONSetElement ( "[]" ;
+		[ 0 ; "PrimaryKey" ; JSONString ] ;
+		[ 1 ; "Manufacturer" ; JSONString ] ;
+		[ 2 ; "Model" ; JSONString ] ;
+		[ 3 ; "YearManufactured" ; JSONString ] ;
+		[ 4 ; "VIN" ; JSONString ] ;
+		[ 5 ; "PlateNumber" ; JSONString ] ;
+		[ 6 ; "ForeignKeyClient" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "fieldTypes" ; JSONSetElement ( "[]" ;
+		[ 0 ; "string" ; JSONString ] ;
+		[ 1 ; "string" ; JSONString ] ;
+		[ 2 ; "string" ; JSONString ] ;
+		[ 3 ; "number" ; JSONString ] ;
+		[ 4 ; "string" ; JSONString ] ;
+		[ 5 ; "string" ; JSONString ] ;
+		[ 6 ; "string" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "searchFields" ; JSONSetElement ( "[]" ;
+		[ 0 ; "Manufacturer" ; JSONString ] ;
+		[ 1 ; "Model" ; JSONString ] ;
+		[ 2 ; "VIN" ; JSONString ] ;
+		[ 3 ; "PlateNumber" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "orderBy" ; $orderBy ; JSONString ] ;
+	[ "customWhere" ; $customWhere ; JSONString ] ;
+	[ "webViewerObject" ; "clientvehiclepicker" ; JSONString ] ;
+	[ "callbackFunction" ; "receiveVehicleData" ; JSONString ] ;
+	[ "responseKey" ; "vehicles" ; JSONString ] ;
+	[ "offset" ; $offset ; JSONNumber ] ;
+	[ "limit" ; $limit ; JSONNumber ] ;
+	[ "search" ; $search ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="1" name="Perform Script">
+		<Script id="573" name="GenericSearch"/>
+		<Calculation><![CDATA[$config]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>
