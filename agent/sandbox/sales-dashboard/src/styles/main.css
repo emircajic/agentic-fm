@@ -154,3 +154,14 @@ body {
 .subtable td.num, .subtable th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .subtable tbody tr:last-child td { border-bottom: 0; }
 .subrow-empty td { padding: 8px 12px; color: var(--muted); font-style: italic; }
+
+/* ── SO link in modal rows ─────────────────────────────────────────────── */
+.so-link {
+  color: var(--accent); text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  white-space: nowrap;
+}
+.so-link:hover { border-bottom-color: var(--accent); }
+.so-arrow { font-size: 10px; opacity: 0.7; }
+
+.modal-table td.no-cost { color: var(--amber); }

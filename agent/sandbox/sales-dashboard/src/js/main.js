@@ -125,6 +125,17 @@ window.toggleServiceRow = (key) => {
   renderModal();
 };
 
+window.openServiceOrder = (soId, event) => {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (!soId) return;
+  callFM('WV__OpenServiceOrderCard', soId);
+};
+
+function soLink(soId, soNumber) {
+  if (!soId) return esc(soNumber);
+  return `<a href="#" class="so-link" onclick="openServiceOrder('${esc(soId).replace(/'/g, "\\'")}', event)">${esc(soNumber)} <span class="so-arrow">↗</span></a>`;
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
@@ -217,6 +228,7 @@ function render() {
         <div class="text-2xl font-bold"><span class="text-slate-400 text-sm">Ukupan profit</span><br />${km(profitTotal)}</div>
         <div class="text-[11px] text-slate-200" style="margin-top:0.5rem;">${marginTotal.toFixed(1)}% od prometa robe ${missingCostCount > 0 ? ' (procjena)' : ''}</div>
         ${profitBreakdown}
+        <button class="${moreButtonClass}" style="margin-top:0.75rem;" onclick="openModal('goods')">Pogledaj svu robu</button>
         <div class="flex items-baseline justify-between" style="gap:0.5rem; margin-top:0.75rem;">
           <div class="flex-1 rounded-xl border shadow-sm ${returnClass}" style="padding:1rem">
             <div class="text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-400" style="margin-bottom:0.5rem;">Povrati</div>
@@ -258,6 +270,7 @@ function renderModal() {
     returns:     'Povrati u periodu',
     missingCost: 'Stavke bez nabavne cijene',
     services:    'Sumarizacija usluga',
+    goods:       'Sva roba u periodu',
   };
   const title = titles[_modal.kind] || 'Detalji';
 
@@ -272,6 +285,8 @@ function renderModal() {
     body = renderMissingCostTable(_modal.rows);
   } else if (_modal.kind === 'services') {
     body = renderServicesTable(_modal.rows);
+  } else if (_modal.kind === 'goods') {
+    body = renderGoodsTable(_modal.rows);
   }
 
   root.innerHTML = `
@@ -297,7 +312,7 @@ function renderReturnsTable(rows) {
   const rowsHtml = rows.map(r => `
     <tr>
       <td>${formatDate(r.jobDate)}</td>
-      <td>${esc(r.serviceOrderNumber)}</td>
+      <td>${soLink(r.serviceOrderId, r.serviceOrderNumber)}</td>
       <td>${esc(r.description)}</td>
       <td class="num">${num(r.kolicina, 2)}</td>
       <td class="num">${km(r.rate)}</td>
@@ -391,7 +406,7 @@ function renderServicesTable(rows) {
       ? `<tr class="subrow-empty"><td colspan="5">Nema detalja.</td></tr>`
       : lines.map(l => `
           <tr class="subrow">
-            <td>${formatDate(l.jobDate)} &middot; ${esc(l.serviceOrderNumber)}</td>
+            <td>${formatDate(l.jobDate)} &middot; ${soLink(l.serviceOrderId, l.serviceOrderNumber)}</td>
             <td>${esc(l.description)}</td>
             <td class="num">${num(l.qty, 2)}</td>
             <td class="num">${km(l.rate)}</td>
@@ -427,6 +442,53 @@ function renderServicesTable(rows) {
         <td></td><td></td>
         <td class="num">${km(grand)}</td>
         <td class="num">100%</td>
+      </tr></tfoot>
+    </table>
+  `;
+}
+
+function renderGoodsTable(rows) {
+  if (!rows || rows.length === 0) {
+    return `<div class="loading">Nema robe u ovom periodu.</div>`;
+  }
+  const totalQty   = rows.reduce((s, r) => s + (Number(r.qty)  || 0), 0);
+  const totalRev   = rows.reduce((s, r) => s + (Number(r.qty)  || 0) * (Number(r.rate) || 0), 0);
+  const totalCost  = rows.reduce((s, r) => s + (Number(r.qty)  || 0) * (Number(r.nabavna) || 0), 0);
+
+  const rowsHtml = rows.map(r => {
+    const qty       = Number(r.qty) || 0;
+    const rate      = Number(r.rate) || 0;
+    const nabavna   = Number(r.nabavna) || 0;
+    const lineTotal = qty * rate;
+    const noCost    = nabavna <= 0;
+    return `
+      <tr>
+        <td>${formatDate(r.jobDate)}</td>
+        <td>${soLink(r.serviceOrderId, r.serviceOrderNumber)}</td>
+        <td>${esc(r.sifraArtikla)}</td>
+        <td>${esc(r.description)}</td>
+        <td class="num">${num(qty, 2)} ${esc(r.jm || '')}</td>
+        <td class="num">${km(rate)}</td>
+        <td class="num ${noCost ? 'no-cost' : ''}">${noCost ? '—' : km(nabavna)}</td>
+        <td class="num">${km(lineTotal)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <table class="modal-table">
+      <thead><tr>
+        <th>Datum</th><th>Nalog</th><th>Šifra</th><th>Naziv</th>
+        <th class="num">Kol.</th><th class="num">Prodajna</th>
+        <th class="num">Nabavna</th><th class="num">Promet</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr>
+        <td colspan="4">Ukupno (${rows.length})</td>
+        <td class="num">${num(totalQty, 2)}</td>
+        <td></td>
+        <td class="num">${km(totalCost)}</td>
+        <td class="num">${km(totalRev)}</td>
       </tr></tfoot>
     </table>
   `;
