@@ -1,0 +1,509 @@
+<fmxmlsnippet type="FMObjectList">
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>PURPOSE: Write-side backfill of InvoiceLines.ForeignKeyStavkaUlazneFakture for CLEAN candidates — see $README block below for details.</Text>
+</Step>
+
+<Step enable="False" id="61" name="Insert Text">
+<SelectAll state="False"/>
+<Text>PURPOSE&#xD;  Backfill InvoiceLines.ForeignKeyStavkaUlazneFakture from the matching SOL's&#xD;  ForeignKeyStavkaPrimkeID, BUT ONLY for candidates the classifier would call CLEAN&#xD;  (exactly 1 distinct candidate batch FK on the linked SOs by Description match).&#xD;  Non-CLEAN rows are SKIPPED, not modified.&#xD;&#xD;  Per-row action:&#xD;    CLEAN         -> UPDATE InvoiceLines SET ForeignKeyStavkaUlazneFakture = ? WHERE PrimaryKey = ?&#xD;    MULTI_BATCH   -> SKIPPED_MULTI&#xD;    SOL_NO_BATCH  -> SKIPPED_SOL_NO_BATCH&#xD;    NO_SOURCE     -> SKIPPED_NO_SOURCE&#xD;&#xD;  Writes audit CSV (tab-separated) to clipboard via BE_ClipboardSetText.&#xD;  Audit columns: month, datum, brojFakture, lineID, sifra, qty, description, bucket, status, newFK, errorMsg, candidateSOLs&#xD;&#xD;PARAMS (JSON)&#xD;  year               (number, required)             e.g. 2026&#xD;  month              (number, optional, 1..12)      single calendar month&#xD;  from               (text, optional, MM/DD/YYYY)   explicit start (overrides month)&#xD;  to                 (text, optional, MM/DD/YYYY)   explicit end   (overrides month)&#xD;  brojFakturePattern (text, optional)               SQL LIKE pattern for Invoices.BrojFakture (default A-01-00__-26)&#xD;&#xD;RETURNS&#xD;  data.rangeFrom, data.rangeTo&#xD;  data.candidatesScanned, data.updated, data.updateFailed&#xD;  data.skippedMulti, data.skippedSolNoBatch, data.skippedNoSource</Text>
+<Field>$README</Field>
+</Step>
+
+<Step enable="True" id="85" name="Allow User Abort">
+<UserAbort state="False"/>
+</Step>
+<Step enable="True" id="86" name="Set Error Capture">
+<OnOff state="True"/>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Envelope init</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "year|month|from|to|brojFakturePattern" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "Backfill EXECUTE starting" ; $params )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $brojFakturePattern ) ; "A-01-00__-26" ; $brojFakturePattern )]]></Calculation></Value>
+<Name>$brojFakturePattern</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Resolve date range</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $from ) and not IsEmpty ( $to )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[GetAsDate ( $from )]]></Calculation></Value>
+<Name>$rangeFrom</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[GetAsDate ( $to )]]></Calculation></Value>
+<Name>$rangeTo</Name>
+</Step>
+<Step enable="True" id="125" name="Else If">
+<Calculation><![CDATA[not IsEmpty ( $year ) and not IsEmpty ( $month )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Date ( $month ; 1 ; $year )]]></Calculation></Value>
+<Name>$rangeFrom</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Date ( $month + 1 ; 0 ; $year )]]></Calculation></Value>
+<Name>$rangeTo</Name>
+</Step>
+<Step enable="True" id="125" name="Else If">
+<Calculation><![CDATA[not IsEmpty ( $year )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Date ( 1 ; 1 ; $year )]]></Calculation></Value>
+<Name>$rangeFrom</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Date ( 12 ; 31 ; $year )]]></Calculation></Value>
+<Name>$rangeTo</Name>
+</Step>
+<Step enable="True" id="70" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "Provide year (with optional month) or from/to" ; "year" ; "{}" ; "" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script name="UTIL__FlushLog" id="780"/>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Query 1: candidate InvoiceLines via epSQL</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SELECT il.PrimaryKey, il.ForeignKeyInvoiceID, i.Datum, i.BrojFakture, " &
+"  il.Sifra, il.Qty, il.Description " &
+"FROM InvoiceLines il " &
+"JOIN Invoices i ON i.PrimaryKey = il.ForeignKeyInvoiceID " &
+"WHERE i.Datum >= " & epSQLQuoteDate ( $rangeFrom ) &
+"  AND i.Datum <= " & epSQLQuoteDate ( $rangeTo ) &
+"  AND il.VrstaStavke = 'Roba' " &
+"  AND ( il.ForeignKeyStavkaUlazneFakture IS NULL OR il.ForeignKeyStavkaUlazneFakture = '' ) " &
+"  AND i.BrojFakture LIKE ? " &
+"ORDER BY i.Datum, il.PrimaryKey"]]></Calculation></Value>
+<Name>$sqlLines</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLExecute ( $sqlLines ; "useSQLResult=rs_lines" ; $brojFakturePattern )]]></Calculation></Value>
+<Name>$err</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "" ; $sqlLines ; "" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Log.add ( "error" ; "SQL_FAIL" ; $err ; $sqlLines )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script name="UTIL__FlushLog" id="780"/>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_lines" )]]></Calculation></Value>
+<Name>$rowCount</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Init counters + CSV header (tab-separated)</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["month" & Char(9) & "datum" & Char(9) & "brojFakture" & Char(9) & "lineID" & Char(9) & "sifra" & Char(9) & "qty" & Char(9) & "description" & Char(9) & "bucket" & Char(9) & "status" & Char(9) & "newFK" & Char(9) & "errorMsg" & Char(9) & "candidateSOLs" & Char(13)]]></Calculation></Value>
+<Name>$csv</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$totalClean</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$totalMulti</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$totalSolNoBatch</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$totalNoSource</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$updated</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$updateFailed</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+<Name>$monthly</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Iterate candidate lines</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="71" name="Loop">
+<FlushType value="Always"/>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+</Step>
+
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs_lines" )]]></Calculation></Value>
+<Name>$lineID</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 1 ; "rs_lines" )]]></Calculation></Value>
+<Name>$invoiceID</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 2 ; "rs_lines" )]]></Calculation></Value>
+<Name>$datum</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 3 ; "rs_lines" )]]></Calculation></Value>
+<Name>$brojFak</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 4 ; "rs_lines" )]]></Calculation></Value>
+<Name>$sifra</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 5 ; "rs_lines" )]]></Calculation></Value>
+<Name>$qty</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $i ; 6 ; "rs_lines" )]]></Calculation></Value>
+<Name>$desc</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Month ( GetAsDate ( $datum ) )]]></Calculation></Value>
+<Name>$month</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Query 2: candidate SOLs by Description match on linked ServiceOrders</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SELECT sol.PrimaryKey, sol.ForeignKeyStavkaPrimkeID " &
+"FROM ServiceOrderLines sol " &
+"JOIN InvoiceLinks ilk ON ilk.ForeignKeyServiceOrderID = sol.ForeignKeyServiceOrder " &
+"WHERE ilk.ForeignKeyInvoiceID = ? " &
+"  AND sol.Description = ?"]]></Calculation></Value>
+<Name>$sqlSols</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLExecute ( $sqlSols ; "useSQLResult=rs_sols" ; $invoiceID ; $desc )]]></Calculation></Value>
+<Name>$err</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $err ) ; epSQLResultRowCount ( "rs_sols" ) ; 0 )]]></Calculation></Value>
+<Name>$solCount</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Name>$solSet</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Name>$batchSet</Name>
+</Step>
+
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Name>$j</Name>
+</Step>
+<Step enable="True" id="71" name="Loop">
+<FlushType value="Always"/>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$j >= $solCount]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $j ; 0 ; "rs_sols" )]]></Calculation></Value>
+<Name>$sID</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResult ( $j ; 1 ; "rs_sols" )]]></Calculation></Value>
+<Name>$sFK</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $sID ) and Position ( "¶" & $solSet & "¶" ; "¶" & $sID & "¶" ; 1 ; 1 ) = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $solSet ) ; $sID ; $solSet & "¶" & $sID )]]></Calculation></Value>
+<Name>$solSet</Name>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $sFK ) and Position ( "¶" & $batchSet & "¶" ; "¶" & $sFK & "¶" ; 1 ; 1 ) = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $batchSet ) ; $sFK ; $batchSet & "¶" & $sFK )]]></Calculation></Value>
+<Name>$batchSet</Name>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$j + 1]]></Calculation></Value>
+<Name>$j</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_sols" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Categorise bucket and act — CLEAN -> UPDATE, others -> SKIP</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Name>$newFK</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Name>$errorMsg</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$solCount = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["NO_SOURCE"]]></Calculation></Value>
+<Name>$bucket</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SKIPPED_NO_SOURCE"]]></Calculation></Value>
+<Name>$status</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$totalNoSource + 1]]></Calculation></Value>
+<Name>$totalNoSource</Name>
+</Step>
+<Step enable="True" id="125" name="Else If">
+<Calculation><![CDATA[IsEmpty ( $batchSet )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SOL_NO_BATCH"]]></Calculation></Value>
+<Name>$bucket</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SKIPPED_SOL_NO_BATCH"]]></Calculation></Value>
+<Name>$status</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$totalSolNoBatch + 1]]></Calculation></Value>
+<Name>$totalSolNoBatch</Name>
+</Step>
+<Step enable="True" id="125" name="Else If">
+<Calculation><![CDATA[ValueCount ( $batchSet ) = 1]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["CLEAN"]]></Calculation></Value>
+<Name>$bucket</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$totalClean + 1]]></Calculation></Value>
+<Name>$totalClean</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[GetValue ( $batchSet ; 1 )]]></Calculation></Value>
+<Name>$newFK</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLExecute ( "UPDATE InvoiceLines SET ForeignKeyStavkaUlazneFakture = ? WHERE PrimaryKey = ?" ; "" ; $newFK ; $lineID )]]></Calculation></Value>
+<Name>$updateErr</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $updateErr )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["UPDATED"]]></Calculation></Value>
+<Name>$status</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$updated + 1]]></Calculation></Value>
+<Name>$updated</Name>
+</Step>
+<Step enable="True" id="70" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["UPDATE_FAILED"]]></Calculation></Value>
+<Name>$status</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$updateErr]]></Calculation></Value>
+<Name>$errorMsg</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$updateFailed + 1]]></Calculation></Value>
+<Name>$updateFailed</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Log.add ( "warn" ; "UPDATE_FAILED" ; "lineID=" & $lineID & " err=" & $updateErr ; "" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="70" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["MULTI_BATCH"]]></Calculation></Value>
+<Name>$bucket</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["SKIPPED_MULTI"]]></Calculation></Value>
+<Name>$status</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$totalMulti + 1]]></Calculation></Value>
+<Name>$totalMulti</Name>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Monthly bucket increment</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["month_" & $month & "." & $bucket]]></Calculation></Value>
+<Name>$mPath</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $monthly ; $mPath ) )]]></Calculation></Value>
+<Name>$cur</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[JSONSetElement ( $monthly ; $mPath ; $cur + 1 ; JSONNumber )]]></Calculation></Value>
+<Name>$monthly</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Append CSV row — TAB delimited, newlines/tabs in description flattened</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$csv &
+$month & Char(9) &
+GetAsText ( GetAsDate ( $datum ) ) & Char(9) &
+Substitute ( $brojFak ; [ Char(9) ; " " ] ; [ Char(13) ; " " ] ) & Char(9) &
+$lineID & Char(9) &
+$sifra & Char(9) &
+$qty & Char(9) &
+Substitute ( $desc ; [ Char(9) ; " " ] ; [ Char(13) ; " " ] ) & Char(9) &
+$bucket & Char(9) &
+$status & Char(9) &
+$newFK & Char(9) &
+Substitute ( $errorMsg ; [ Char(9) ; " " ] ; [ Char(13) ; " " ] ) & Char(9) &
+Substitute ( $solSet   ; "¶" ; "|" ) & Char(13)]]></Calculation></Value>
+<Name>$csv</Name>
+</Step>
+
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"/>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_lines" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Push CSV to clipboard via BE plugin</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[BE_ClipboardSetText ( $csv ; "public.utf8-plain-text" )]]></Calculation></Value>
+<Name>$clipErr</Name>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)">
+<Text>Summary dialog</Text>
+</Step>
+<Step enable="True" id="87" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Backfill EXECUTE — " & GetAsText ( $rangeFrom ) & " → " & GetAsText ( $rangeTo )]]></Calculation></Title>
+<Message><Calculation><![CDATA["Candidates scanned : " & ( $totalClean + $totalMulti + $totalSolNoBatch + $totalNoSource ) & "¶¶" &
+"UPDATED            : " & $updated        & "¶" &
+"UPDATE_FAILED      : " & $updateFailed   & "¶¶" &
+"SKIPPED_MULTI      : " & $totalMulti     & "¶" &
+"SKIPPED_SOL_NO_BAT : " & $totalSolNoBatch & "¶" &
+"SKIPPED_NO_SOURCE  : " & $totalNoSource  & "¶¶" &
+"Audit CSV is on your clipboard — paste into Sheets/Excel."]]></Calculation></Message>
+</Step>
+
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Finalize envelope</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+    [ "rangeFrom"          ; GetAsText ( $rangeFrom ) ; JSONString ] ;
+    [ "rangeTo"            ; GetAsText ( $rangeTo )   ; JSONString ] ;
+    [ "candidatesScanned"  ; ( $totalClean + $totalMulti + $totalSolNoBatch + $totalNoSource ) ; JSONNumber ] ;
+    [ "updated"            ; $updated                 ; JSONNumber ] ;
+    [ "updateFailed"       ; $updateFailed            ; JSONNumber ] ;
+    [ "skippedMulti"       ; $totalMulti              ; JSONNumber ] ;
+    [ "skippedSolNoBatch"  ; $totalSolNoBatch         ; JSONNumber ] ;
+    [ "skippedNoSource"    ; $totalNoSource           ; JSONNumber ] ;
+    [ "monthly"            ; $monthly                 ; JSONObject ]
+) )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_DONE" ; "updated=" & $updated & " failed=" & $updateFailed & " skipped: multi=" & $totalMulti & " solNoBatch=" & $totalSolNoBatch & " noSource=" & $totalNoSource ; "" )]]></Calculation></Value>
+<Name>$void</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script name="UTIL__FlushLog" id="780"/>
+</Step>
+<Step enable="True" id="69" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+
+</fmxmlsnippet>

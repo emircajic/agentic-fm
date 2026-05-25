@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Odabir klijenta i vozila</title>
+  <script type="module" src="/src/js/main.js"></script>
+</head>
+<body class="h-screen overflow-hidden text-slate-800">
+  <div class="h-full flex flex-col max-w-[1100px] mx-auto">
+
+    <!-- Top bar: search + confirm -->
+    <header class="shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-3">
+      <div class="flex items-center gap-3">
+        <div class="relative flex-grow">
+          <input id="search" type="text" autocomplete="off"
+            placeholder="Pretraži klijente i vozila (ime, telefon, marka, tablica, VIN)…"
+            class="w-full pl-9 pr-8 py-2 rounded-md border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm">
+          <svg class="absolute left-3 top-3 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <button id="search-clear" class="hidden absolute right-2 top-1.5 text-slate-400 hover:text-slate-700 px-1">✕</button>
+        </div>
+        <button id="confirm" disabled
+          class="shrink-0 px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed">
+          Potvrdi
+        </button>
+        <button id="cancel"
+          class="shrink-0 px-3 py-2 rounded-md border border-slate-300 text-slate-600 text-sm hover:bg-slate-50">
+          Zatvori
+        </button>
+      </div>
+      <div id="selection-bar" class="mt-2 text-xs text-slate-500 flex gap-4">
+        <span>Klijent: <span id="sel-client" class="font-medium text-slate-700">—</span></span>
+        <span>Vozilo: <span id="sel-vehicle" class="font-medium text-slate-700">—</span></span>
+      </div>
+    </header>
+
+    <!-- Two panes -->
+    <main class="flex-grow min-h-0 grid grid-cols-2 gap-3">
+
+      <!-- Clients pane -->
+      <section class="flex flex-col min-h-0 bg-white rounded-lg shadow-sm border border-slate-200">
+        <div class="shrink-0 flex items-center justify-between px-3 py-2 border-b border-slate-100">
+          <h2 class="text-sm font-semibold text-slate-700">Klijenti <span id="client-count" class="text-slate-400 font-normal"></span></h2>
+          <button id="add-client-btn" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700">+ Dodaj klijenta</button>
+        </div>
+        <div id="client-form" class="hidden shrink-0 border-b border-slate-100 bg-slate-50 p-3"></div>
+        <div id="client-list" class="flex-grow overflow-y-auto p-2 space-y-1"></div>
+      </section>
+
+      <!-- Vehicles pane -->
+      <section class="flex flex-col min-h-0 bg-white rounded-lg shadow-sm border border-slate-200">
+        <div class="shrink-0 flex items-center justify-between px-3 py-2 border-b border-slate-100 gap-2">
+          <h2 class="text-sm font-semibold text-slate-700">Vozila <span id="vehicle-count" class="text-slate-400 font-normal"></span></h2>
+          <div class="flex items-center gap-2">
+            <div id="scope-toggle" class="hidden inline-flex rounded-md border border-slate-200 overflow-hidden text-xs">
+              <button data-scope="owned" class="px-2 py-1 hover:bg-slate-100">Klijentova</button>
+              <button data-scope="all" class="px-2 py-1 hover:bg-slate-100">Sva</button>
+            </div>
+            <button id="add-vehicle-btn" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700">+ Dodaj vozilo</button>
+          </div>
+        </div>
+        <div id="vehicle-form" class="hidden shrink-0 border-b border-slate-100 bg-slate-50 p-3"></div>
+        <div id="vehicle-list" class="flex-grow overflow-y-auto p-2 space-y-1"></div>
+      </section>
+
+    </main>
+
+    <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md text-sm text-white shadow-lg z-50"></div>
+  </div>
+</body>
+</html>

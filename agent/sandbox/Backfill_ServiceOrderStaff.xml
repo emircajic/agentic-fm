@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Response envelope init</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Log.add ( "info" ; "BACKFILL_START" ; "Begin ServiceOrderStaff backfill from ServiceOrders.ForeignKeyStaff" ; "" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Count candidates and existing join rows (baseline for delta)</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT COUNT(*) FROM ServiceOrders WHERE ForeignKeyStaff IS NOT NULL" ; "" ; "" ) )]]></Calculation>
+		</Value>
+		<Name>$totalCandidates</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT COUNT(*) FROM ServiceOrderStaff" ; "" ; "" ) )]]></Calculation>
+		</Value>
+		<Name>$countBefore</Name>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Short-circuit if there is nothing to backfill</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$totalCandidates = 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "created" ; 0 ; JSONNumber ] ;
+	[ "skipped" ; 0 ; JSONNumber ] ;
+	[ "totalCandidates" ; 0 ; JSONNumber ]
+) )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Log.add ( "info" ; "BACKFILL_NOOP" ; "No ServiceOrders rows with a non-empty ForeignKeyStaff" ; "" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="1" name="Perform Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		<Script id="780" name="UTIL__FlushLog"/>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="89" name="# (comment)"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Single-shot INSERT … SELECT with NOT EXISTS for idempotency</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA["INSERT INTO ServiceOrderStaff (ForeignKeyServiceOrder, ForeignKeyStaff, AssignedAt) " &
+"SELECT so.PrimaryKey, so.ForeignKeyStaff, so.CreationTimestamp " &
+"FROM ServiceOrders so " &
+"WHERE so.ForeignKeyStaff IS NOT NULL " &
+"AND NOT EXISTS ( " &
+	"SELECT 1 FROM ServiceOrderStaff sos " &
+	"WHERE sos.ForeignKeyServiceOrder = so.PrimaryKey " &
+	"AND sos.ForeignKeyStaff = so.ForeignKeyStaff " &
+")"]]></Calculation>
+		</Value>
+		<Name>$sql</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[epSQLExecute ( $sql ; "" )]]></Calculation>
+		</Value>
+		<Name>$sqlError</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $sqlError )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Response_AddError ( "SQL_INSERT_FAIL" ; $sqlError ; "" ; $sql ; "" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Log.add ( "error" ; "SQL_INSERT_FAIL" ; $sqlError ; $sql )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="1" name="Perform Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		<Script id="780" name="UTIL__FlushLog"/>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="89" name="# (comment)"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Derive created / skipped from the row-count delta</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "SELECT COUNT(*) FROM ServiceOrderStaff" ; "" ; "" ) )]]></Calculation>
+		</Value>
+		<Name>$countAfter</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[$countAfter - $countBefore]]></Calculation>
+		</Value>
+		<Name>$created</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[$totalCandidates - $created]]></Calculation>
+		</Value>
+		<Name>$skipped</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "created" ; $created ; JSONNumber ] ;
+	[ "skipped" ; $skipped ; JSONNumber ] ;
+	[ "totalCandidates" ; $totalCandidates ; JSONNumber ]
+) )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Log.add ( "info" ; "BACKFILL_DONE" ; "Created " & $created & ", skipped " & $skipped & " of " & $totalCandidates ; "" )]]></Calculation>
+		</Value>
+		<Name>$void</Name>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Interactive summary when run as root</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="87" name="Show Custom Dialog">
+		<Title>
+			<Calculation><![CDATA["Backfill complete"]]></Calculation>
+		</Title>
+		<Message>
+			<Calculation><![CDATA["Candidates: " & $totalCandidates & ¶ &
+"Created: " & $created & ¶ &
+"Skipped (already existed): " & $skipped]]></Calculation>
+		</Message>
+		<Buttons>
+			<Button CommitState="True">
+				<Calculation><![CDATA["OK"]]></Calculation>
+			</Button>
+		</Buttons>
+	</Step>
+	<Step enable="True" id="1" name="Perform Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		<Script id="780" name="UTIL__FlushLog"/>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+</fmxmlsnippet>

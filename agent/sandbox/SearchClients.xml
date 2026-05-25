@@ -1,0 +1,75 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Build the GenericSearch config for the Clients pane of the Client/Vehicle picker and dispatch it. Results return to JS receiveClientData on the clientvehiclepicker web viewer.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMETER (JSON): offset, limit, search</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$input</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$offset</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $input ; "offset" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$limit</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $input ; "limit" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$search</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $input ; "search" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$config</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "table" ; "Clients" ; JSONString ] ;
+	[ "fields" ; JSONSetElement ( "[]" ;
+		[ 0 ; "PrimaryKey" ; JSONString ] ;
+		[ 1 ; "FirstName" ; JSONString ] ;
+		[ 2 ; "LastName" ; JSONString ] ;
+		[ 3 ; "Phone" ; JSONString ] ;
+		[ 4 ; "Email" ; JSONString ] ;
+		[ 5 ; "VehicleCount_Calculation" ; JSONString ] ;
+		[ 6 ; "DisplayName_Display" ; JSONString ] ;
+		[ 7 ; "Type" ; JSONString ] ;
+		[ 8 ; "CompanyName" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "fieldTypes" ; JSONSetElement ( "[]" ;
+		[ 0 ; "string" ; JSONString ] ;
+		[ 1 ; "string" ; JSONString ] ;
+		[ 2 ; "string" ; JSONString ] ;
+		[ 3 ; "string" ; JSONString ] ;
+		[ 4 ; "string" ; JSONString ] ;
+		[ 5 ; "number" ; JSONString ] ;
+		[ 6 ; "string" ; JSONString ] ;
+		[ 7 ; "string" ; JSONString ] ;
+		[ 8 ; "string" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "searchFields" ; JSONSetElement ( "[]" ;
+		[ 0 ; "DisplayName_Display" ; JSONString ] ;
+		[ 1 ; "Phone" ; JSONString ] ;
+		[ 2 ; "Email" ; JSONString ]
+	) ; JSONArray ] ;
+	[ "orderBy" ; "DisplayName_Display ASC" ; JSONString ] ;
+	[ "webViewerObject" ; "clientvehiclepicker" ; JSONString ] ;
+	[ "callbackFunction" ; "receiveClientData" ; JSONString ] ;
+	[ "responseKey" ; "clients" ; JSONString ] ;
+	[ "offset" ; $offset ; JSONNumber ] ;
+	[ "limit" ; $limit ; JSONNumber ] ;
+	[ "search" ; $search ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="1" name="Perform Script">
+		<Script id="573" name="GenericSearch"/>
+		<Calculation><![CDATA[$config]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

@@ -7,9 +7,9 @@ Cross-session journal. Updated by Claude Code as decisions are made, tasks compl
 ## Active tasks
 
 - [x] UFD → KMP creation chain — reviewed and complete (see KMP section below)
-- [ ] UFD__Process — paste final patched version into FM and verify (sandbox is up to date)
-- [ ] Push fresh xml_parsed snapshot — schema changes not yet reflected in index files
-- [ ] Run `Test__UFD_Flow` (id 692) and `Test__KMP_Flow` (id 693) to smoke-test the full chain
+- [x] UFD__Process — paste final patched version into FM and verify (sandbox is up to date)
+- [x] Push fresh xml_parsed snapshot — schema changes not yet reflected in index files
+- [x] Run `Test__UFD_Flow` (id 692) and `Test__KMP_Flow` (id 693) to smoke-test the full chain
 
 ### Duty #1 — Workflow Optimization: Service Order Operations
 

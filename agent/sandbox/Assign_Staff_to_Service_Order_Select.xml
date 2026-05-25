@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Add the selected staff member to the originating Service Order's staff via the ServiceOrderStaff link table. Idempotent — re-selecting the same staff is a no-op.</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[Staff::PrimaryKey]]></Calculation>
+		</Value>
+		<Name>$primaryKeyStaff</Name>
+	</Step>
+	<Step enable="True" id="121" name="Close Window">
+		<LimitToWindowsOfCurrentFile state="True"/>
+		<Window value="Current"/>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Back on the originating Service Order context — read its PK</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[ServiceOrders::PrimaryKey]]></Calculation>
+		</Value>
+		<Name>$primaryKeyServiceOrder</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $primaryKeyStaff ) or IsEmpty ( $primaryKeyServiceOrder )]]></Calculation>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[""]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Idempotency check — has this pair already been linked?</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[GetAsNumber ( ExecuteSQL (
+	"SELECT COUNT(*) FROM ServiceOrderStaff WHERE ForeignKeyServiceOrder = ? AND ForeignKeyStaff = ?" ;
+	"" ; "" ;
+	$primaryKeyServiceOrder ; $primaryKeyStaff
+) )]]></Calculation>
+		</Value>
+		<Name>$existsCount</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$existsCount = 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Commit before SQL to release any pending field edits and avoid record-lock errors</Text>
+	</Step>
+	<Step enable="True" id="75" name="Commit Records/Requests">
+		<NoInteract state="True"/>
+		<Option state="False"/>
+		<ESSForceCommit state="False"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Value>
+			<Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO ServiceOrderStaff (ForeignKeyServiceOrder, ForeignKeyStaff) VALUES (?, ?)" ;
+	"" ;
+	$primaryKeyServiceOrder ; $primaryKeyStaff
+)]]></Calculation>
+		</Value>
+		<Name>$sqlError</Name>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $sqlError )]]></Calculation>
+	</Step>
+	<Step enable="True" id="87" name="Show Custom Dialog">
+		<Title>
+			<Calculation><![CDATA["Greška pri dodjeli serviser"]]></Calculation>
+		</Title>
+		<Message>
+			<Calculation><![CDATA[$sqlError]]></Calculation>
+		</Message>
+		<Buttons>
+			<Button CommitState="True">
+				<Calculation><![CDATA["OK"]]></Calculation>
+			</Button>
+		</Buttons>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[""]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>Refresh window so the assigned-staff portal/list reflects the new row</Text>
+	</Step>
+	<Step enable="True" id="80" name="Refresh Window">
+		<Option state="True"/>
+	</Step>
+</fmxmlsnippet>

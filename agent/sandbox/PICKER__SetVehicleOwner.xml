@@ -1,0 +1,87 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Associate (or dissociate) a vehicle with a client by setting Vehicles::ForeignKeyClient via epSQL, then notify JS via receiveVehicleOwnerChanged.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMETER (JSON): vehicleId (required), clientId (empty string = dissociate)&#xD;RETURNS (to JS receiveVehicleOwnerChanged): { vehicleId, clientId } or { error: "..." }</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$json</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$vehicleId</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "vehicleId" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$clientId</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $json ; "clientId" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $vehicleId )]]></Calculation>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; "missing vehicleId" ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Commit any open edit, then UPDATE owner via epSQL</Text>
+	</Step>
+	<Step enable="True" id="75" name="Commit Records/Requests">
+		<NoInteract state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE Vehicles SET ForeignKeyClient = ? WHERE PrimaryKey = ?" ;
+	"" ;
+	$clientId ; $vehicleId
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName><Calculation><![CDATA["clientvehiclepicker"]]></Calculation></ObjectName>
+		<FunctionName><Calculation><![CDATA["receiveVehicleOwnerChanged"]]></Calculation></FunctionName>
+		<Parameters Count="1">
+			<P><Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $err ; JSONString )]]></Calculation></P>
+		</Parameters>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $err ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "vehicleId" ; $vehicleId ; JSONString ] ;
+	[ "clientId" ; $clientId ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName><Calculation><![CDATA["clientvehiclepicker"]]></Calculation></ObjectName>
+		<FunctionName><Calculation><![CDATA["receiveVehicleOwnerChanged"]]></Calculation></FunctionName>
+		<Parameters Count="1">
+			<P><Calculation><![CDATA[$payload]]></Calculation></P>
+		</Parameters>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$payload]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>
