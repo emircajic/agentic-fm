@@ -72,7 +72,7 @@
   </Step>
 
     <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA["SELECT sp.PrimaryKey, sp.Kolicina, sol.Description, sol.Rate, so.ServiceOrderNumber, so.JobDate " &
+      <Value><Calculation><![CDATA["SELECT sp.PrimaryKey, sp.Kolicina, sol.Description, sol.Rate, so.ServiceOrderNumber, so.JobDate, so.PrimaryKey " &
 "FROM StavkePovrata sp " &
 "INNER JOIN ServiceOrderLines sol ON sp.ForeignKeyServiceOrderLineID = sol.PrimaryKey " &
 "INNER JOIN ServiceOrders so ON sol.ForeignKeyServiceOrder = so.PrimaryKey " &
@@ -129,7 +129,8 @@
 	["description"        ; epSQLResult ( $i ; 2 ; "rs" ) ; JSONString] ;
 	["rate"               ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs" ) ) ; JSONNumber] ;
 	["serviceOrderNumber" ; epSQLResult ( $i ; 4 ; "rs" ) ; JSONString] ;
-	["jobDate"            ; epSQLResult ( $i ; 5 ; "rs" ) ; JSONString]
+	["jobDate"            ; epSQLResult ( $i ; 5 ; "rs" ) ; JSONString] ;
+	["serviceOrderId"     ; epSQLResult ( $i ; 6 ; "rs" ) ; JSONString]
 )]]></Calculation></Value>
         <Name>$row</Name>
       </Step>
@@ -239,12 +240,13 @@
   </Step>
 
     <Step enable="True" id="89" name="# (comment)">
-      <Text>Service lines (no ForeignKeyArtikalID), aggregated by ForeignKeyServiceItem. Each group keeps its raw lines for drill-down.</Text>
+      <Text>Service lines (no ForeignKeyArtikalID), aggregated by Service Items.Type. Missing Type buckets into "Ostale usluge".</Text>
     </Step>
     <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA["SELECT sol.ForeignKeyServiceItem, sol.Description, sol.Qty, sol.Rate, so.ServiceOrderNumber, so.JobDate " &
+      <Value><Calculation><![CDATA["SELECT si.Type, sol.Description, sol.Qty, sol.Rate, so.ServiceOrderNumber, so.JobDate, so.PrimaryKey " &
 "FROM ServiceOrderLines sol " &
 "INNER JOIN ServiceOrders so ON sol.ForeignKeyServiceOrder = so.PrimaryKey " &
+"LEFT OUTER JOIN " & Quote ( "Service Items" ) & " si ON sol.ForeignKeyServiceItem = si.PrimaryKey " &
 "WHERE (so.Status = " & epSQLQuote ( "Fakturisan" ) & " OR so.Status = " & epSQLQuote ( "Naplaćen" ) & ") " &
 "AND so.JobDate >= " & epSQLQuoteDate ( $start ) & " AND so.JobDate <= " & epSQLQuoteDate ( $today ) & " " &
 "AND (sol.ForeignKeyArtikalID IS NULL OR sol.ForeignKeyArtikalID = '') " &
@@ -301,7 +303,7 @@
       </Step>
       <Step enable="True" id="141" name="Set Variable">
         <Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs" )]]></Calculation></Value>
-        <Name>$key</Name>
+        <Name>$type</Name>
       </Step>
       <Step enable="True" id="141" name="Set Variable">
         <Value><Calculation><![CDATA[epSQLResult ( $i ; 1 ; "rs" )]]></Calculation></Value>
@@ -324,7 +326,11 @@
         <Name>$soDate</Name>
       </Step>
       <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[If ( IsEmpty ( $key ) ; "_NONE_" ; $key )]]></Calculation></Value>
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 6 ; "rs" )]]></Calculation></Value>
+        <Name>$soId</Name>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[If ( IsEmpty ( $type ) ; "Ostale usluge" ; $type )]]></Calculation></Value>
         <Name>$key</Name>
       </Step>
       <Step enable="True" id="141" name="Set Variable">
@@ -333,7 +339,8 @@
 	["jobDate"            ; $soDate ; JSONString] ;
 	["description"        ; $desc   ; JSONString] ;
 	["qty"                ; $qty    ; JSONNumber] ;
-	["rate"               ; $rate   ; JSONNumber]
+	["rate"               ; $rate   ; JSONNumber] ;
+	["serviceOrderId"     ; $soId   ; JSONString]
 )]]></Calculation></Value>
         <Name>$line</Name>
       </Step>
@@ -348,7 +355,7 @@
         <Step enable="True" id="141" name="Set Variable">
           <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
 	["key"         ; $key          ; JSONString] ;
-	["description" ; $desc         ; JSONString] ;
+	["description" ; $key          ; JSONString] ;
 	["qty"         ; $qty          ; JSONNumber] ;
 	["lineCount"   ; 1             ; JSONNumber] ;
 	["revenue"     ; $qty * $rate  ; JSONNumber] ;
@@ -433,6 +440,111 @@
         <Name>$j</Name>
       </Step>
     <Step enable="True" id="73" name="End Loop"/>
+
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$modal = "goods"]]></Calculation>
+  </Step>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Goods (Roba) — ServiceOrderLines with ForeignKeyArtikalID set. Filter empty FK in script (FQL IS NOT NULL is unreliable for text fields).</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA["SELECT sol.PrimaryKey, sol.Qty, sol.Rate, sol.Description, sol.NabavnaCijena_Stvarna, sol.JM, sol.ForeignKeyArtikalID, so.ServiceOrderNumber, so.JobDate, so.PrimaryKey, a.SifraArtikla " &
+"FROM ServiceOrderLines sol " &
+"INNER JOIN ServiceOrders so ON sol.ForeignKeyServiceOrder = so.PrimaryKey " &
+"LEFT OUTER JOIN Artikli a ON sol.ForeignKeyArtikalID = a.PrimaryKey " &
+"WHERE (so.Status = " & epSQLQuote ( "Fakturisan" ) & " OR so.Status = " & epSQLQuote ( "Naplaćen" ) & ") " &
+"AND so.JobDate >= " & epSQLQuoteDate ( $start ) & " AND so.JobDate <= " & epSQLQuoteDate ( $today ) & " " &
+"ORDER BY so.JobDate DESC, so.ServiceOrderNumber DESC"]]></Calculation></Value>
+      <Name>$sql</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLExecute ( $sql ; "useSQLResult=rs" ; "" )]]></Calculation></Value>
+      <Name>$err</Name>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Restore state="False"/>
+      <Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+    </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["modal" ; $modal ; JSONString] ;
+	["error" ; $err   ; JSONString] ;
+	["generatedAt" ; $genAt ; JSONString]
+)]]></Calculation></Value>
+        <Name>$payload</Name>
+      </Step>
+      <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+        <ObjectName><Calculation><![CDATA["wv_salesDashboard"]]></Calculation></ObjectName>
+        <FunctionName><Calculation><![CDATA["receiveModalData"]]></Calculation></FunctionName>
+        <Parameters Count="1">
+          <P><Calculation><![CDATA[$payload]]></Calculation></P>
+        </Parameters>
+      </Step>
+      <Step enable="True" id="103" name="Exit Script"/>
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultRowCount ( "rs" )]]></Calculation></Value>
+      <Name>$rowCount</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[0]]></Calculation></Value>
+      <Name>$i</Name>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[0]]></Calculation></Value>
+      <Name>$j</Name>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Restore state="False"/>
+      <FlushType value="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[$i >= $rowCount]]></Calculation>
+      </Step>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[epSQLResult ( $i ; 6 ; "rs" )]]></Calculation></Value>
+        <Name>$artikalID</Name>
+      </Step>
+      <Step enable="True" id="68" name="If">
+        <Restore state="False"/>
+        <Calculation><![CDATA[not IsEmpty ( $artikalID )]]></Calculation>
+      </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	["id"                 ; epSQLResult ( $i ; 0 ; "rs" ) ; JSONString] ;
+	["qty"                ; GetAsNumber ( epSQLResult ( $i ; 1 ; "rs" ) ) ; JSONNumber] ;
+	["rate"               ; GetAsNumber ( epSQLResult ( $i ; 2 ; "rs" ) ) ; JSONNumber] ;
+	["description"        ; epSQLResult ( $i ; 3 ; "rs" ) ; JSONString] ;
+	["nabavna"            ; GetAsNumber ( epSQLResult ( $i ; 4 ; "rs" ) ) ; JSONNumber] ;
+	["jm"                 ; epSQLResult ( $i ; 5 ; "rs" ) ; JSONString] ;
+	["serviceOrderNumber" ; epSQLResult ( $i ; 7 ; "rs" ) ; JSONString] ;
+	["jobDate"            ; epSQLResult ( $i ; 8 ; "rs" ) ; JSONString] ;
+	["serviceOrderId"     ; epSQLResult ( $i ; 9 ; "rs" ) ; JSONString] ;
+	["sifraArtikla"       ; epSQLResult ( $i ; 10 ; "rs" ) ; JSONString]
+)]]></Calculation></Value>
+          <Name>$row</Name>
+        </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $j & "]" ; $row ; JSONObject )]]></Calculation></Value>
+          <Name>$rows</Name>
+        </Step>
+        <Step enable="True" id="141" name="Set Variable">
+          <Value><Calculation><![CDATA[$j + 1]]></Calculation></Value>
+          <Name>$j</Name>
+        </Step>
+      <Step enable="True" id="70" name="End If"/>
+      <Step enable="True" id="141" name="Set Variable">
+        <Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+        <Name>$i</Name>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[epSQLResultDelete ( "rs" )]]></Calculation></Value>
+      <Name>$void</Name>
+    </Step>
 
   <Step enable="True" id="69" name="Else">
     <Restore state="False"/>

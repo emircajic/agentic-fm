@@ -1,241 +1,515 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-
   <Step enable="True" id="89" name="# (comment)">
-    <Text>PURPOSE: Find all StavkePrimke with available quantity, group by Primka, and return JSON payload for the picker.</Text>
+    <Text>PURPOSE: Pull StavkePrimke + Primke + Artikli with three flat epSQL queries, merge aggregates in FM via JSON dicts, group by Primka, return JSON payload for the picker.</Text>
   </Step>
   <Step enable="False" id="61" name="Insert Text">
     <SelectAll state="False"/>
     <Text>PARAMS: serviceOrderID (text, required) | callbackScript (text, required) | callbackContext (object, optional)&#xD;RETURNS: data.groupCount (number) | data.stavkeCount (number) | data.scriptPayload (object)</Text>
     <Field>$README</Field>
   </Step>
-
   <Step enable="True" id="85" name="Allow User Abort">
-    <Boolean type="AllowUserAbort" id="0" value="False"/>
+    <Set state="False"/>
   </Step>
   <Step enable="True" id="86" name="Set Error Capture">
-    <Boolean type="SetErrorCapture" id="0" value="True"/>
+    <Set state="False"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "serviceOrderID|callbackScript|callbackContext" )]]></Calculation>
+    </Value>
     <Name>$void</Name>
-    <Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "serviceOrderID|callbackScript|callbackContext" )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
     <Name>$void</Name>
-    <Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Log.add ( "info" ; "SO_PRIMKA_PICKER_START" ; "Building picker for serviceOrderID " & $serviceOrderID ; $params )]]></Calculation>
+    </Value>
     <Name>$void</Name>
-    <Value><Calculation><![CDATA[Log.add ( "info" ; "SO_PRIMKA_PICKER_START" ; "Building picker for serviceOrderID " & $serviceOrderID ; $params )]]></Calculation></Value>
   </Step>
-
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Validate</Text>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Validate</Text>
   </Step>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
     <Calculation><![CDATA[IsEmpty ( $serviceOrderID )]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$void</Name>
-      <Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "serviceOrderID is required" ; "serviceOrderID" ; "{}" ; "" )]]></Calculation></Value>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "serviceOrderID is required" ; "serviceOrderID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
     <Calculation><![CDATA[IsEmpty ( $callbackScript )]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$void</Name>
-      <Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "callbackScript is required" ; "callbackScript" ; "{}" ; "" )]]></Calculation></Value>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "callbackScript is required" ; "callbackScript" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
     <Calculation><![CDATA[Response_HasErrors ( $response )]]></Calculation>
   </Step>
-    <Step enable="True" id="68" name="If">
-      <Restore state="False"/>
-      <Calculation><![CDATA[$isRoot]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-        <Script id="780" name="UTIL__FlushLog"/>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[Response_Finalize]]></Calculation>
-    </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Find all StavkePrimke</Text>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Query A — SP + Primke + Artikli, no aggregates, ordered for display</Text>
   </Step>
-  <Step enable="True" id="6" name="Go to Layout">
-    <Layout id="227" name="Dev StavkePrimke"/>
-  </Step>
-  <Step enable="True" id="23" name="Show All Records"/>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$foundCount</Name>
-    <Value><Calculation><![CDATA[Get ( FoundCount )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT" &
+	"  Primke.PrimaryKey," &
+	"  Primke.BrojFaktureDobavljaca," &
+	"  Primke.DatumPrimitka," &
+	"  StavkePrimke.PrimaryKey," &
+	"  StavkePrimke.ForeignKeyArtikalID," &
+	"  Artikli.SifraArtikla," &
+	"  Artikli.NazivArtikla," &
+	"  StavkePrimke.Kolicina," &
+	"  StavkePrimke.NabavnaCijenaStavke," &
+	"  StavkePrimke.ProdajnaCijena," &
+	"  StavkePrimke.JM" &
+	" FROM StavkePrimke" &
+	" JOIN Primke  ON Primke.PrimaryKey  = StavkePrimke.ForeignKeyPrimkaID" &
+	" JOIN Artikli ON Artikli.PrimaryKey = StavkePrimke.ForeignKeyArtikalID" &
+	" ORDER BY Primke.DatumPrimitka DESC, Primke.BrojFaktureDobavljaca, Artikli.NazivArtikla" ;
+	"useSQLResult=rs_sp"
+)]]></Calculation>
+    </Value>
+    <Name>$sqlErr</Name>
   </Step>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
-    <Calculation><![CDATA[$foundCount = 0]]></Calculation>
+    <Calculation><![CDATA[not IsEmpty ( $sqlErr )]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$void</Name>
-      <Value><Calculation><![CDATA[Response_AddError ( "NO_STAVKE" ; "No StavkePrimke records found in the solution" ; "" ; "{}" ; "" )]]></Calculation></Value>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Restore state="False"/>
-      <Calculation><![CDATA[$isRoot]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-        <Script id="780" name="UTIL__FlushLog"/>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[Response_Finalize]]></Calculation>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "epSQL Query A failed: " & $sqlErr ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
-  <Step enable="True" id="39" name="Sort Records">
-    <NoInteract state="True"/>
-    <Restore state="True"/>
-    <SortList Maintain="True" value="True">
-      <Sort type="Descending">
-        <PrimaryField>
-          <Field table="Primke" id="8" name="DatumPrimitka"/>
-        </PrimaryField>
-      </Sort>
-      <Sort type="Ascending">
-        <PrimaryField>
-          <Field table="Primke" id="7" name="BrojFaktureDobavljaca"/>
-        </PrimaryField>
-      </Sort>
-      <Sort type="Ascending">
-        <PrimaryField>
-          <Field table="Artikli" id="7" name="NazivArtikla"/>
-        </PrimaryField>
-      </Sort>
-    </SortList>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
   </Step>
-
+  <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Build grouped JSON — skip stavke where QtyAvailable = 0, group by Primka</Text>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Query B — transferred sums by SP (one GROUP BY scan)</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$groups</Name>
-    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT ForeignKeyStavkaPrimkeID, SUM ( Qty )" &
+	" FROM ServiceOrderLines" &
+	" GROUP BY ForeignKeyStavkaPrimkeID" ;
+	"useSQLResult=rs_tr"
+)]]></Calculation>
+    </Value>
+    <Name>$sqlErr</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $sqlErr )]]></Calculation>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$currentStavke</Name>
-    <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$currentGroup</Name>
-    <Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "epSQL Query B failed: " & $sqlErr ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Query C — returned sums by SP (one GROUP BY scan)</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$lastPrimkaPK</Name>
-    <Value><Calculation><![CDATA[""]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT ForeignKeyStavkaPrimkeID, SUM ( Kolicina )" &
+	" FROM StavkePovrata" &
+	" GROUP BY ForeignKeyStavkaPrimkeID" ;
+	"useSQLResult=rs_ret"
+)]]></Calculation>
+    </Value>
+    <Name>$sqlErr</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $sqlErr )]]></Calculation>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$groupCount</Name>
-    <Value><Calculation><![CDATA[0]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$totalStavke</Name>
-    <Value><Calculation><![CDATA[0]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_tr" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
   </Step>
-  <Step enable="True" id="16" name="Go to Record/Request/Page">
-    <RowPageLocation value="First"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "epSQL Query C failed: " & $sqlErr ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Build aggregate dicts — JSON objects keyed by stavkaPK</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["{}"]]></Calculation>
+    </Value>
+    <Name>$dictT</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_tr" )]]></Calculation>
+    </Value>
+    <Name>$rowsT</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$j</Name>
   </Step>
   <Step enable="True" id="71" name="Loop">
     <Restore state="False"/>
-    <FlushType value="Always"/>
+    <FlushType value="Defer"/>
   </Step>
-    <Step enable="True" id="68" name="If">
-      <Restore state="False"/>
-      <Calculation><![CDATA[StavkePrimke::QtyAvailable_Calculation > 0]]></Calculation>
-    </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Name>$primkaPK</Name>
-        <Value><Calculation><![CDATA[StavkePrimke::ForeignKeyPrimkaID]]></Calculation></Value>
-      </Step>
-      <Step enable="True" id="68" name="If">
-        <Restore state="False"/>
-        <Calculation><![CDATA[$primkaPK ≠ $lastPrimkaPK]]></Calculation>
-      </Step>
-        <Step enable="True" id="68" name="If">
-          <Restore state="False"/>
-          <Calculation><![CDATA[not IsEmpty ( $lastPrimkaPK )]]></Calculation>
-        </Step>
-          <Step enable="True" id="141" name="Set Variable">
-            <Name>$currentGroup</Name>
-            <Value><Calculation><![CDATA[JSONSetElement ( $currentGroup ; "stavke" ; $currentStavke ; JSONArray )]]></Calculation></Value>
-          </Step>
-          <Step enable="True" id="141" name="Set Variable">
-            <Name>$groups</Name>
-            <Value><Calculation><![CDATA[JSONSetElement ( $groups ; "[+]" ; $currentGroup ; JSONObject )]]></Calculation></Value>
-          </Step>
-          <Step enable="True" id="141" name="Set Variable">
-            <Name>$groupCount</Name>
-            <Value><Calculation><![CDATA[$groupCount + 1]]></Calculation></Value>
-          </Step>
-        <Step enable="True" id="70" name="End If"/>
-        <Step enable="True" id="141" name="Set Variable">
-          <Name>$currentGroup</Name>
-          <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "primkaPK" ; $primkaPK ; JSONString ] ;
-	[ "brojFakture" ; Primke::BrojFaktureDobavljaca ; JSONString ] ;
-	[ "datum" ; GetAsText ( Primke::DatumPrimitka ) ; JSONString ]
-)]]></Calculation></Value>
-        </Step>
-        <Step enable="True" id="141" name="Set Variable">
-          <Name>$currentStavke</Name>
-          <Value><Calculation><![CDATA["[]"]]></Calculation></Value>
-        </Step>
-        <Step enable="True" id="141" name="Set Variable">
-          <Name>$lastPrimkaPK</Name>
-          <Value><Calculation><![CDATA[$primkaPK]]></Calculation></Value>
-        </Step>
-      <Step enable="True" id="70" name="End If"/>
-      <Step enable="True" id="141" name="Set Variable">
-        <Name>$stavkaObj</Name>
-        <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "stavkaPK" ; StavkePrimke::PrimaryKey ; JSONString ] ;
-	[ "artikalPK" ; StavkePrimke::ForeignKeyArtikalID ; JSONString ] ;
-	[ "sifra" ; Artikli::SifraArtikla ; JSONString ] ;
-	[ "naziv" ; Artikli::NazivArtikla ; JSONString ] ;
-	[ "kolicina" ; StavkePrimke::Kolicina ; JSONNumber ] ;
-	[ "nabavna" ; StavkePrimke::NabavnaCijenaStavke ; JSONNumber ] ;
-	[ "prodajna" ; StavkePrimke::ProdajnaCijena ; JSONNumber ] ;
-	[ "qtyAvailable" ; StavkePrimke::QtyAvailable_Calculation ; JSONNumber ] ;
-	[ "jm" ; StavkePrimke::JM ; JSONString ] ;
-	[ "transferStatus" ; StavkePrimke::TransferStatus_Display ; JSONString ]
-)]]></Calculation></Value>
-      </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Name>$currentStavke</Name>
-        <Value><Calculation><![CDATA[JSONSetElement ( $currentStavke ; "[+]" ; $stavkaObj ; JSONObject )]]></Calculation></Value>
-      </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Name>$totalStavke</Name>
-        <Value><Calculation><![CDATA[$totalStavke + 1]]></Calculation></Value>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="16" name="Go to Record/Request/Page">
-      <RowPageLocation value="Next"/>
-      <Exit state="True"/>
-    </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$j ≥ $rowsT]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $dictT ; "k" & epSQLResult ( $j ; 0 ; "rs_tr" ) ; GetAsNumber ( epSQLResult ( $j ; 1 ; "rs_tr" ) ) ; JSONNumber )]]></Calculation>
+    </Value>
+    <Name>$dictT</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$j + 1]]></Calculation>
+    </Value>
+    <Name>$j</Name>
+  </Step>
   <Step enable="True" id="73" name="End Loop"/>
-
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_tr" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["{}"]]></Calculation>
+    </Value>
+    <Name>$dictR</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_ret" )]]></Calculation>
+    </Value>
+    <Name>$rowsR</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$j</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Defer"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$j ≥ $rowsR]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $dictR ; "k" & epSQLResult ( $j ; 0 ; "rs_ret" ) ; GetAsNumber ( epSQLResult ( $j ; 1 ; "rs_ret" ) ) ; JSONNumber )]]></Calculation>
+    </Value>
+    <Name>$dictR</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$j + 1]]></Calculation>
+    </Value>
+    <Name>$j</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_ret" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Walk Query A — lookup aggregates from dicts, filter qtyAvailable &gt; 0, group by Primka</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$rowCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$groups</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$currentStavke</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["{}"]]></Calculation>
+    </Value>
+    <Name>$currentGroup</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Name>$lastPrimkaPK</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$groupCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$totalStavke</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Restore state="False"/>
+    <FlushType value="Defer"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $rowCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResult ( $i ; 3 ; "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$stavkaPK</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( epSQLResult ( $i ; 7 ; "rs_sp" ) )]]></Calculation>
+    </Value>
+    <Name>$kolicina</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+	~raw = JSONGetElement ( $dictT ; "k" & $stavkaPK )
+] ; Case (
+	Left ( ~raw ; 1 ) = "?" ; 0 ;
+	IsEmpty ( ~raw )        ; 0 ;
+	GetAsNumber ( ~raw )
+) )]]></Calculation>
+    </Value>
+    <Name>$qtyTransferred</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+	~raw = JSONGetElement ( $dictR ; "k" & $stavkaPK )
+] ; Case (
+	Left ( ~raw ; 1 ) = "?" ; 0 ;
+	IsEmpty ( ~raw )        ; 0 ;
+	GetAsNumber ( ~raw )
+) )]]></Calculation>
+    </Value>
+    <Name>$qtyReturned</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Max ( 0 ; $kolicina - $qtyTransferred - $qtyReturned )]]></Calculation>
+    </Value>
+    <Name>$qtyAvailable</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$qtyAvailable > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$primkaPK</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$primkaPK ≠ $lastPrimkaPK]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $lastPrimkaPK )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $currentGroup ; "stavke" ; $currentStavke ; JSONArray )]]></Calculation>
+    </Value>
+    <Name>$currentGroup</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $groups ; "[+]" ; $currentGroup ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$groups</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$groupCount + 1]]></Calculation>
+    </Value>
+    <Name>$groupCount</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "primkaPK"    ; $primkaPK                                                       ; JSONString ] ;
+	[ "brojFakture" ; epSQLResult ( $i ; 1 ; "rs_sp" )                                ; JSONString ] ;
+	[ "datum"       ; GetAsText ( GetAsDate ( epSQLResult ( $i ; 2 ; "rs_sp" ) ) )    ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$currentGroup</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$currentStavke</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$primkaPK]]></Calculation>
+    </Value>
+    <Name>$lastPrimkaPK</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaPK"       ; $stavkaPK                                            ; JSONString ] ;
+	[ "artikalPK"      ; epSQLResult ( $i ; 4 ; "rs_sp" )                     ; JSONString ] ;
+	[ "sifra"          ; epSQLResult ( $i ; 5 ; "rs_sp" )                     ; JSONString ] ;
+	[ "naziv"          ; epSQLResult ( $i ; 6 ; "rs_sp" )                     ; JSONString ] ;
+	[ "kolicina"       ; $kolicina                                            ; JSONNumber ] ;
+	[ "nabavna"        ; GetAsNumber ( epSQLResult ( $i ; 8 ; "rs_sp" ) )     ; JSONNumber ] ;
+	[ "prodajna"       ; GetAsNumber ( epSQLResult ( $i ; 9 ; "rs_sp" ) )     ; JSONNumber ] ;
+	[ "qtyAvailable"   ; $qtyAvailable                                        ; JSONNumber ] ;
+	[ "jm"             ; epSQLResult ( $i ; 10 ; "rs_sp" )                    ; JSONString ] ;
+	[ "transferStatus" ; If ( $qtyTransferred > 0 ; "Partially Used" ; "Available" ) ; JSONString ]
+)]]></Calculation>
+    </Value>
+    <Name>$stavkaObj</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $currentStavke ; "[+]" ; $stavkaObj ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$currentStavke</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$totalStavke + 1]]></Calculation>
+    </Value>
+    <Name>$totalStavke</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text># Flush the last group</Text>
   </Step>
@@ -243,80 +517,97 @@
     <Restore state="False"/>
     <Calculation><![CDATA[not IsEmpty ( $lastPrimkaPK )]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$currentGroup</Name>
-      <Value><Calculation><![CDATA[JSONSetElement ( $currentGroup ; "stavke" ; $currentStavke ; JSONArray )]]></Calculation></Value>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$groups</Name>
-      <Value><Calculation><![CDATA[JSONSetElement ( $groups ; "[+]" ; $currentGroup ; JSONObject )]]></Calculation></Value>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$groupCount</Name>
-      <Value><Calculation><![CDATA[$groupCount + 1]]></Calculation></Value>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $currentGroup ; "stavke" ; $currentStavke ; JSONArray )]]></Calculation>
+    </Value>
+    <Name>$currentGroup</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $groups ; "[+]" ; $currentGroup ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$groups</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$groupCount + 1]]></Calculation>
+    </Value>
+    <Name>$groupCount</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_sp" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
     <Calculation><![CDATA[$totalStavke = 0]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Name>$void</Name>
-      <Value><Calculation><![CDATA[Response_AddError ( "NO_AVAILABLE_STAVKE" ; "No StavkePrimke with available quantity found" ; "" ; "{}" ; "" )]]></Calculation></Value>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Restore state="False"/>
-      <Calculation><![CDATA[$isRoot]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-        <Script id="780" name="UTIL__FlushLog"/>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[Response_Finalize]]></Calculation>
-    </Step>
-  <Step enable="True" id="70" name="End If"/>
-
-  <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Build payload</Text>
-  </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Name>$payload</Name>
-    <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "serviceOrderID" ; $serviceOrderID ; JSONString ] ;
-	[ "groups" ; $groups ; JSONArray ] ;
-	[ "groupCount" ; $groupCount ; JSONNumber ] ;
-	[ "stavkeCount" ; $totalStavke ; JSONNumber ] ;
-	[ "callbackScript" ; $callbackScript ; JSONString ] ;
-	[ "callbackContext" ; If ( IsEmpty ( $callbackContext ) ; JSONSetElement ( "{}" ; "serviceOrderID" ; $serviceOrderID ; JSONString ) ; $callbackContext ) ; JSONObject ]
-)]]></Calculation></Value>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "NO_AVAILABLE_STAVKE" ; "No StavkePrimke with available quantity found" ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
     <Name>$void</Name>
-    <Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
-	[ "groupCount" ; $groupCount ; JSONNumber ] ;
-	[ "stavkeCount" ; $totalStavke ; JSONNumber ] ;
-	[ "scriptPayload" ; $payload ; JSONObject ]
-) )]]></Calculation></Value>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Name>$void</Name>
-    <Value><Calculation><![CDATA[Log.add ( "info" ; "SO_PRIMKA_PICKER_DONE" ; "Built picker with " & $groupCount & " primke, " & $totalStavke & " stavke for serviceOrderID " & $serviceOrderID ; $params )]]></Calculation></Value>
   </Step>
   <Step enable="True" id="68" name="If">
     <Restore state="False"/>
     <Calculation><![CDATA[$isRoot]]></Calculation>
   </Step>
-    <Step enable="True" id="1" name="Perform Script">
-      <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
-      <Script id="780" name="UTIL__FlushLog"/>
-    </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="103" name="Exit Script">
     <Calculation><![CDATA[Response_Finalize]]></Calculation>
   </Step>
-
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text># MARK: Build payload</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "serviceOrderID"  ; $serviceOrderID  ; JSONString ] ;
+	[ "groups"          ; $groups          ; JSONArray  ] ;
+	[ "groupCount"      ; $groupCount      ; JSONNumber ] ;
+	[ "stavkeCount"     ; $totalStavke     ; JSONNumber ] ;
+	[ "callbackScript"  ; $callbackScript  ; JSONString ] ;
+	[ "callbackContext" ; If ( IsEmpty ( $callbackContext ) ; JSONSetElement ( "{}" ; "serviceOrderID" ; $serviceOrderID ; JSONString ) ; $callbackContext ) ; JSONObject ]
+)]]></Calculation>
+    </Value>
+    <Name>$payload</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "groupCount"    ; $groupCount  ; JSONNumber ] ;
+	[ "stavkeCount"   ; $totalStavke ; JSONNumber ] ;
+	[ "scriptPayload" ; $payload     ; JSONObject ]
+) )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Log.add ( "info" ; "SO_PRIMKA_PICKER_DONE" ; "Built picker with " & $groupCount & " primke, " & $totalStavke & " stavke for serviceOrderID " & $serviceOrderID ; $params )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
+  </Step>
 </fmxmlsnippet>
