@@ -55,6 +55,54 @@ body {
   font-size: 14px;
 }
 
+/* ── Scope header (read-only — controls live in FileMaker) ──────── */
+
+.scope-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--md-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-shadow-1);
+}
+
+.scope-label {
+  font-size: 14px;
+  font-weight: 700;            /* MD3 title-medium */
+  letter-spacing: 0.1px;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+}
+
+.scope-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.scope-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #fff;
+  background: var(--col-accent, var(--md-primary));
+}
+
+.scope-page {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+}
+
 /* ── Kanban board ───────────────────────────────────────────────── */
 
 .kanban-board {
@@ -93,6 +141,13 @@ body {
   background: var(--md-primary-container);
   outline-color: var(--md-primary);
 }
+
+/* Status filter active — columns outside the filter stay droppable but recede */
+.column.dimmed {
+  opacity: 0.45;
+  transition: opacity 0.18s;
+}
+.column.dimmed.drag-over { opacity: 1; }   /* lift dim while dragging onto it */
 
 /* ── Column header ──────────────────────────────────────────────── */
 

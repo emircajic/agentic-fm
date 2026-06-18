@@ -20,6 +20,7 @@ const ACCENT = {
 
 // ── App state ──────────────────────────────────────────────────────────────
 let currentOrders = [];
+let currentMeta  = null;    // scope/pagination info pushed by FileMaker (read-only here)
 let draggedId    = null;
 let wasDragging  = false;   // prevents tap-click firing after a drag release
 
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = typeof data === 'string' ? JSON.parse(data) : data;
     if (Array.isArray(payload.orders)) {
       currentOrders = payload.orders;
+      currentMeta   = payload.meta || null;
       renderKanban();
     }
   };
@@ -51,14 +53,51 @@ function renderKanban() {
 
   const columns = buildColumnList();
   const byStatus = groupByStatus(currentOrders);
+  const activeStatuses = (currentMeta && Array.isArray(currentMeta.statuses)) ? currentMeta.statuses : [];
 
   app.innerHTML = `
+    ${scopeHeaderHTML(currentMeta)}
     <div class="kanban-board">
-      ${columns.map(s => columnHTML(s, byStatus[s] || [])).join('')}
+      ${columns.map(s => columnHTML(s, byStatus[s] || [], activeStatuses)).join('')}
     </div>
   `;
 
   attachDragHandlers();
+}
+
+// ── Read-only scope header (controls live in FileMaker, not here) ───────────
+function scopeHeaderHTML(meta) {
+  if (!meta) return '';
+
+  const label = meta.label || '';
+  const page  = meta.page || {};
+  const statuses = Array.isArray(meta.statuses) ? meta.statuses : [];
+
+  // Page indicator: "1–100 od 137" (only meaningful when there's more than one page)
+  let pageStr = '';
+  const total = Number(page.total) || 0;
+  const limit = Number(page.limit) || 0;
+  const offset = Number(page.offset) || 0;
+  if (total > 0 && limit > 0) {
+    const from = offset + 1;
+    const to   = Math.min(offset + limit, total);
+    if (total > limit) pageStr = `${from}–${to} od ${total}`;
+    else               pageStr = `${total}`;
+  }
+
+  const chips = statuses.length
+    ? `<div class="scope-chips">${statuses.map(s =>
+        `<span class="scope-chip" style="--col-accent:${ACCENT[s] || ACCENT._default}">${esc(s)}</span>`
+      ).join('')}</div>`
+    : '';
+
+  return `
+    <div class="scope-header">
+      <span class="scope-label">${esc(label)}</span>
+      ${chips}
+      ${pageStr ? `<span class="scope-page">${esc(pageStr)}</span>` : ''}
+    </div>
+  `;
 }
 
 function groupByStatus(orders) {
@@ -68,10 +107,12 @@ function groupByStatus(orders) {
   }, {});
 }
 
-function columnHTML(status, orders) {
+function columnHTML(status, orders, activeStatuses = []) {
   const accent = ACCENT[status] || ACCENT._default;
+  // When a status filter is active, columns outside it stay visible & droppable but dimmed.
+  const dimmed = activeStatuses.length && !activeStatuses.includes(status) ? ' dimmed' : '';
   return `
-    <div class="column" data-drop-zone="${esc(status)}" style="--col-accent:${accent}">
+    <div class="column${dimmed}" data-drop-zone="${esc(status)}" style="--col-accent:${accent}">
       <div class="column-header">
         <div class="column-accent"></div>
         <span class="column-title">${esc(status)}</span>
@@ -109,12 +150,17 @@ function cardHTML(order) {
 }
 
 function formatTimeRange(start, end) {
-  const s = (start || '').trim();
-  const e = (end || '').trim();
+  const s = trimSeconds((start || '').trim());
+  const e = trimSeconds((end || '').trim());
   if (s && e) return `${s} – ${e}`;
   if (s)      return `od ${s}`;
   if (e)      return `do ${e}`;
   return null;
+}
+
+// FileMaker ExecuteSQL returns TIME fields as "HH:MM:SS" — show just "HH:MM".
+function trimSeconds(t) {
+  return /^\d{1,2}:\d{2}:\d{2}$/.test(t) ? t.slice(0, t.lastIndexOf(':')) : t;
 }
 
 function esc(str) {
