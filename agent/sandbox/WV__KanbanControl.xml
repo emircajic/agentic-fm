@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Mutate the kanban scope ($$KANBAN_SCOPE) from the FileMaker-native controls, then re-push the board. The web viewer never owns scope — controls call this script.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAMS: JSON {"action":"setPeriod|navigate|toggleStatus|clearStatus|page","value":"..."}. setPeriod→day|week|month · navigate→prev|next|today · toggleStatus→a status · page→prev|next</Text>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Name>$params</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $params ; "action" )]]></Calculation>
+    </Value>
+    <Name>$action</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $params ; "value" )]]></Calculation>
+    </Value>
+    <Name>$value</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Read current scope with defaults</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $$KANBAN_SCOPE ) and Left ( $$KANBAN_SCOPE ; 1 ) = "{" ; $$KANBAN_SCOPE ; "{}" )]]></Calculation>
+    </Value>
+    <Name>$scope</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( d = Get ( CurrentDate ) ;
+	Year ( d ) & "-" & Right ( "0" & Month ( d ) ; 2 ) & "-" & Right ( "0" & Day ( d ) ; 2 )
+)]]></Calculation>
+    </Value>
+    <Name>$today</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( p = JSONGetElement ( $scope ; "periodMode" ) ; If ( IsEmpty ( p ) or p = "?" ; "day" ; p ) )]]></Calculation>
+    </Value>
+    <Name>$periodMode</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( a = JSONGetElement ( $scope ; "anchorDate" ) ; If ( IsEmpty ( a ) or a = "?" ; $today ; a ) )]]></Calculation>
+    </Value>
+    <Name>$anchorStr</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( s = JSONGetElement ( $scope ; "statuses" ) ; If ( Left ( s ; 1 ) = "[" ; s ; "[]" ) )]]></Calculation>
+    </Value>
+    <Name>$statuses</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( l = GetAsNumber ( JSONGetElement ( $scope ; "limit" ) ) ; If ( l > 0 ; l ; 100 ) )]]></Calculation>
+    </Value>
+    <Name>$limit</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( o = GetAsNumber ( JSONGetElement ( $scope ; "offset" ) ) ; If ( o > 0 ; o ; 0 ) )]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: setPeriod — switch day/week/month, reset to first page</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "setPeriod"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$value]]></Calculation>
+    </Value>
+    <Name>$periodMode</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: navigate — prev/next shifts anchor by one period unit; today resets to current date</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "navigate"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$value = "today"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$today]]></Calculation>
+    </Value>
+    <Name>$anchorStr</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+	anchor = Date ( Middle ( $anchorStr ; 6 ; 2 ) ; Right ( $anchorStr ; 2 ) ; Left ( $anchorStr ; 4 ) ) ;
+	dir    = If ( $value = "next" ; 1 ; -1 ) ;
+	newD   = Case (
+		$periodMode = "week"  ; anchor + 7 * dir ;
+		$periodMode = "month" ; Date ( Month ( anchor ) + dir ; 1 ; Year ( anchor ) ) ;
+		anchor + dir
+	)
+] ;
+	Year ( newD ) & "-" & Right ( "0" & Month ( newD ) ; 2 ) & "-" & Right ( "0" & Day ( newD ) ; 2 )
+)]]></Calculation>
+    </Value>
+    <Name>$anchorStr</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: toggleStatus — add/remove one status in the filter, reset to first page</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "toggleStatus"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ValueCount ( JSONListKeys ( $statuses ; "" ) )]]></Calculation>
+    </Value>
+    <Name>$n</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$new</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$j</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$found</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $n]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $statuses ; $i )]]></Calculation>
+    </Value>
+    <Name>$cur</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$cur = $value]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Value>
+    <Name>$found</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $new ; "[" & $j & "]" ; $cur ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$new</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$j + 1]]></Calculation>
+    </Value>
+    <Name>$j</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$found = 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $new ; "[" & $j & "]" ; $value ; JSONString )]]></Calculation>
+    </Value>
+    <Name>$new</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$new]]></Calculation>
+    </Value>
+    <Name>$statuses</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: clearStatus — remove all status filters</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "clearStatus"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$statuses</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: page — step offset by one page (push clamps the upper bound)</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "page"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Max ( 0 ; $offset + If ( $value = "next" ; $limit ; - $limit ) )]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: Persist scope and re-push the board</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "periodMode" ; $periodMode ; JSONString ] ;
+	[ "anchorDate" ; $anchorStr  ; JSONString ] ;
+	[ "statuses"   ; $statuses   ; JSONArray  ] ;
+	[ "offset"     ; $offset     ; JSONNumber ] ;
+	[ "limit"      ; $limit      ; JSONNumber ]
+)]]></Calculation>
+    </Value>
+    <Name>$$KANBAN_SCOPE</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Script id="827" name="WV__PushServiceOrdersKanban"/>
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$$KANBAN_SCOPE]]></Calculation>
+  </Step>
+</fmxmlsnippet>

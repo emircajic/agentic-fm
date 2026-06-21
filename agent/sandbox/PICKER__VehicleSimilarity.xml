@@ -1,0 +1,152 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Return existing vehicles whose plate or VIN partially matches the given strings, so the picker can warn the user before they create a duplicate. Plate comparison strips dashes/spaces so "A12-T-123" matches "A12T123".</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMETER (JSON): plate (already alnum-uppercased by JS), vin (same)&#xD;RETURNS (to JS receiveVehicleSimilarity): { matches: [ { PrimaryKey, Manufacturer, Model, YearManufactured, VIN, PlateNumber, ForeignKeyClient, ClientName } ] } or { error: "..." }</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$json</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$plate</Name>
+		<Value><Calculation><![CDATA[Upper ( JSONGetElement ( $json ; "plate" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$vin</Name>
+		<Value><Calculation><![CDATA[Upper ( JSONGetElement ( $json ; "vin" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Build LIKE patterns — prefix match only. Just append "%" and let SQL find rows whose plate/VIN starts with the typed string. Empty pattern = pane inactive (gated by `? &lt;&gt; ''` in the WHERE).</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$platePat</Name>
+		<Value><Calculation><![CDATA[If ( Length ( $plate ) ≥ 3 ; $plate & "%" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$vinPat</Name>
+		<Value><Calculation><![CDATA[If ( Length ( $vin ) ≥ 4 ; $vin & "%" ; "" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $platePat ) and IsEmpty ( $vinPat )]]></Calculation>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName><Calculation><![CDATA["clientvehiclepicker"]]></Calculation></ObjectName>
+		<FunctionName><Calculation><![CDATA["receiveVehicleSimilarity"]]></Calculation></FunctionName>
+		<Parameters Count="1">
+			<P><Calculation><![CDATA[JSONSetElement ( "{}" ; "matches" ; "[]" ; JSONArray )]]></Calculation></P>
+		</Parameters>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "matches" ; "[]" ; JSONArray )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Run SQL — empty pattern + `? &lt;&gt; ''` short-circuits that side</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT v.PrimaryKey, v.Manufacturer, v.Model, v.YearManufactured, v.VIN, v.PlateNumber, v.ForeignKeyClient, c.DisplayName_Display" &
+	" FROM Vehicles v LEFT JOIN Clients c ON v.ForeignKeyClient = c.PrimaryKey" &
+	" WHERE (UPPER(v.PlateNumber) LIKE ?)" &
+	"    OR (UPPER(v.VIN) LIKE ?)" &
+	" FETCH FIRST 12 ROWS ONLY" ;
+	"useSQLResult=rs_sim" ;
+	$platePat ; $vinPat
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName><Calculation><![CDATA["clientvehiclepicker"]]></Calculation></ObjectName>
+		<FunctionName><Calculation><![CDATA["receiveVehicleSimilarity"]]></Calculation></FunctionName>
+		<Parameters Count="1">
+			<P><Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $err ; JSONString )]]></Calculation></P>
+		</Parameters>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "error" ; $err ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Build matches array from result set</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rowCount</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_sim" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rows</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i ≥ $rowCount]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$row</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "PrimaryKey" ; epSQLResult ( $i ; 0 ; "rs_sim" ) ; JSONString ] ;
+	[ "Manufacturer" ; epSQLResult ( $i ; 1 ; "rs_sim" ) ; JSONString ] ;
+	[ "Model" ; epSQLResult ( $i ; 2 ; "rs_sim" ) ; JSONString ] ;
+	[ "YearManufactured" ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs_sim" ) ) ; JSONNumber ] ;
+	[ "VIN" ; epSQLResult ( $i ; 4 ; "rs_sim" ) ; JSONString ] ;
+	[ "PlateNumber" ; epSQLResult ( $i ; 5 ; "rs_sim" ) ; JSONString ] ;
+	[ "ForeignKeyClient" ; epSQLResult ( $i ; 6 ; "rs_sim" ) ; JSONString ] ;
+	[ "ClientName" ; epSQLResult ( $i ; 7 ; "rs_sim" ) ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rows</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[" & $i & "]" ; $row ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_sim" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ; "matches" ; $rows ; JSONArray )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+		<ObjectName><Calculation><![CDATA["clientvehiclepicker"]]></Calculation></ObjectName>
+		<FunctionName><Calculation><![CDATA["receiveVehicleSimilarity"]]></Calculation></FunctionName>
+		<Parameters Count="1">
+			<P><Calculation><![CDATA[$payload]]></Calculation></P>
+		</Parameters>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$payload]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

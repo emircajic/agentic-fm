@@ -113,6 +113,22 @@ class MockFileMaker {
         window.receiveVehicleOwnerChanged({ vehicleId: p.vehicleId, clientId: p.clientId || '' });
         break;
       }
+      case 'PICKER__VehicleSimilarity': {
+        const plate = String(p.plate || '').toUpperCase();
+        const vin = String(p.vin || '').toUpperCase();
+        const plateOn = plate.length >= 3;
+        const vinOn = vin.length >= 4;
+        const matches = (plateOn || vinOn) ? vehicles.filter((v) => {
+          const pn = String(v.PlateNumber || '').toUpperCase();
+          const vn = String(v.VIN || '').toUpperCase();
+          return (plateOn && pn.startsWith(plate)) || (vinOn && vn.startsWith(vin));
+        }).slice(0, 12).map((v) => ({
+          ...v,
+          ClientName: (clients.find((c) => c.PrimaryKey === v.ForeignKeyClient) || {}).DisplayName_Display || '',
+        })) : [];
+        window.receiveVehicleSimilarity({ matches });
+        break;
+      }
       case 'PICKER__CommitClientVehicle': {
         console.log('[Mock FM] COMMIT', p, '→ would set ServiceOrders FKs and close card');
         alert(`Commit:\nclient=${p.clientId || '(none)'}\nvehicle=${p.vehicleId || '(none)'}${p.cancel ? '\n(cancelled)' : ''}`);

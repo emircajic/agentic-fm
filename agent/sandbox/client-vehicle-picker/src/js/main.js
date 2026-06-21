@@ -13,6 +13,7 @@ const state = {
   selectedVehicle: null,
   scope: 'all',            // 'owned' | 'all' — only meaningful once a client is selected
   editingVehicleId: null,  // vehicle row currently in inline-edit mode
+  similarityMatches: [],   // current candidates surfaced in the add-vehicle form
 };
 
 /* ---------- FileMaker bridge ---------- */
@@ -61,7 +62,43 @@ function clientName(c) {
 function vehicleName(v) {
   if (!v) return '—';
   const base = [v.Manufacturer, v.Model].filter(Boolean).join(' ');
-  return [base, v.PlateNumber ? `(${v.PlateNumber})` : ''].filter(Boolean).join(' ') || '(bez naziva)';
+  const plate = formatPlate(v.PlateNumber);
+  return [base, plate ? `(${plate})` : ''].filter(Boolean).join(' ') || '(bez naziva)';
+}
+
+// Keep only valid VIN characters (uppercase alphanumerics); strip spaces/punctuation.
+// This is what gets stored — applied before any save.
+function sanitizeVin(s) {
+  return String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+// Display-only grouping: 3-3-5-6 (e.g. "WVW ZZZ 1KEP3 907895"). Never stored.
+function formatVin(s) {
+  const v = sanitizeVin(s);
+  if (!v) return '';
+  const groups = [];
+  let i = 0;
+  for (const n of [3, 3, 5, 6]) {
+    if (i >= v.length) break;
+    groups.push(v.slice(i, i + n));
+    i += n;
+  }
+  if (i < v.length) groups.push(v.slice(i)); // anything beyond 17 chars
+  return groups.join(' ');
+}
+
+// Plate is stored normalised (uppercase alphanumeric, no dashes/spaces) — A12-T-123 ≡ A12T123.
+function sanitizePlate(s) {
+  return String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+// Display-only formatting back to dashes for known Bosnian patterns.
+// Normal civilian: [AEMKOT]\d\d[AEMKOT]\d\d\d → "A12-T-123"
+// Taxi:           TA\d{6}                    → "TA-123456"
+// Anything else (foreign, army, CD, partial) → shown as stored.
+function formatPlate(s) {
+  const p = sanitizePlate(s);
+  if (/^[AEMKOT]\d\d[AEMKOT]\d{3}$/.test(p)) return `${p.slice(0, 3)}-${p[3]}-${p.slice(4)}`;
+  if (/^TA\d{6}$/.test(p)) return `TA-${p.slice(2)}`;
+  return p;
 }
 
 /* ---------- queries ---------- */
@@ -143,6 +180,13 @@ window.receiveVehicleSaved = (payload) => {
   }
   loadVehicles(false);
   updateSelectionBar();
+};
+
+window.receiveVehicleSimilarity = (payload) => {
+  const p = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  if (p.error) { toast(p.error, false); return; }
+  state.similarityMatches = p.matches || [];
+  renderSimilarityMatches();
 };
 
 window.receiveVehicleOwnerChanged = (payload) => {
@@ -237,7 +281,7 @@ function vehicleRowDisplay(v) {
   const owned = state.selectedClientId && v.ForeignKeyClient === state.selectedClientId;
   const ownedByOther = state.selectedClientId && v.ForeignKeyClient && v.ForeignKeyClient !== state.selectedClientId;
   const title = [v.Manufacturer, v.Model].filter(Boolean).join(' ') || '(bez naziva)';
-  const meta = [v.YearManufactured, v.PlateNumber, v.VIN].filter(Boolean).join(' · ');
+  const meta = [v.YearManufactured, formatPlate(v.PlateNumber), formatVin(v.VIN)].filter(Boolean).join(' · ');
 
   let assocBtn = '';
   if (state.selectedClientId) {
@@ -353,6 +397,7 @@ function saveClientForm() {
 /* ---------- add-vehicle form ---------- */
 function showVehicleForm() {
   $('vehicle-form').classList.remove('hidden');
+  state.similarityMatches = [];
   const f = (name, ph) => `<input data-vf="${name}" placeholder="${ph}" class="w-full px-2 py-1 rounded border border-slate-300 text-xs">`;
   const assoc = state.selectedClientId
     ? `<label class="flex items-center gap-1.5 text-xs text-slate-600 mt-2"><input type="checkbox" data-vf="associate" checked> Poveži s: ${esc(clientName(state.selectedClient))}</label>`
@@ -367,9 +412,64 @@ function showVehicleForm() {
     <div class="mt-2 flex justify-end gap-2">
       <button data-vf-cancel class="text-xs px-3 py-1 rounded border border-slate-300 text-slate-600 hover:bg-white">Otkaži</button>
       <button data-vf-save class="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Sačuvaj vozilo</button>
+    </div>
+    <div id="vehicle-form-matches" class="mt-3"></div>`;
+}
+function hideVehicleForm() {
+  $('vehicle-form').classList.add('hidden');
+  state.similarityMatches = [];
+}
+
+// Look up existing vehicles whose plate or VIN partially matches what the user
+// is typing into the add-vehicle form — surfaces likely duplicates before save.
+let _simTimer;
+function checkVehicleSimilarity() {
+  clearTimeout(_simTimer);
+  _simTimer = setTimeout(() => {
+    const box = $('vehicle-form');
+    if (!box || box.classList.contains('hidden')) return;
+    // Similarity is a prefix LIKE — pass the input lightly normalised (uppercase + trim)
+    // so dashes/spaces survive ("du 1354" → "DU 1354%"). The save path still sanitises strictly.
+    const plate = (box.querySelector('[data-vf="plate"]')?.value || '').trim().toUpperCase();
+    const vin = (box.querySelector('[data-vf="vin"]')?.value || '').trim().toUpperCase();
+    if (plate.length < 3 && vin.length < 4) {
+      state.similarityMatches = [];
+      renderSimilarityMatches();
+      return;
+    }
+    fm('PICKER__VehicleSimilarity', { plate, vin });
+  }, 300);
+}
+
+function renderSimilarityMatches() {
+  const box = $('vehicle-form-matches');
+  if (!box) return;
+  const matches = state.similarityMatches;
+  if (!matches.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="text-xs font-semibold text-amber-700 mb-1 border-t border-amber-200 pt-2">
+      Slično postojeće vozilo? Kliknite da odaberete:
+    </div>
+    <div class="space-y-1">
+      ${matches.map((m) => {
+        const plate = formatPlate(m.PlateNumber);
+        const title = [m.Manufacturer, m.Model].filter(Boolean).join(' ');
+        return `
+          <button data-sim="${esc(m.PrimaryKey)}"
+            class="w-full text-left px-2 py-1.5 rounded border border-amber-200 bg-amber-50 hover:bg-amber-100 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-medium">${esc(plate) || '—'}</span>
+              <span class="text-slate-700">${esc(title)}</span>
+              ${m.YearManufactured ? `<span class="text-slate-400">${esc(m.YearManufactured)}</span>` : ''}
+            </div>
+            <div class="text-slate-500 mt-0.5 truncate">
+              ${m.ClientName ? esc(m.ClientName) : '<i>bez vlasnika</i>'}
+              ${m.VIN ? ` · <span class="text-slate-400">${esc(formatVin(m.VIN))}</span>` : ''}
+            </div>
+          </button>`;
+      }).join('')}
     </div>`;
 }
-function hideVehicleForm() { $('vehicle-form').classList.add('hidden'); }
 
 function saveVehicleForm() {
   const box = $('vehicle-form');
@@ -378,7 +478,7 @@ function saveVehicleForm() {
   const payload = {
     mode: 'create',
     manufacturer: get('manufacturer'), model: get('model'),
-    year: get('year'), vin: get('vin'), plate: get('plate'),
+    year: get('year'), vin: sanitizeVin(get('vin')), plate: sanitizePlate(get('plate')),
     clientId: associate ? state.selectedClientId : '',
   };
   if (!payload.manufacturer && !payload.model && !payload.plate) {
@@ -394,7 +494,7 @@ function saveVehicleEdit(vehicleId) {
   fm('PICKER__SaveVehicle', {
     mode: 'update', vehicleId,
     manufacturer: get('manufacturer'), model: get('model'),
-    year: get('year'), vin: get('vin'), plate: get('plate'),
+    year: get('year'), vin: sanitizeVin(get('vin')), plate: sanitizePlate(get('plate')),
   });
 }
 
@@ -473,6 +573,15 @@ function wire() {
   $('vehicle-form').addEventListener('click', (e) => {
     if (e.target.closest('[data-vf-cancel]')) { hideVehicleForm(); return; }
     if (e.target.closest('[data-vf-save]')) { saveVehicleForm(); return; }
+    const sim = e.target.closest('[data-sim]');
+    if (sim) {
+      const m = state.similarityMatches.find((x) => x.PrimaryKey === sim.dataset.sim);
+      if (m) { hideVehicleForm(); selectVehicle(m); }
+    }
+  });
+  $('vehicle-form').addEventListener('input', (e) => {
+    const t = e.target;
+    if (t && (t.dataset.vf === 'plate' || t.dataset.vf === 'vin')) checkVehicleSimilarity();
   });
 }
 
