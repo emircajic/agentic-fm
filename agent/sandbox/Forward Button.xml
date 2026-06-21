@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: UI binding for "go forward". All logic lives in Navigation_("forward").</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Kept as a named script so UI button bindings don't need to be re-pointed.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["forward"]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+
+</fmxmlsnippet>

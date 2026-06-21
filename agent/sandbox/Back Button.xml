@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: UI binding for "go back". All logic lives in Navigation_("back").</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Kept as a named script so existing button bindings on ServiceOrdersKanban / ServiceOrderDetails / ClientDetails Card don't need to be re-pointed.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["back"]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+
+</fmxmlsnippet>
