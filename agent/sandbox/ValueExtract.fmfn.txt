@@ -1,0 +1,22 @@
+// =============================================================================
+// ValueExtract ( data ; start ; end )
+// =============================================================================
+//   Returns the substring of `data` between the first occurrence of `start`
+//   and the next occurrence of `end` after it. Generic string slicing helper.
+//
+//   Example:
+//     ValueExtract ( "<Layout id=\"123\">" ; "<Layout id=\"" ; "\">" )  ->  "123"
+//
+//   Used by GetContext to pull recids + layout id out of a Snapshot Link XML.
+//   Parameters (in order): data, start, end
+// =============================================================================
+
+Let ( [
+	~data = data;
+	~start = start;
+	~end = end;
+	~position = Position ( ~data ; ~start ; 1 ; 1 ) + Length ( ~start );
+	~result = Middle ( ~data ; ~position ; Position ( ~data ; ~end ; ~position ; 1 ) - ~position )
+];
+	~result
+)

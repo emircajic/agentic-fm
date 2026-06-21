@@ -1,0 +1,25 @@
+// =============================================================================
+// GetContext ( fpsl )
+// =============================================================================
+//   Parses the contents of a FileMaker Snapshot Link (.fmpsl) file and returns
+//   a JSON object describing the captured context:
+//
+//     { "recids": "<¶-delimited recid values / ranges>", "layoutid": <number> }
+//
+//   recids come from the CDATA block; each line is a record id or a hyphenated
+//   range (e.g. "12-50"). Restore Context turns "-" into the find range "...".
+//
+//   Depends on: ValueExtract
+//   Parameter: fpsl  (raw text content of the snapshot link file)
+// =============================================================================
+
+Let ( [
+	~data = fpsl;
+	~RecIDs = ValueExtract ( ~data ; "<![CDATA[" ; "]]" );
+	~layoutID = ValueExtract ( ~data ; "<Layout id=\"" ; "\">" )
+];
+	JSONSetElement ( "{}" ;
+		[ "recids" ; ~RecIDs ; JSONString ];
+		[ "layoutid" ; ~layoutID ; JSONNumber ]
+	)
+)

@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Capture the current context (layout + found set) as a JSON blob.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>RETURNS: { "recids": "...", "layoutid": N } via Exit Script result. Also stored in $$CONTEXT.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>HOW: Save Records as Snapshot Link to a temp file, read it back, parse via GetContext ( ValueExtract ).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Create a snapshot link to a unique temp path.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( TemporaryPath ) & Get ( UUID )]]></Calculation></Value>
+    <Name>$path</Name>
+  </Step>
+  <Step enable="True" id="152" name="Save Records as Snapshot Link">
+    <CreateDirectories state="False"/>
+    <CreateEmail state="False"/>
+    <SaveType value="BrowsedRecords"/>
+    <UniversalPathList>$path</UniversalPathList>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not Get ( LastError )]]></Calculation>
+  </Step>
+    <Step enable="True" id="188" name="Get File Exists">
+      <UniversalPathList>$path</UniversalPathList>
+      <Text/>
+      <Field>$exists</Field>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Calculation><![CDATA[$exists]]></Calculation>
+    </Step>
+      <Step enable="True" id="191" name="Open Data File">
+        <UniversalPathList>$path</UniversalPathList>
+        <Text/>
+        <Field>$fileid</Field>
+      </Step>
+      <Step enable="True" id="193" name="Read from Data File">
+        <DataSourceType value="2"/>
+        <Calculation><![CDATA[$fileid]]></Calculation>
+        <Text/>
+        <Field>$data</Field>
+      </Step>
+      <Step enable="True" id="196" name="Close Data File">
+        <Calculation><![CDATA[$fileid]]></Calculation>
+      </Step>
+    <Step enable="True" id="70" name="End If"/>
+
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Extract recids + layout id into a JSON object.</Text>
+    </Step>
+    <Step enable="True" id="141" name="Set Variable">
+      <Value><Calculation><![CDATA[GetContext ( $data )]]></Calculation></Value>
+      <Name>$context</Name>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[$context]]></Calculation></Value>
+    <Name>$$CONTEXT</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$context]]></Calculation>
+  </Step>
+
+</fmxmlsnippet>

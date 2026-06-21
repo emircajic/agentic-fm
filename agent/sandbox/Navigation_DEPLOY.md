@@ -1,308 +1,174 @@
 # Navigation switchboard — deployment guide
 
-Six scripts. Two are new (you'll create empty placeholders first), four replace existing bodies. After deploy you'll remove three OnLayoutExit triggers. No layout XML changes are required for the navigation system to work; per-layout state Capture/Restore scripts are an opt-in extension.
+`Navigation_` is the single source of truth for all layout navigation: forward, back, forward-again, and card peeks. Each layout's state (layout + found set) is persisted with the **Snapshot Link context** technique. **Context is decoupled from history** — it lives in a per-layout keyed store, so any arrival (back/forward OR a normal nav button) can restore it.
 
-## What changed (summary)
+## Architecture
 
-- **Navigation_ owns everything now.** It accepts `"back"` and `"forward"` as special destinations alongside the entity routes. Stack push/pop, state capture, state restore, and forward-stack invalidation all happen in one script.
-- **Back Button and Forward Button shrink to one-liner wrappers** that just `Perform Script [ "Navigation_" ; "back" ]` (or `"forward"`). They exist only so existing UI button bindings on ServiceOrdersKanban / ServiceOrderDetails / ClientDetails Card don't need to be re-pointed.
-- **Capture Layout State** and **Restore Layout State** stay as thin dispatchers that delegate to `Capture_<BaseLayoutName>` / `Restore_<BaseLayoutName>`.
-- **`CustomList`** (Agnès Barouh's classic) — used by per-layout `Capture_<X>` to walk the found set as pure calculation (no record movement, no triggers, scales to ~500k records).
-- **`Restore Found Set By PK List`** — generic counterpart. Takes a JSON array of PKs, enters Find Mode, OR-joins one request per PK, Perform Find. SQL can't rebuild a found set (it doesn't touch FM context).
-- **Add to Layout Stack is fully retired.** OnLayoutExit triggers were removed from Calendar / ServiceOrderDetails / ServiceOrdersKanban; the script can be deleted in FM.
-- Removed from Navigation_: the implicit Details↔List toggle, the `stock` destination, `Set Field [Globals::SearchTerm; ""]`, and the unreachable trailing "unknown destination" branch.
+```
+UI button / startup
+   │ Perform Script "Navigation_" with one of:
+   │   "destination" | "destination|payload" | "destination.list" | "destination.card" | "back" | "forward"
+   ▼
+Navigation_
+   ├─ if in a card window: close it first
+   ├─ parse: destination, payload, .card modifier, hasRecord = payload present
+   ├─ hygiene: freeze, browse mode, commit
+   ├─ back/forward branch:
+   │     capture current → keyed store ; pop source name-list ; push current onto other
+   │     → restore target from keyed store (Restore Context) or plain navigate if none
+   ├─ routing table (dot-notation) → { layout, init, mode }   ( .card forces mode=card )
+   ├─ CARD branch:  New Window [Card] → navigate → Init   (NO capture, NO context — own found set)
+   └─ REGULAR branch:
+         capture current → keyed store ; push onto $$LAYOUT.STACK ; clear FORWARD
+         → if (no record AND saved context exists): Restore Context  (return to last state)
+           else:                                    HandleResponsiveLayout_ → Init_<entity>
 
-**Fixes from previous rounds:**
+Get Context      → Save Records as Snapshot Link → read file → GetContext() → { recids, layoutid }
+Restore Context  → ObjectLayoutNumber → Go to Layout → Find Mode by recid (ranges) → Perform Find
+```
 
-- *Inverted state-restore Set Variable* (Back/Forward Button) — fixed inside Navigation_'s back/forward branches.
-- *`Capture Layout State` $README contract* was still talking about `rowid`. Updated to PrimaryKey + the helper-script restore path.
+**State globals:**
+- `$$LAYOUT.CONTEXT` — **JSON object keyed by base layout name** → context blob `{recids,layoutid}`. The canonical per-layout state. Written on every leave (except from card windows).
+- `$$LAYOUT.STACK` / `$$LAYOUT.STACK.FORWARD` — **¶-delimited lists of base layout names** (top = first line). Ordering only; the blob is looked up from `$$LAYOUT.CONTEXT`.
+- `$$CONTEXT` — last-captured blob (side effect of Get Context; harmless).
 
-**Two new fixes prompted by Data Viewer observation:**
+`$$LAYOUT.STATE`, `$$LAYOUT.IGNORE`, the blob-in-stack model, and the `<Entity>Set` anchor schema from earlier rounds are **all retired**.
 
-1. **Back never navigated.** Previous back/forward used `Go to Layout [ Layout Name by Calc: ObjectLayoutName ( $targetLayoutID ; "" ) ]`. `ObjectLayoutName` returns the layout that contains a named object — it's NOT a layout-number-to-name lookup. Feeding it a layout number like `"134"` returned `"?"`, the navigation silently no-op'd, the stack push still ran, and `$$LAYOUT.STACK.FORWARD` accumulated `134 134 134 134 ...` as Back was pressed repeatedly. Replaced with `Go to Layout [ Layout Number by Calculation: $targetLayoutID ]` — no name lookup needed since we capture and use `Get(LayoutNumber)`.
+## Restore behavior (the model)
 
-2. **`$$LAYOUT.STATE[N]` repetition pollution.** Each captured layout created its own repetition row in the Data Viewer (`$$LAYOUT.STATE[14]`, `[16]`, `[93]`, ...). Switched to a **single global JSON object** keyed by layout number: `JSONSetElement` to write, `JSONGetElement` to read. Now there's one `$$LAYOUT.STATE` row holding `{"14":{...},"16":{...},...}`.
+Window mode is the discriminator — every FileMaker window has its own found set, so a card peek physically cannot disturb the main window's state.
 
-   Side effect: `Capture Layout State` had the same `ObjectLayoutName` mistake when deriving the base layout name. Replaced with `Get(LayoutName)` directly — Capture is always called on the layout being captured, so it's already current.
+| Invocation | Restore saved context? | Writes saved context? |
+|---|---|---|
+| `clients.card` / `clients.card\|id` — peek | No — Init shows the record in a card | **No** — cards never capture |
+| `clients` — regular, no record | **Yes** — return to last found set | Yes, on leave |
+| `clients\|client_id` — regular, specific record | No — Init finds the record | Yes, on leave (becomes new state) |
+| `back` / `forward` | Yes — from the keyed store | Yes (captures current first) |
+
+**Rule of thumb:** "show me this related record without losing my place" → `.card`. "go work on this record full-screen" → `entity|id` (regular). Saved context is never deleted — cards don't touch it, regular nav overwrites it naturally on leave.
+
+## Why Snapshot Link (vs. the approaches we tried before)
+
+- **N find requests** — falls over on large sets (the 3500-of-4000 case hangs the UI).
+- **`<Entity>Set` multi-key anchor** — works, but forces a per-entity TO + relationship + a global field, and every layout must sit on the right TO.
+- **Snapshot Link context** — FileMaker's native snapshot already encodes the found set as compact **recid ranges** (contiguous runs collapse to `"100-200"`). Restore turns each range into a find request `100...200`, so the number of requests = number of ranges, not records. A 3500-record contiguous set can be a *single* request. Schema cost: one indexed `recid` field per table. No TOs, no relationships, no globals.
 
 ## Parameter contract for Navigation_
 
 | Call | Result |
 |---|---|
-| `Navigation_ ( "back" )` | Pop `$$LAYOUT.STACK`, push prev onto `$$LAYOUT.STACK.FORWARD`, navigate, restore state. Silent no-op if back stack is empty. |
+| `Navigation_ ( "back" )` | Pop back stack, push current onto forward stack, restore target from keyed store. Silent no-op if empty. |
 | `Navigation_ ( "forward" )` | Mirror of back. |
 | `Navigation_ ( "dashboard" )` | Početna |
-| `Navigation_ ( "clients" )` | ClientDetails (default for entity destinations) |
-| `Navigation_ ( "clients.list" )` | ClientList — dot-notation selects the variant |
-| `Navigation_ ( "orders.list" )` | ServiceOrderList |
-| `Navigation_ ( "orders|{\"jumpToOrderID\":\"abc-123\"}" )` | ServiceOrderDetails, payload passed to Init_ServiceOrder |
-| `Navigation_ ( "settings" )` | Card Setup card window (does not touch stack) |
+| `Navigation_ ( "clients" )` | ClientDetails — restores last context if saved |
+| `Navigation_ ( "clients.list" )` | ClientList — `.list` variant |
+| `Navigation_ ( "clients.card" )` | ClientDetails in a card window (peek, isolated) |
+| `Navigation_ ( "clients|client_id" )` | ClientDetails, Init finds that client; context disregarded for this arrival |
+| `Navigation_ ( "clients.card|client_id" )` | That client in a card; main window untouched |
+| `Navigation_ ( "settings" )` | Card Setup card window |
 
-**Destination syntax**: `entity` or `entity.variant`. Variant lives in the routing table — currently `.list` is wired for clients / orders / items / vehicles. Adding a new variant (e.g. `orders.kanban`) is one line in Navigation_'s Case.
+Pipe-split on first `|`. Payload is passed straight to `Init_<Entity>` — Navigation_ doesn't inspect it, only notes present/absent. Modifiers: `.list` picks the List layout (routing-table row); `.card` is orthogonal — strip it, route normally, force a card window. Payload present ⇒ "specific target" ⇒ saved context disregarded for that arrival.
 
-**Payload syntax**: optional, separated by `|`. JSON object. Navigation_ does not inspect it — passed straight through to `Init_<Entity>` as the script parameter. Use it for "open this specific record" / "pre-filter to this set" style hints; routing decisions belong in the destination string.
+## Schema requirement — `recid` field
 
-Back/forward accept no payload and ignore any that's passed.
+`Restore Context` rebuilds the found set by finding on a field literally named **`recid`** on the destination layout's base table:
 
-## Deploy order
+```
+Set Field By Name [ Get(LayoutTableName) & "::recid" ; <recid or range> ]
+```
 
-Do steps 1–2 first so the new scripts have IDs before Navigation_ / Back / Forward reference them by name on paste.
+For every entity you want found-set restore on (Clients, ServiceOrders, ServiceItems, Vehicles, …), add a field named exactly **`recid`** (lowercase):
 
-### 1. Install the `CustomList` custom function
+```
+recid   -- Calculation, = Get ( RecordID ), result Number, STORED + INDEXED
+```
 
-File: `agent/sandbox/CustomList.fmfn.txt` — Agnès Barouh's classic, v4.8.1.
+**Must be stored + indexed** — range finds (`100...200`) need the index. A *calculation* of `Get(RecordID)` is fine: uncheck **"Do not store calculation results — recalculate when needed"** in Storage Options, and FileMaker will let you index it. `Get(RecordID)` is constant per record, so storing it is safe. (You can also use an auto-enter calc on a Number field — same result; the stored calc is simpler.)
 
-In FM: **File → Manage → Custom Functions → New**.
-- Function name: `CustomList`
-- Parameters (in this order): `Start`, `End`, `Function`
-- Body: paste the `Case ( ... )` block from the file (everything from `// ----------- FORMULA STARTS HERE -----------` down to the matching close paren).
+⚠️ Your solution today defines `recid` calc `Get(RecordID)` only on utility tables (AgentExports, KretanjeRobe, Settings, TR__LedgerRows) and `RecID` — wrong case — on Primke. The entity tables (Clients, ServiceOrders, ServiceItems, Vehicles) have none. Two things to check/do:
+1. **Verify the existing fields are actually stored + indexed** (they may currently be unstored — the default).
+2. **Add `recid` to the entity tables**, lowercase, stored, indexed.
 
-Save. References are by name in calculations.
+Layouts whose base table lacks `recid`: back/forward still restores the **layout** (graceful), just not the found set.
 
-If you already have a different general-purpose found-set walker in the project, fine — skip this step and substitute it in the Capture_&lt;X&gt; templates below.
+## Custom functions
 
-### 2. Clean up current FM state (one-time housekeeping)
+Install via **Manage → Custom Functions → New**:
 
-Drift caught in the scan — handle these before pasting the new bodies:
+| CF | Params | File |
+|---|---|---|
+| `ValueExtract` | `data ; start ; end` | `agent/sandbox/ValueExtract.fmfn.txt` |
+| `GetContext` | `fpsl` | `agent/sandbox/GetContext.fmfn.txt` (depends on ValueExtract) |
 
-| Action | Why |
+`ObjectLayoutNumber` (114) and `JSONIsValid` already exist in your solution.
+
+## Deploy steps
+
+### 1. Custom functions
+Install `ValueExtract` then `GetContext` (order matters — GetContext calls ValueExtract).
+
+### 2. Schema
+Add the indexed `recid` field to each entity table (see above). Skip any entity you don't need found-set restore on yet.
+
+### 3. Create placeholder scripts
+In the **Layout Stack** group: `Get Context`, `Restore Context`. (Forward Button already exists from a prior round.)
+
+### 4. Paste bodies (⌘A then ⌘V on each)
+
+1. `Get Context.xml` → **Get Context**
+2. `Restore Context.xml` → **Restore Context**
+3. `Forward Button.xml` → **Forward Button** (one-liner → `Navigation_("forward")`)
+4. `Back Button.xml` → **Back Button** (one-liner → `Navigation_("back")`)
+5. `Navigation_.xml` → **Navigation_** (ID 450)
+
+**After paste, verify every Go to Layout step** in Get Context / Restore Context / Navigation_ — open in Script Workspace and confirm the destination radio + calculation. This step has imported malformed before even when the XML looked clean.
+
+### 5. Retire obsolete scripts (one-time cleanup from earlier rounds)
+
+| Action | Reason |
 |---|---|
-| **Delete** script `Restor Found Set By PK List` (ID 927) | Approach retired in favour of the relationship anchor below. The typo'd name no longer matters. |
-| **Delete** script `Restore Layout State` ID **844** (the empty stub in Layout Stack group) | Duplicate. The real dispatcher is ID 922. |
-| **Move** `Restore Layout State` ID 922 into the **Layout Stack** group | Currently orphaned in no group. |
-| **Move** `Capture Layout State` ID 921 into the **Layout Stack** group | Currently orphaned. |
-| **Delete** script `Navigation_ Copy` (ID 924) | Lingering backup. |
-| **Delete** script `Add to Layout Stack` (ID 846) | Fully retired, no callers. |
-| Confirm **`CustomList`** custom function is installed | Scan shows it's missing. Without it, per-layout `Capture_<X>` will fail. |
+| Delete `Capture Layout State` (921) | Superseded by Get Context |
+| Delete `Restore Layout State` (844 stub **and** 922 dispatcher) | Superseded by Restore Context |
+| Delete `Restor Found Set By PK List` (927) | Approach retired |
+| Delete `Add to Layout Stack` (846) | Fully retired |
+| Delete `Navigation_ Copy` (924) | Lingering backup |
 
-### 2.5. Clear polluted state from previous bad navigation
+`<Entity>Set` TOs / `Globals::FoundSetKeys` were never built — nothing to undo there.
 
-In the Data Viewer (or via a one-off Set Variable script step), reset these globals before testing the fix:
+### 6. Clear stale globals before testing
 
+In the Data Viewer:
 ```
 $$LAYOUT.STACK         = ""
 $$LAYOUT.STACK.FORWARD = ""
-$$LAYOUT.STATE         = ""
-$$LAYOUT.IGNORE        = ""
+$$CONTEXT              = ""
 ```
+Old `$$LAYOUT.STATE[N]` / `$$LAYOUT.IGNORE` artifacts clear on file close/reopen (globals don't persist across sessions).
 
-Any leftover `$$LAYOUT.STATE[N]` repetitions from the previous (broken) storage model will linger as artifacts until you also clear those — easiest path is to close and reopen the file (globals don't persist across sessions).
+### 7. Optional — collapse the Back/Forward Button wrappers
 
-### 3. Paste bodies (⌘A then ⌘V on each)
+They exist only so existing UI bindings keep working. To retire them: in Layout Mode point each Back button at `Navigation_` param `"back"` (Forward → `"forward"`), then delete the two scripts. Bindings found referencing Back Button today: ServiceOrdersKanban, ServiceOrderDetails, ClientDetails Card. Forward Button isn't bound anywhere yet — wire your Forward UI button straight to `Navigation_("forward")` and skip the wrapper entirely.
 
-Create a new script `Restore Found Set Via Anchor` in the **Layout Stack** group before pasting. Then:
+## Behavior notes & caveats
 
-1. `Restore Found Set Via Anchor.xml` → into **Restore Found Set Via Anchor** (NEW — the dispatcher described above)
-2. `Capture Layout State.xml` → into **Capture Layout State** (refreshes the `$README` contract block, fixes `ObjectLayoutName` and switches `$$LAYOUT.STATE` to a single JSON object)
-3. `Restore Layout State.xml` → into **Restore Layout State** (ID 922 — the surviving one)
-4. `Forward Button.xml` → into **Forward Button** (one-liner)
-5. `Back Button.xml` → into **Back Button** (one-liner)
-6. `Navigation_.xml` → into **Navigation_** (ID 450 — adds back/forward branches, fixes Go to Layout, fixes state restore)
-
-Manual paste flow for each script:
-1. Open the target script in Script Workspace
-2. ⌘A — select all existing steps and delete
-3. ⌘V — paste
-
-**After paste, every Go to Layout step in the script — verify in Script Workspace** that the destination radio and the calculation match what's expected. Past experience: this step has imported malformed even when the XML looked clean.
-
-### 4. Optional — collapse Back/Forward Button down to UI bindings
-
-The Back/Forward Button scripts are kept as thin wrappers so existing layout buttons don't need to be re-pointed. If you want to retire them entirely:
-
-- In Layout Mode, change each Back button's script to **Navigation_** with parameter `"back"`.
-- Same for Forward, with `"forward"`.
-- Then delete the Back Button and Forward Button scripts.
-
-UI bindings I found referencing Back Button today: ServiceOrdersKanban, ServiceOrderDetails, ClientDetails Card. No bindings reference Forward Button yet — wire up your Forward UI button directly to `Navigation_("forward")` and you skip ever needing the Forward Button script.
-
-## State capture / restore (opt-in per layout)
-
-The dispatchers (`Capture Layout State`, `Restore Layout State`) only do something for layouts that have a matching `Capture_<BaseLayoutName>` / `Restore_<BaseLayoutName>` script. Without those, state defaults to `{}` and Back/Forward still works — you just don't get tab/record/found-set restoration.
-
-### JSON state contract
-
-`Capture_<X>` returns (via `Exit Script [ Result: ... ]`) a JSON object. `Restore_<X>` receives it as the script parameter. Suggested keys:
-
-```json
-{
-  "tabs":      ["tabObjectName1", "panelObjectName2"],
-  "record_id": "uuid-or-pk",
-  "found_set": [12, 47, 88, 91],
-  "custom":    { /* anything layout-specific */ }
-}
-```
-
-`found_set` is an array of `rowid` values (FM's built-in row id). Restore rebuilds the find generically — `WHERE rowid IN (...)` via epSQL — so per-layout capture scripts don't need to know or store table-specific query logic. They just grab the current found set's rowids.
-
-Layouts may add their own keys under `custom`. The dispatcher is dumb — it just hands the JSON over.
-
-### Capturing the found_set with CustomList
-
-CustomList is a pure-calculation iterator — internally it builds an `Evaluate`-able chain (in batches of ~1700) of `Let([CLNum=1];expr) & ¶ & Let([CLNum=2];expr) & ¶ ...`. No record movement, no triggers fire, current record is preserved.
-
-Simplest call — list of PKs across the found set:
-
-```
-CustomList ( 1 ; Get ( FoundCount ) ;
-    "GetNthRecord ( Clients::PrimaryKey ; [n] )"
-)
-```
-
-Returns a `¶`-delimited list. To wrap into a JSON array of quoted strings (for the `found_set` slot in the state JSON):
-
-```
-Let ( [
-    list = CustomList ( 1 ; Get ( FoundCount ) ;
-                "GetNthRecord ( Clients::PrimaryKey ; [n] )" )
-] ;
-    If ( IsEmpty ( list ) ; "[]" ;
-        "[\"" & Substitute ( list ; ¶ ; "\",\"" ) & "\"]"
-    )
-)
-```
-
-For multi-field capture (e.g. snapshotting PK + sort key per record in one pass), the Function arg can be a full `Let([...]; ... )` expression — CustomList substitutes `[n]` at every iteration:
-
-```
-CustomList ( 1 ; Get ( FoundCount ) ;
-    "Let ( [
-        pk = GetNthRecord ( Clients::PrimaryKey ; [n] ) ;
-        nm = GetNthRecord ( Clients::Name ; [n] )
-     ] ;
-        JSONSetElement ( \"{}\" ;
-            [ \"pk\" ; pk ; JSONString ] ;
-            [ \"nm\" ; nm ; JSONString ]
-        )
-    )"
-)
-```
-
-**Why PrimaryKey, not `Get(RecordID)`** — `Get(RecordID)` is a function, not a field, so `GetNthRecord` can't reach it. PrimaryKey lives on every table in this solution (per the schema), is domain-stable, and Restore can rebuild the find via `WHERE PrimaryKey IN ( ... )` through epSQL.
-
-### Template — Capture_ClientDetails
-
-```
-# Capture_ClientDetails
-Set Variable [ $pkList ; CustomList ( 1 ; Get ( FoundCount ) ;
-    "GetNthRecord ( Clients::PrimaryKey ; [n] )" ) ]
-Set Variable [ $foundSetJSON ; If ( IsEmpty ( $pkList ) ; "[]" ;
-    "[\"" & Substitute ( $pkList ; ¶ ; "\",\"" ) & "\"]" ) ]
-
-Exit Script [ Result: JSONSetElement ( "{}" ;
-    [ "record_id" ; Clients::PrimaryKey ; JSONString ] ;
-    [ "found_set" ; $foundSetJSON ; JSONArray ] ;
-    [ "tabs"      ; <JSON array of active tab object names> ; JSONArray ]
-) ]
-```
-
-Almost identical for every entity — just substitute the base table name in the two field references.
-
-### The `<Entity>Set` convention
-
-For found-set restore to work flawlessly the multi-key anchor has to be baked into every cluster, with a consistent naming scheme so callers never have to think. The convention:
-
-- **Anchor field:** one global text field, `Globals::FoundSetKeys`.
-- **Anchor TO:** every entity has a base TO named `<Entity>Set` — `ClientSet`, `ServiceOrderSet`, `ServiceItemSet`, `VehicleSet`. Layouts that participate in found-set restore sit on these TOs.
-- **Anchor relationship:** every `<Entity>Set` has the relationship `Globals::FoundSetKeys = <Entity>Set::PrimaryKey` wired in.
-
-Adding a new entity is a four-step recipe: create the `<Entity>Set` TO, wire the relationship, add one `Else If` branch in `Restore Found Set Via Anchor`, point your layouts at the TO. Done. Every layout sitting on that TO inherits found-set restore for free.
-
-**Cost of non-conformance.** A layout whose base TO doesn't follow the `<Entity>Set` convention can't be restored. `Restore Found Set Via Anchor` falls through its `Else` silently — captured state is harmless, just unused. Either migrate the layout's base TO, or accept that found-set restore is opt-in by convention.
-
-### Schema setup (one-time)
-
-**1.** Globals table — add field:
-
-```
-Globals::FoundSetKeys     -- text, global storage
-```
-
-**Regular (non-repeating) text field.** Multi-key match in FM operates on return-delimited values in a single field — repetitions are not involved and would actually break the pattern.
-
-**2.** For each entity participating in found-set restore, in Manage Database → Relationships:
-
-- Add a TO of the base table named `<Entity>Set` (e.g. `ClientSet`).
-- Add the relationship: `Globals::FoundSetKeys = <Entity>Set::PrimaryKey` (plain `=` operator).
-- Point ClientList, ClientDetails, etc. at `ClientSet` as their base TO.
-
-**3.** In `Restore Found Set Via Anchor`, the dispatcher already has `If/Else If` branches for `ClientSet`, `ServiceOrderSet`, `ServiceItemSet`, `VehicleSet`. Add more as you add entities.
-
-### Smoke test before relying on it
-
-Before wiring up `Restore_<X>` scripts, sanity-check the multi-key match against one entity (say, ClientSet):
-
-1. Schema steps 1–2 done for ClientSet only.
-2. On any layout, in the Data Viewer:
-   ```
-   Set Field [ Globals::FoundSetKeys ; "pk1¶pk2¶pk3" ]
-   ```
-   where pk1/pk2/pk3 are three real PrimaryKey values from Clients.
-3. Inspect `ClientSet::PrimaryKey` (e.g. via `Count ( ClientSet::PrimaryKey )` in the Data Viewer or by going to a layout based on Globals and viewing related ClientSet records). You should see exactly those 3 records related, in one resolution step.
-4. From a ClientSet-based layout, run `Go to Related Records [Show only related; From: ClientSet; CurrentLayout]`. Found set should be those 3 records.
-
-If that works, the pattern works for any scale.
-
-### Template — Restore_ClientDetails (the entire script)
-
-```
-# Restore_ClientDetails
-Set Variable [ $state ; Get(ScriptParameter) ]
-
-# Found set rebuild -- one line, the dispatcher handles GTRR per entity.
-Perform Script [ "Restore Found Set Via Anchor" ; Parameter: JSONGetElement ( $state ; "found_set" ) ]
-
-# Active record
-Set Variable [ $recordID ; JSONGetElement ( $state ; "record_id" ) ]
-If [ not IsEmpty ( $recordID ) ]
-    # Walk the (now-restored, small) found set looking for the matching PK, then Go to Record.
-End If
-
-# Tabs
-# Loop JSONListValues ( JSONGetElement ( $state ; "tabs" ) ; "" ) calling Go to Object on each.
-```
-
-That's it for the found-set part — one `Perform Script` line per `Restore_<X>`. No GTRR wiring per layout.
-
-**Why not SQL** — `ExecuteSQL` / `epSQL` read data but can't change the active found set. FM's context layer (current record, found set, mode) is only mutated by script steps. Multi-key relationship + GTRR is the FM-idiomatic way to "rebuild this exact set" without scaling problems.
-
-**Why not N find requests** — works for small sets (~< 100), gets slow fast, falls over completely around a few thousand. The 3500-of-4000 case you flagged would hang the UI.
-
-**Sort order is NOT preserved.** GTRR delivers the SET of records, not the order. If a layout's UX depends on the user's sort, capture the sort criteria into `state.custom` and re-apply via Sort Records in `Restore_<X>` after the dispatcher returns.
-
-Roll Capture_/Restore_ out per layout as the need arises. No rush — the system runs fine with zero per-layout Capture/Restore scripts.
-
-## What I deliberately did NOT change
-
-- **Init_ contract** is unchanged. Existing Init scripts still receive the raw payload (or `JSONNull` if none). If you later want a "navigation context" wrapper (e.g. `{"payload":..., "from":..., "via":"forward"}`), that's a separate pass touching each Init.
-- **HandleResponsiveLayout_** and `_GetBaseLayoutName` are untouched.
-- **Layout XML** is untouched. Removing the OnLayoutExit triggers is a click in Layout Setup, not a code change.
-
-## Verification
-
-After deploy, smoke-test in FM:
-
-1. **Forward nav**: Dashboard → Calendar. `$$LAYOUT.STACK` should contain Dashboard's layout ID. `$$LAYOUT.STACK.FORWARD` should be empty.
-2. **Back**: from Calendar, press Back. Returns to Dashboard. `$$LAYOUT.STACK` empty, `$$LAYOUT.STACK.FORWARD` contains Calendar's ID.
-3. **Forward**: press Forward. Returns to Calendar. Stacks swap back.
-4. **Fresh nav clears forward**: on Calendar with forward stack populated, press a different nav button → forward stack should clear.
-5. **Toggle default**: from any layout, `Navigation_("clients")` → ClientDetails. `Navigation_("clients|{\"view\":\"list\"}")` → ClientList.
-6. **Card mode**: `Navigation_("settings")` opens Card Setup. Stack untouched. Closing the card leaves you on the prior layout.
-7. **Unknown destination**: `Navigation_("foo")` shows the "Nepoznata destinacija" dialog.
-8. **Empty stack**: from a virgin session, Back does nothing (early Exit).
-9. **No-access target**: bonus — if a user lacks access to the target layout, Back/Forward bail cleanly (no infinite loop).
-
-Use the Data Viewer to watch `$$LAYOUT.STACK`, `$$LAYOUT.STACK.FORWARD`, `$$LAYOUT.IGNORE`, and `$$LAYOUT.STATE[*]` during the smoke tests.
+- **Capture cost.** Get Context writes + reads + parses a temp snapshot file on every navigation. It's native and fast (faster than iterating a big found set in calc), but it is disk I/O per nav. Fine for interactive use.
+- **Snapshot path.** `Get(TemporaryPath) & Get(UUID)` — no `.fmpsl` extension, matching the source pattern. If your FM build appends the extension and the subsequent `Get File Exists` fails, add `& ".fmpsl"` in `Get Context` (verify on first run).
+- **Active record not pinned.** Restore rebuilds the *set*; current record lands on the first found. Snapshot doesn't carry the active row in this implementation.
+- **Single-record found sets.** `Restore Context` exits `False` when `recids` holds exactly one value (`$requests = ValueCount - 1 = 0`). A 1-record found set isn't restored as such. Edit the `If [ not $requests ]` guard if you need that case.
+- **Sort order not preserved.** Find Mode + Perform Find returns the set, not the ordering. Re-sort in a per-layout OnLayoutEnter if a layout's UX depends on sort.
+- **Device variant on restore.** A restored blob navigates via its captured `layoutid` (the exact variant active at capture). If the session switched devices since capture (e.g. captured on `_phone`, restoring on desktop), you land on the captured variant. Rare within a session; note if multi-device.
+- **Context is "latest per layout," not point-in-time.** Visiting a layout twice with different found sets keeps only the most recent in `$$LAYOUT.CONTEXT`. Back to that layout restores the latest, not the historical snapshot at that stack position. Simpler and almost always what users expect.
+- **Tabs / scroll / UI state.** Not captured — Context covers layout + found set only. If you later need tab restoration, layer a per-layout hook on top; out of scope for this round.
 
 ## Files in this changeset
 
 - `agent/sandbox/Navigation_.xml`
 - `agent/sandbox/Back Button.xml`
-- `agent/sandbox/Forward Button.xml` (NEW)
-- `agent/sandbox/Capture Layout State.xml`
-- `agent/sandbox/Restore Layout State.xml`
-- `agent/sandbox/Restore Found Set Via Anchor.xml` (NEW — per-entity GTRR dispatcher)
-- `agent/sandbox/CustomList.fmfn.txt` (Agnès Barouh's CustomList v4.8.1, installed via Manage Custom Functions)
+- `agent/sandbox/Forward Button.xml`
+- `agent/sandbox/Get Context.xml` (NEW)
+- `agent/sandbox/Restore Context.xml` (NEW)
+- `agent/sandbox/ValueExtract.fmfn.txt` (NEW — custom function)
+- `agent/sandbox/GetContext.fmfn.txt` (NEW — custom function)
 - `agent/sandbox/Navigation_DEPLOY.md` (this file)
 
-**Add to Layout Stack** is being retired — no sandbox file. Delete the script from FM after pasting the others.
+Retired (delete from FM, no sandbox files): Capture Layout State, Restore Layout State, Restore Found Set By PK List / Via Anchor, Add to Layout Stack, Navigation_ Copy. `CustomList` may stay installed — it's no longer used by this system.

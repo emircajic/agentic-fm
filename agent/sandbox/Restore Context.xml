@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Restore both the layout and found set from a context JSON blob.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAM:   { "recids": "...", "layoutid": N } -- as produced by Get Context.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>RESULT:  True / False (text) -- whether the context was restored.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>REQUIRES: an indexed "recid" field (auto-enter = Get(RecordID)) on the base table of the destination layout.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Let ( $parameters = Get ( ScriptParameter ) ; not JSONIsValid ( $parameters ) )]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[False]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Re-establish layout context (layoutid -> layout number).</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[ObjectLayoutNumber ( JSONGetElement ( $parameters ; "layoutid" ) ; "" )]]></Calculation></Value>
+    <Name>$layout</Name>
+  </Step>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="LayoutNumberByCalculation"/>
+    <Calculation><![CDATA[$layout]]></Calculation>
+    <Animation value="None"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( LastError )]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[False]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Re-establish found set: one find request per recid value (ranges become "a...b").</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( LayoutTableName )]]></Calculation></Value>
+    <Name>$table</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["recid"]]></Calculation></Value>
+    <Name>$field</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[$table & "::" & $field]]></Calculation></Value>
+    <Name>$target</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $parameters ; "recids" )]]></Calculation></Value>
+    <Name>$recIDs</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[ValueCount ( $recIDs ) - 1]]></Calculation></Value>
+    <Name>$requests</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not $requests]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[False]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <Flush state="Always"/>
+  </Step>
+    <Step enable="True" id="147" name="Set Field By Name">
+      <TargetName><Calculation><![CDATA[$target]]></Calculation></TargetName>
+      <Result><Calculation><![CDATA[Substitute ( GetValue ( $recIDs ; Get ( RecordNumber ) ) ; "-" ; "..." )]]></Calculation></Result>
+    </Step>
+    <Step enable="True" id="72" name="Exit Loop If">
+      <Calculation><![CDATA[Let ( $i = $i + 1 ; If ( $i > Int ( $requests ) ; Let ( $i = "" ; True ) ) )]]></Calculation>
+    </Step>
+    <Step enable="True" id="7" name="New Record/Request"/>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not Get ( FoundCount )]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[False]]></Calculation>
+    </Step>
+  <Step enable="True" id="69" name="Else"/>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[True]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+</fmxmlsnippet>
