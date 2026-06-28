@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Generic quick find driven by the toolbar search input. Replaces the per-entity Quick Find &lt;Entity&gt; scripts -- Perform Quick Find already searches the CURRENT layout's quick-find fields, so this works on any list layout.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAM: the raw search term (Get(ScriptParameter)) sent by the Web Viewer search box. Empty -> show all.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>LIVE SEARCH: called on every (debounced) keystroke, so it NEVER pops a "nothing found" dialog -- a no-match just yields an empty found set. No native search field, so no Go to Field / Exit False cursor management (focus stays in the WV input).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Name>$term</Name>
+  </Step>
+
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $term )]]></Calculation>
+  </Step>
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>Empty term -> reset to the full list.</Text>
+    </Step>
+    <Step enable="True" id="23" name="Show All Records"/>
+  <Step enable="True" id="69" name="Else"/>
+    <Step enable="True" id="150" name="Perform Quick Find">
+      <Calculation><![CDATA[$term]]></Calculation>
+    </Step>
+    <Step enable="True" id="68" name="If">
+      <Calculation><![CDATA[Get ( LastError ) = 401]]></Calculation>
+    </Step>
+      <Step enable="True" id="89" name="# (comment)">
+        <Text>No matches. A Quick Find that finds nothing leaves the found set untouched; Show All + Show Omitted Only forces a consistent empty set. Silent -- no dialog during live typing.</Text>
+      </Step>
+      <Step enable="True" id="23" name="Show All Records"/>
+      <Step enable="True" id="27" name="Show Omitted Only"/>
+    <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="First"/>
+  </Step>
+
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+
+</fmxmlsnippet>

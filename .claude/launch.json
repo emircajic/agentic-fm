@@ -19,5 +19,11 @@
       "runtimeArgs": ["-c", "cd agent/sandbox/client-vehicle-picker && npm run dev -- --port 5176"],
       "port": 5176
     }
+    ,{
+      "name": "chrome-toolbar",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd agent/sandbox/chrome-toolbar && npm run dev -- --port 5177"],
+      "port": 5177
+    }
   ]
 }

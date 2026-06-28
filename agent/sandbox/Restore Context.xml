@@ -100,10 +100,36 @@
     <Step enable="True" id="103" name="Exit Script">
       <Calculation><![CDATA[False]]></Calculation>
     </Step>
-  <Step enable="True" id="69" name="Else"/>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[True]]></Calculation>
-    </Step>
   <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Re-position onto the previously-active record. Get(RecordID) == the snapshot nativeID, so no field read needed -- just walk the rebuilt set.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $parameters ; "selectedrow" )]]></Calculation></Value>
+    <Name>$selRow</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $selRow ) and $selRow ≠ "?"]]></Calculation>
+  </Step>
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="First"/>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Flush state="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[Get ( RecordID ) = GetAsNumber ( $selRow )]]></Calculation>
+      </Step>
+      <Step enable="True" id="16" name="Go to Record/Request/Page">
+        <RowPageLocation value="Next"/>
+        <Exit state="True"/>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[True]]></Calculation>
+  </Step>
 
 </fmxmlsnippet>

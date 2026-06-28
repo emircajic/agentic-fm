@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Open a service order's detail (from the calendar). Delegates to the navigation switchboard.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAM:   ServiceOrders PrimaryKey (TSID). Navigation_ routes "orders" -> ServiceOrderDetails and Go to Record finds the PK.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Was: Go to Layout ServiceOrderDetails + Enter Find + Set Field PrimaryKey + Perform Find. Now stack/context-aware via Navigation_.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["orders|" & Get ( ScriptParameter )]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+
+</fmxmlsnippet>

@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Browse to a record by PrimaryKey WITHOUT destroying the found set.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>  1. Look up the record's recid via epSQL.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>  2. If it's already in the current found set -> just move the pointer to it (set preserved).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>  3. If not -> Show All Records, then move to it.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAM:  PrimaryKey (text). Empty -> no-op. Not found -> no-op (returns 0).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>RESULT: Get(FoundCount) after positioning. recid == Get(RecordID), so positioning needs no field read.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>ASSUMES: the layout's base table has text fields "PrimaryKey" and "recid" (= Get(RecordID), indexed).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Name>$pk</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $pk )]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[""]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Commit so the current edit is saved and epSQL reads committed data.</Text>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>---- 1: recid for this PrimaryKey on the current layout's table occurrence ----</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[epSQLExecute ( "SELECT \"recid\" FROM \"" & Get ( LayoutTableName ) & "\" WHERE \"PrimaryKey\" = " & epSQLQuote ( $pk ) )]]></Calculation></Value>
+    <Name>$sqlErr</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 )]]></Calculation></Value>
+    <Name>$recidRaw</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $recidRaw )]]></Calculation>
+  </Step>
+    <Step enable="True" id="89" name="# (comment)">
+      <Text>PrimaryKey not found in this table (or SQL error) -- nothing to do.</Text>
+    </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[0]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[GetAsNumber ( $recidRaw )]]></Calculation></Value>
+    <Name>$recid</Name>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>---- 2: land on it within the current found set (preserve the set) ----</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( FoundCount ) > 0]]></Calculation>
+  </Step>
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="First"/>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Flush state="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[Get ( RecordID ) = $recid]]></Calculation>
+      </Step>
+      <Step enable="True" id="16" name="Go to Record/Request/Page">
+        <RowPageLocation value="Next"/>
+        <Exit state="True"/>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>---- 3: not in the current set? Show all, then land on it ----</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( RecordID ) ≠ $recid]]></Calculation>
+  </Step>
+    <Step enable="True" id="23" name="Show All Records"/>
+    <Step enable="True" id="16" name="Go to Record/Request/Page">
+      <RowPageLocation value="First"/>
+    </Step>
+    <Step enable="True" id="71" name="Loop">
+      <Flush state="Always"/>
+    </Step>
+      <Step enable="True" id="72" name="Exit Loop If">
+        <Calculation><![CDATA[Get ( RecordID ) = $recid]]></Calculation>
+      </Step>
+      <Step enable="True" id="16" name="Go to Record/Request/Page">
+        <RowPageLocation value="Next"/>
+        <Exit state="True"/>
+      </Step>
+    <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Get ( FoundCount )]]></Calculation>
+  </Step>
+
+</fmxmlsnippet>

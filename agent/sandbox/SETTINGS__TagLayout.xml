@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Register a layout's toolbar context (name/cluster/view) durably under layouts.&lt;N&gt; in Settings.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PARAM JSON: { "scopeId": &lt;layoutNumber, optional — defaults to current&gt; , "name": "...", "cluster": "clients|vehicles|serviceorders", "view": "details|list" }</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Only the keys you supply are written; omitted keys are left untouched. Persists via SETTINGS__SyncScopeDraft (scope "layouts") and reloads the cache.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Name>$p</Name>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Target layout — explicit scopeId or the current layout number.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Let ( [
+	~v = JSONGetElement ( $p ; "scopeId" )
+] ;
+	If ( IsEmpty ( ~v ) or Left ( ~v ; 1 ) = "?" ; Get ( LayoutNumber ) ; ~v )
+)]]></Calculation></Value>
+    <Name>$scopeId</Name>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Build the draft from only the keys actually supplied (skip empty / missing).</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Let ( [
+	~name = JSONGetElement ( $p ; "name" ) ;
+	~clu  = JSONGetElement ( $p ; "cluster" ) ;
+	~view = JSONGetElement ( $p ; "view" ) ;
+	d0 = "{}" ;
+	d1 = If ( not IsEmpty ( ~name ) and Left ( ~name ; 1 ) ≠ "?" ; JSONSetElement ( d0 ; "name" ; ~name ; JSONString ) ; d0 ) ;
+	d2 = If ( not IsEmpty ( ~clu )  and Left ( ~clu ; 1 )  ≠ "?" ; JSONSetElement ( d1 ; "cluster" ; ~clu ; JSONString ) ; d1 ) ;
+	d3 = If ( not IsEmpty ( ~view ) and Left ( ~view ; 1 ) ≠ "?" ; JSONSetElement ( d2 ; "view" ; ~view ; JSONString ) ; d2 )
+] ;
+	d3
+)]]></Calculation></Value>
+    <Name>$draft</Name>
+  </Step>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Persist + reload via the solution's existing scope-sync script.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "scope"   ; "layouts" ; JSONString ] ;
+	[ "scopeId" ; $scopeId  ; JSONString ] ;
+	[ "draft"   ; $draft    ; JSONObject ] ;
+	[ "reload"  ; True      ; JSONBoolean ]
+)]]></Calculation>
+    <Script id="760" name="SETTINGS__SyncScopeDraft"/>
+  </Step>
+
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+  </Step>
+
+</fmxmlsnippet>

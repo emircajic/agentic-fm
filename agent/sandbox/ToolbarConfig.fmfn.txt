@@ -1,0 +1,74 @@
+/*
+ToolbarConfig ( kontekst )
+
+THE BRAIN. Builds the toolbar button array for the current layout from `kontekst`
+(JSON from Toolbarkontekst). The dumb renderer renders this verbatim.
+
+Contract per row: { label, icon, script, payload, zone, order }   (buttons / labels)
+                  { type:"search", script, placeholder, debounce, zone, order }  (search input)
+  - script present -> clickable button -> FileMaker.PerformScript(script, payload)
+  - script absent  -> static label (e.g. the friendly layout name)
+  - type "search"  -> debounced text input -> FileMaker.PerformScript(script, <term>)
+  - zone ("left"|"center"|"right") + order drive placement; append order is irrelevant.
+
+COMPOSITION (single management point — clients & vehicles are identical, they just
+carry a different `cluster`; the entity is read from kontekst, never hardcoded):
+  ALWAYS      : hamburger, back, forward, friendly name
+  details     : + view-switch -> "{cluster}.list"   (left)
+                + Delete/Add/Search -> "Function Bar" delete/new/search   (right)
+  list        : + view-switch -> "{cluster}"        (left)
+                + search box -> "Quick Find Toolbar" (center, debounced)
+  serviceorders/details : + SO-specific extras (see extension point below)
+
+Appends use ValueCount(JSONListKeys(rows;"")) as the next index, so conditional
+rows never leave holes in the array.
+*/
+
+Let ( [
+	~name      = JSONGetElement ( kontekst ; "name" ) ;
+	~cluster   = JSONGetElement ( kontekst ; "cluster" ) ;
+	~view      = JSONGetElement ( kontekst ; "view" ) ;
+	~isDetails = ~view = "details" ;
+	~isList    = ~view = "list" ;
+	~hasEntity = not IsEmpty ( ~cluster ) ;
+	~isSO      = ~cluster = "serviceorders" ;
+
+	// ---- row builders ----
+	~menu  = JSONSetElement ( "{}" ; [ "icon" ; "icon-menu" ; JSONString ] ; [ "script" ; "UTIL__OpenSideNav" ; JSONString ] ; [ "payload" ; "" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 10 ; JSONNumber ] ) ;
+	~back  = JSONSetElement ( "{}" ; [ "icon" ; "icon-back" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; "back" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 20 ; JSONNumber ] ) ;
+	~fwd   = JSONSetElement ( "{}" ; [ "icon" ; "icon-forward" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; "forward" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 30 ; JSONNumber ] ) ;
+	~nameL = JSONSetElement ( "{}" ; [ "label" ; ~name ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 40 ; JSONNumber ] ) ;
+	~toList   = JSONSetElement ( "{}" ; [ "icon" ; "icon-list" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; ~cluster & ".list" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 50 ; JSONNumber ] ) ;
+	~toDetail = JSONSetElement ( "{}" ; [ "icon" ; "icon-card" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; ~cluster ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 50 ; JSONNumber ] ) ;
+	~searchBox = JSONSetElement ( "{}" ; [ "type" ; "search" ; JSONString ] ; [ "script" ; "Quick Find Toolbar" ; JSONString ] ; [ "placeholder" ; "Pretraži…" ; JSONString ] ; [ "zone" ; "center" ; JSONString ] ; [ "order" ; 10 ; JSONNumber ] ) ;
+	~del    = JSONSetElement ( "{}" ; [ "icon" ; "icon-trash" ; JSONString ] ; [ "script" ; "Function Bar" ; JSONString ] ; [ "payload" ; "delete" ; JSONString ] ; [ "zone" ; "right" ; JSONString ] ; [ "order" ; 10 ; JSONNumber ] ) ;
+	~add    = JSONSetElement ( "{}" ; [ "icon" ; "icon-plus" ; JSONString ] ; [ "script" ; "Function Bar" ; JSONString ] ; [ "payload" ; "new" ; JSONString ] ; [ "zone" ; "right" ; JSONString ] ; [ "order" ; 20 ; JSONNumber ] ) ;
+	~search = JSONSetElement ( "{}" ; [ "icon" ; "icon-search" ; JSONString ] ; [ "script" ; "Function Bar" ; JSONString ] ; [ "payload" ; "search" ; JSONString ] ; [ "zone" ; "right" ; JSONString ] ; [ "order" ; 30 ; JSONNumber ] ) ;
+	~kanban   = JSONSetElement ( "{}" ; [ "icon" ; "icon-kanban" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; "kanban" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 60 ; JSONNumber ] ) ;
+	~calendar = JSONSetElement ( "{}" ; [ "icon" ; "icon-calendar" ; JSONString ] ; [ "script" ; "Navigation_" ; JSONString ] ; [ "payload" ; "calendar" ; JSONString ] ; [ "zone" ; "left" ; JSONString ] ; [ "order" ; 70 ; JSONNumber ] ) ;
+
+	// ---- assemble ----
+	rows = "[]" ;
+	rows = JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~menu ; JSONObject ) ;
+	rows = JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~back ; JSONObject ) ;
+	rows = JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~fwd ; JSONObject ) ;
+	rows = JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~nameL ; JSONObject ) ;
+
+	// view-switch
+	rows = If ( ~hasEntity and ~isDetails ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~toList ; JSONObject ) ; rows ) ;
+	rows = If ( ~hasEntity and ~isList    ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~toDetail ; JSONObject ) ; rows ) ;
+
+	// list search box (center)
+	rows = If ( ~isList ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~searchBox ; JSONObject ) ; rows ) ;
+
+	// standard detail action bar (right)
+	rows = If ( ~isDetails ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~del ; JSONObject ) ; rows ) ;
+	rows = If ( ~isDetails ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~add ; JSONObject ) ; rows ) ;
+	rows = If ( ~isDetails ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~search ; JSONObject ) ; rows ) ;
+
+	// ---- Service Orders: extra views (kanban + calendar) beside the view-switch, on every SO layout ----
+	rows = If ( ~isSO ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~kanban ; JSONObject ) ; rows ) ;
+	rows = If ( ~isSO ; JSONSetElement ( rows ; "[" & ValueCount ( JSONListKeys ( rows ; "" ) ) & "]" ; ~calendar ; JSONObject ) ; rows )
+] ;
+	rows
+)

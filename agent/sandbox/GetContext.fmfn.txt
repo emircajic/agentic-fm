@@ -4,22 +4,29 @@
 //   Parses the contents of a FileMaker Snapshot Link (.fmpsl) file and returns
 //   a JSON object describing the captured context:
 //
-//     { "recids": "<¶-delimited recid values / ranges>", "layoutid": <number> }
+//     { "recids": "<¶-delimited recid values / ranges>",
+//       "layoutid": <number>,
+//       "selectedrow": <nativeID of the active record, or ""> }
 //
-//   recids come from the CDATA block; each line is a record id or a hyphenated
+//   recids come from the <Rows> CDATA; each line is a record id or a hyphenated
 //   range (e.g. "12-50"). Restore Context turns "-" into the find range "...".
+//   selectedrow is <SelectedRow>/@id = Get(RecordID) of the active record;
+//   Restore Context re-positions onto it after the find.
 //
-//   Depends on: ValueExtract
+//   Parses via BaseElements BE_XPath (plugin installed on server + clients).
+//   The fpsl has no XML namespace, so the namespace arg is unused.
 //   Parameter: fpsl  (raw text content of the snapshot link file)
 // =============================================================================
 
 Let ( [
-	~data = fpsl;
-	~RecIDs = ValueExtract ( ~data ; "<![CDATA[" ; "]]" );
-	~layoutID = ValueExtract ( ~data ; "<Layout id=\"" ; "\">" )
-];
+	~data = fpsl ;
+	~RecIDs = BE_XPath ( ~data ; "/FPSL/UIState/Rows/text()" ) ;
+	~layoutID = BE_XPath ( ~data ; "/FPSL/UIState/Layout/@id" ) ;
+	~selRow = BE_XPath ( ~data ; "/FPSL/UIState/SelectedRow/@id" )
+] ;
 	JSONSetElement ( "{}" ;
-		[ "recids" ; ~RecIDs ; JSONString ];
-		[ "layoutid" ; ~layoutID ; JSONNumber ]
+		[ "recids" ; ~RecIDs ; JSONString ] ;
+		[ "layoutid" ; ~layoutID ; JSONNumber ] ;
+		[ "selectedrow" ; ~selRow ; If ( IsEmpty ( ~selRow ) ; JSONString ; JSONNumber ) ]
 	)
 )

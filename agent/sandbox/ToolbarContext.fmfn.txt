@@ -1,0 +1,41 @@
+  /*
+  ToolbarContext ( )
+
+  Thin per-layout context handed to ToolbarConfig. Reads the COMMITTED settings for
+  this layout directly — Settings_GetObject ( "layouts." & Get(LayoutNumber) ) — the
+  same source SETTINGS__LayoutEnter hydrates its draft from.
+
+  WHY committed, not the $$LAYOUT_SETTINGS draft (LayoutSetting_Get):
+    The draft only exists after SETTINGS__LayoutEnter has run for this layout. A toolbar
+    Web Viewer can evaluate its URL calc before that trigger fires (or on a layout that
+    isn't wired to it at all), which would yield an empty cluster/view and silently drop
+    the layout-specific buttons. Reading the committed object removes that race — it only
+    needs $$SETTINGS loaded (SETTINGS__Load at startup), which is global, not per-layout.
+
+    name    — friendly layout name (falls back to Get(LayoutName) when unset)
+    cluster — "clients" | "vehicles" | "serviceorders" | …  (lets ONE ToolbarConfig serve
+              clients AND vehicles; the layout just carries a different cluster)
+    view    — "details" | "list"
+
+  Register a layout's values durably under layouts.<N>.{name,cluster,view} via
+  SETTINGS__SyncScopeDraft (scope "layouts") — see the SETTINGS__TagLayout helper.
+  An un-registered layout still gets the base bar (hamburger/back/forward/name).
+  */
+
+  Let ( [
+    ~n       = Get ( LayoutNumber ) ;
+    ~obj     = Settings_GetObject ( "layouts." & ~n ; "{}" ) ;
+    ~rawName = JSONGetElement ( ~obj ; "name" ) ;
+    ~rawClu  = JSONGetElement ( ~obj ; "cluster" ) ;
+    ~rawView = JSONGetElement ( ~obj ; "view" ) ;
+    ~name    = If ( IsEmpty ( ~rawName ) or Left ( ~rawName ; 1 ) = "?" ; Get ( LayoutName ) ; ~rawName ) ;
+    ~cluster = If ( Left ( ~rawClu ; 1 ) = "?" ; "" ; ~rawClu ) ;
+    ~view    = If ( Left ( ~rawView ; 1 ) = "?" ; "" ; ~rawView )
+  ] ;
+    JSONSetElement ( "{}" ;
+      [ "name"    ; ~name    ; JSONString ] ;
+      [ "cluster" ; ~cluster ; JSONString ] ;
+      [ "view"    ; ~view    ; JSONString ] ;
+      [ "layout"  ; ~n       ; JSONNumber ]
+    )
+  )

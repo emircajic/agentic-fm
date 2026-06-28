@@ -17,11 +17,11 @@ Navigation_
    │     capture current → keyed store ; pop source name-list ; push current onto other
    │     → restore target from keyed store (Restore Context) or plain navigate if none
    ├─ routing table (dot-notation) → { layout, init, mode }   ( .card forces mode=card )
-   ├─ CARD branch:  New Window [Card] → navigate → Init   (NO capture, NO context — own found set)
+   ├─ CARD branch:  New Window [Card] → navigate → [Init if exists] → [Go to Record if bare id]   (NO capture/context)
    └─ REGULAR branch:
          capture current → keyed store ; push onto $$LAYOUT.STACK ; clear FORWARD
-         → if (no record AND saved context exists): Restore Context  (return to last state)
-           else:                                    HandleResponsiveLayout_ → Init_<entity>
+         → if (no payload AND saved context exists): Restore Context  (return to last state)
+           else:  HandleResponsiveLayout_ → [Init if exists] → [Go to Record if bare id]
 
 Get Context      → Save Records as Snapshot Link → read file → GetContext() → { recids, layoutid }
 Restore Context  → ObjectLayoutNumber → Go to Layout → Find Mode by recid (ranges) → Perform Find
@@ -30,7 +30,18 @@ Restore Context  → ObjectLayoutNumber → Go to Layout → Find Mode by recid 
 **State globals:**
 - `$$LAYOUT.CONTEXT` — **JSON object keyed by base layout name** → context blob `{recids,layoutid}`. The canonical per-layout state. Written on every leave (except from card windows).
 - `$$LAYOUT.STACK` / `$$LAYOUT.STACK.FORWARD` — **¶-delimited lists of base layout names** (top = first line). Ordering only; the blob is looked up from `$$LAYOUT.CONTEXT`.
+- `$$NAV.ENTITY` — the `Init_` base of the layout currently shown (e.g. `"Client"`). Used to detect same-entity view switches. Cleared by back/forward.
 - `$$CONTEXT` — last-captured blob (side effect of Get Context; harmless).
+
+## List ↔ Details share a found set
+
+FileMaker shares a found set **per table occurrence per window**, so ClientList and ClientDetails (both on the `Clients` TO) natively share one found set — that's the List/Detail browse pattern. The router must not fight it.
+
+When the destination's entity matches the layout you're already on (`$initScriptBase = $$NAV.ENTITY`, e.g. `clients.list` while on `ClientDetails`) **and there's no payload**, Navigation_ treats it as a **view switch**: it just changes layout and does **nothing** to the found set — no Restore Context, no Init. The shared set (and its sort/filter, applied by Init on first entry to the entity) carries over natively.
+
+Restore/Init still run for cross-entity navigation and back/forward. A record jump (`clients|id`) within the same entity is *not* a plain view switch — it carries a payload, so `Go to Record` still narrows to that record.
+
+> Implementation note: this replaces literal "key context by TO." TO-keying collides with Restore Context's layout coupling (a TO-shared blob could send you to List when you asked for Details). The same-entity short-circuit achieves the same observable result — shared found set — without that hazard. Edge: the first view switch immediately after a back/forward doesn't get the skip (`$$NAV.ENTITY` was cleared); harmless, since the found set is already correct natively.
 
 `$$LAYOUT.STATE`, `$$LAYOUT.IGNORE`, the blob-in-stack model, and the `<Entity>Set` anchor schema from earlier rounds are **all retired**.
 
@@ -67,7 +78,28 @@ Window mode is the discriminator — every FileMaker window has its own found se
 | `Navigation_ ( "clients.card|client_id" )` | That client in a card; main window untouched |
 | `Navigation_ ( "settings" )` | Card Setup card window |
 
-Pipe-split on first `|`. Payload is passed straight to `Init_<Entity>` — Navigation_ doesn't inspect it, only notes present/absent. Modifiers: `.list` picks the List layout (routing-table row); `.card` is orthogonal — strip it, route normally, force a card window. Payload present ⇒ "specific target" ⇒ saved context disregarded for that arrival.
+Pipe-split on first `|`. Modifiers: `.list` picks the List layout (routing-table row); `.card` is orthogonal — strip it, route normally, force a card window. Payload present ⇒ "specific target" ⇒ saved context disregarded for that arrival.
+
+**Payload is one of two things, auto-detected:**
+- **Bare id** (`clients|client_id` — does **not** start with `{` or `[`) → the router calls `Go to Record`, which **positions** onto that PrimaryKey within the found set. No Init code required for record navigation.
+- **JSON** (`orders|{"filter":"open"}` — starts with `{` or `[`) → passed to `Init_<Entity>` as config; the router does not auto-find.
+
+> Discrimination is a `{`/`[` **prefix test**, not `JSONIsValid` — a numeric or all-digit id (e.g. a numeric TSID) is technically valid JSON but is still a record key. Only an actual JSON object/array is treated as Init config.
+
+In both cases the payload is also handed to Init (if one exists) for layouts that want it.
+
+## Init is optional
+
+`Init_<Entity>` runs only if it exists — a missing one (error 104) is silent, no dialog. You do **not** need to create empty placeholder Init scripts for every layout. Add an `Init_<Entity>` only when a layout needs setup beyond navigation + found set (web viewer push, default sort, globals, etc.). Real errors inside an Init that *does* exist are still surfaced.
+
+Found set is the router's job, not Init's:
+- **Specific record** → `Go to Record` (centralized helper; moves the pointer, keeps the set).
+- **Return to last state** → `Restore Context`.
+- **Default view for a fresh visit** → that's the one found-set concern still legitimately inside Init (e.g. "open orders only"). It runs first; a bare-id `Go to Record` then positions onto the requested record **within** that set (or Show All if it's not in the set).
+
+### Go to Record is non-destructive
+
+`Go to Record` no longer does a `Perform Find` (which would collapse the found set to one record). Instead: epSQL looks up the record's `recid` for the PrimaryKey, then it walks the **current** found set to position onto it (`Get(RecordID) = recid`, no field read). Only if the record isn't in the current set does it `Show All Records` and position there. So clicking a row in your 50-record search lands on that record **inside the 50** — the List→Details browse pattern holds for record jumps too. (Walk is O(found count) under Freeze Window — fine for normal sets; on a very large Show-All fallback it's a linear scan.)
 
 ## Schema requirement — `recid` field
 
@@ -97,29 +129,31 @@ Install via **Manage → Custom Functions → New**:
 
 | CF | Params | File |
 |---|---|---|
-| `ValueExtract` | `data ; start ; end` | `agent/sandbox/ValueExtract.fmfn.txt` |
-| `GetContext` | `fpsl` | `agent/sandbox/GetContext.fmfn.txt` (depends on ValueExtract) |
+| `GetContext` | `fpsl` | `agent/sandbox/GetContext.fmfn.txt` |
 
-`ObjectLayoutNumber` (114) and `JSONIsValid` already exist in your solution.
+`GetContext` parses the snapshot XML with **BaseElements `BE_XPath`** (plugin already installed on server + clients). `ObjectLayoutNumber` (114) and `JSONIsValid` already exist in your solution.
+
+`ValueExtract` is **no longer required** by the nav system — `GetContext` was switched from text-slicing to proper XPath. The CF is harmless to keep as a generic helper, or retire it if nothing else uses it.
 
 ## Deploy steps
 
 ### 1. Custom functions
-Install `ValueExtract` then `GetContext` (order matters — GetContext calls ValueExtract).
+Install `GetContext`. (Requires the BaseElements plugin for `BE_XPath` — already deployed in your environment.)
 
 ### 2. Schema
 Add the indexed `recid` field to each entity table (see above). Skip any entity you don't need found-set restore on yet.
 
 ### 3. Create placeholder scripts
-In the **Layout Stack** group: `Get Context`, `Restore Context`. (Forward Button already exists from a prior round.)
+In the **Layout Stack** group: `Get Context`, `Restore Context`, `Go to Record`. (Forward Button already exists from a prior round.)
 
 ### 4. Paste bodies (⌘A then ⌘V on each)
 
-1. `Get Context.xml` → **Get Context**
-2. `Restore Context.xml` → **Restore Context**
-3. `Forward Button.xml` → **Forward Button** (one-liner → `Navigation_("forward")`)
-4. `Back Button.xml` → **Back Button** (one-liner → `Navigation_("back")`)
-5. `Navigation_.xml` → **Navigation_** (ID 450)
+1. `Go to Record.xml` → **Go to Record**
+2. `Get Context.xml` → **Get Context**
+3. `Restore Context.xml` → **Restore Context**
+4. `Forward Button.xml` → **Forward Button** (one-liner → `Navigation_("forward")`)
+5. `Back Button.xml` → **Back Button** (one-liner → `Navigation_("back")`)
+6. `Navigation_.xml` → **Navigation_** (ID 450)
 
 **After paste, verify every Go to Layout step** in Get Context / Restore Context / Navigation_ — open in Script Workspace and confirm the destination radio + calculation. This step has imported malformed before even when the XML looked clean.
 
@@ -141,6 +175,8 @@ In the Data Viewer:
 ```
 $$LAYOUT.STACK         = ""
 $$LAYOUT.STACK.FORWARD = ""
+$$LAYOUT.CONTEXT       = ""
+$$NAV.ENTITY           = ""
 $$CONTEXT              = ""
 ```
 Old `$$LAYOUT.STATE[N]` / `$$LAYOUT.IGNORE` artifacts clear on file close/reopen (globals don't persist across sessions).
@@ -165,6 +201,7 @@ They exist only so existing UI bindings keep working. To retire them: in Layout 
 - `agent/sandbox/Navigation_.xml`
 - `agent/sandbox/Back Button.xml`
 - `agent/sandbox/Forward Button.xml`
+- `agent/sandbox/Go to Record.xml` (NEW — centralized record browse)
 - `agent/sandbox/Get Context.xml` (NEW)
 - `agent/sandbox/Restore Context.xml` (NEW)
 - `agent/sandbox/ValueExtract.fmfn.txt` (NEW — custom function)

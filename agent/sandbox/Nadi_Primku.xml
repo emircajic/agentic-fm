@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Open the clicked Primka (SOL__Primke portal on ServiceOrderDetails) in IncomingOrders via Navigation_.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>WAS: Go to Related Record [ SOL__Primke ; IncomingOrders ] -- from a multi-row portal this lands on the FIRST related Primka, not the clicked row (the "jumps to an unrelated record" bug).</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>NOW: read the active portal row's Primka PrimaryKey, then jump deterministically by key.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>STEP 1 -- the clicked row's Primka key, read straight off the stavka row's FK (no hop to the SOL__Primke parent). ForeignKeyPrimkaID = SOL__Primke::PrimaryKey by definition.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[SOL__StavkePrimke::ForeignKeyPrimkaID]]></Calculation></Value>
+    <Name>$primkaPK</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaPK )]]></Calculation>
+  </Step>
+    <Step enable="True" id="103" name="Exit Script">
+      <Calculation><![CDATA[""]]></Calculation>
+    </Step>
+  <Step enable="True" id="70" name="End If"/>
+
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>STEP 2 -- navigate. "incomingorders" routes to IncomingOrders (Primke base); the bare PK triggers Go to Record.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["incomingorders|" & $primkaPK]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+
+</fmxmlsnippet>

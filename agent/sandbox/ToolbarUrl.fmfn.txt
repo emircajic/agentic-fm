@@ -1,0 +1,33 @@
+/*
+ToolbarUrl ( )
+
+Web-address calc for every chrome-toolbar Web Viewer. Bakes the current layout's
+config into the built (scaffold) bundle at evaluate-time, so first paint is already
+correct — no fetch, no race, no flash of wrong state. FileMaker re-evaluates this on
+every layout change, so the toolbar follows the layout automatically.
+
+HOW THE BAKE WORKS
+  displayHTMLfrom returns  "data:text/html," & <raw HTML from HTML::Toolbar>  (UN-encoded).
+  The built bundle (agent/sandbox/chrome-toolbar/dist/index.html) loads its JS as a single
+  deferred <script type="module">. We inject a CLASSIC inline <script> right after <head>;
+  classic inline scripts run during parse, BEFORE any deferred module, so the global
+  window.__TOOLBAR_CONFIG__ is set before the renderer runs. main.js reads it on load.
+  ToolbarConfig returns a bare JSON array, which is a valid JS array literal, so it drops
+  straight in as the right-hand side of the assignment — no quoting/escaping/base64 needed.
+
+WITHIN-LAYOUT UPDATES (not cold load)
+  Don't re-evaluate this / refresh the WV object (that reloads + flashes). Push in place:
+    Perform JavaScript in Web Viewer [ "<wv-name>" ;
+      "receiveFromFileMaker(" & ToolbarConfig ( ToolbarContext ( ) ) & ")" ]
+
+NOTE: friendly names baked into the config should avoid '#' and '%' (reserved in a
+data: URL). Missing name falls back to Get(LayoutName) via ToolbarContext, which is safe.
+*/
+
+Let (
+[
+	~html = displayHTMLfrom ( "HTML" ; "Toolbar" ) ;
+	~boot = "<script>window.__TOOLBAR_CONFIG__=" & ToolbarConfig ( ToolbarContext ( ) ) & ";</script>"
+] ;
+	Substitute ( ~html ; "<head>" ; "<head>" & ~boot )
+)
