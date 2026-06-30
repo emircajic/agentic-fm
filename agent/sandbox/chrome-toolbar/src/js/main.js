@@ -59,6 +59,16 @@ function makeSearch(row) {
   return wrap;
 }
 
+// Visual group separator — a thin vertical rule between button clusters
+// (e.g. base nav | time-scope | period-navigation). Pure chrome, no action.
+function makeSpacer() { return el('div', 'divider'); }
+
+function makeRow(r) {
+  if (r.type === 'spacer') return makeSpacer();
+  if (r.type === 'search') return makeSearch(r);
+  return makeItem(r);
+}
+
 function render(config) {
   const bar = document.getElementById('bar');
   if (!bar) return;
@@ -70,7 +80,7 @@ function render(config) {
     if (!zones[z]) return;
     const zn = el('div', 'zone ' + z);
     zones[z].sort((a, b) => (a.order || 0) - (b.order || 0))
-            .forEach((r) => zn.appendChild(r.type === 'search' ? makeSearch(r) : makeItem(r)));
+            .forEach((r) => zn.appendChild(makeRow(r)));
     bar.appendChild(zn);
   });
 }

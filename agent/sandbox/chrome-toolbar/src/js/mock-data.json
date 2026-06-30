@@ -1,10 +1,18 @@
 [
-  { "icon": "icon-menu",     "script": "UTIL__OpenSideNav", "payload": "",             "zone": "left",   "order": 10 },
-  { "icon": "icon-back",     "script": "Navigation_",       "payload": "back",         "zone": "left",   "order": 20 },
-  { "icon": "icon-forward",  "script": "Navigation_",       "payload": "forward",      "zone": "left",   "order": 30 },
-  { "label": "Service Orders",                               "zone": "left",   "order": 40 },
-  { "icon": "icon-card",     "script": "Navigation_",       "payload": "serviceorders", "zone": "left",  "order": 50 },
-  { "icon": "icon-kanban",   "script": "Navigation_",       "payload": "kanban",       "zone": "left",   "order": 60 },
-  { "icon": "icon-calendar", "script": "Navigation_",       "payload": "calendar",     "zone": "left",   "order": 70 },
-  { "type": "search", "script": "Quick Find Toolbar", "placeholder": "Pretraži…", "zone": "center", "order": 10 }
+  { "icon": "icon-menu",     "script": "UTIL__OpenSideNav", "payload": "",        "zone": "left",   "order": 10 },
+  { "icon": "icon-back",     "script": "Navigation_",       "payload": "back",    "zone": "left",   "order": 20 },
+  { "icon": "icon-forward",  "script": "Navigation_",       "payload": "forward", "zone": "left",   "order": 30 },
+  { "label": "Kanban",                                       "zone": "left",   "order": 40 },
+  { "icon": "icon-card",     "script": "Navigation_",       "payload": "orders",   "zone": "left",  "order": 50 },
+  { "icon": "icon-calendar", "script": "Navigation_",       "payload": "calendar", "zone": "left",  "order": 70 },
+  { "type": "spacer",                                        "zone": "left", "order": 75 },
+  { "icon": "icon-day",      "script": "WV__KanbanControl", "payload": "{\"action\":\"setPeriod\",\"value\":\"day\"}",   "zone": "left", "order": 80 },
+  { "icon": "icon-week",     "script": "WV__KanbanControl", "payload": "{\"action\":\"setPeriod\",\"value\":\"week\"}",  "zone": "left", "order": 90 },
+  { "icon": "icon-month",    "script": "WV__KanbanControl", "payload": "{\"action\":\"setPeriod\",\"value\":\"month\"}", "zone": "left", "order": 100 },
+  { "type": "spacer",                                        "zone": "left", "order": 105 },
+  { "icon": "icon-prev",     "script": "WV__KanbanControl", "payload": "{\"action\":\"navigate\",\"value\":\"prev\"}",    "zone": "left", "order": 110 },
+  { "icon": "icon-today",    "script": "WV__KanbanControl", "payload": "{\"action\":\"navigate\",\"value\":\"today\"}",   "zone": "left", "order": 120 },
+  { "icon": "icon-next",     "script": "WV__KanbanControl", "payload": "{\"action\":\"navigate\",\"value\":\"next\"}",    "zone": "left", "order": 130 },
+  { "icon": "icon-refresh",  "script": "WV__PushServiceOrdersKanban", "payload": "",                                    "zone": "right", "order": 10 },
+  { "icon": "icon-add",      "script": "OtvoriFormuZaUnos", "payload": "", "zone": "right", "order": 20 }
 ]

@@ -29,6 +29,10 @@ button.item:active{background:var(--active)}
 .ico{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;
   stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
+/* group separator — thin vertical rule between button clusters */
+.divider{flex:0 0 auto;align-self:center;width:1px;height:24px;
+  background:rgba(255,255,255,.25);margin:0 8px}
+
 /* center zone grows to fill the gap between left cluster and right actions */
 .zone.center{flex:1 1 auto;min-width:0;align-items:center;justify-content:flex-end;padding:0 8px}
 .searchwrap{display:flex;align-items:center;width:100%;justify-content:flex-end}
