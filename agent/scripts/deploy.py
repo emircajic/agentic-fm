@@ -113,6 +113,35 @@ def _post_json(url: str, payload: dict, timeout: int = 15) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Plug-in capability detection (optional commercial plug-in)
+# ---------------------------------------------------------------------------
+
+def _check_plugin(companion_url: str) -> dict:
+    """Return the plug-in capability block from the companion's /health.
+
+    The companion is the single detection broker: one GET /health tells us
+    whether the AgenticFM plug-in is *usable* (installed + reachable +
+    licensed), how to reach it (server.base + bearer token), and which
+    solutions it has indexed. Detection only — routing the deploy through the
+    plug-in's direct script-install API is a later phase. Never raises; on any
+    failure the block is empty and deploy stays on the OSS tiers.
+
+    Returns the `plugin` block, e.g.:
+      {"installed": true, "usable": true,
+       "server": {"reachable": true, "base": "http://127.0.0.1:8766", "token": "..."},
+       "license": {"status": "trial", ...}, "solutions": [...]}
+    or {} when the companion is unreachable or reports no plug-in.
+    """
+    try:
+        req = urllib.request.Request(f"{companion_url}/health", method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return data.get("plugin", {}) or {}
+    except Exception:
+        return {}
+
+
+# ---------------------------------------------------------------------------
 # Window switching helper
 # ---------------------------------------------------------------------------
 
@@ -628,6 +657,19 @@ def deploy(
     effective_auto_save = auto_save if auto_save is not None else bool(config.get("auto_save", False))
     companion_url = config.get("companion_url", "http://local.hub:8765").rstrip("/")
     fm_app_name = config.get("fm_app_name", "FileMaker Pro")
+
+    # Plug-in awareness (no hardcoded endpoints). When the plug-in is usable,
+    # the zero-keystroke install path is for the agent to pick a script-write
+    # endpoint from the plug-in's /api/discover suite (see PLUGIN_INTEGRATION.md
+    # — e.g. create new, insert steps, or read-then-fmpatch). This CLI stays the
+    # OSS clipboard fallback; surface the steer once and continue.
+    if _check_plugin(companion_url).get("usable"):
+        print(
+            "(AgenticFM plug-in is usable — for a zero-keystroke install, choose a "
+            "script-write endpoint from its /api/discover suite per "
+            "agent/docs/PLUGIN_INTEGRATION.md. Continuing on the OSS clipboard path.)",
+            file=sys.stderr,
+        )
 
     # Auto-resolve target file if not provided
     if target_file is None:

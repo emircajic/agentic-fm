@@ -5,6 +5,10 @@
   "fm_app_name": "FileMaker Pro",
   "companion_url": "http://localhost:8765",
   "tiers": {
+    "0": {
+      "description": "Plug-in direct — agent selects a script-write endpoint from the AgenticFM plug-in's /api/discover suite (zero keystrokes); requires the plug-in to be usable",
+      "requires": ["plugin"]
+    },
     "1": {
       "description": "Clipboard only — agent writes XML to clipboard, developer pastes with Cmd+V",
       "requires": []

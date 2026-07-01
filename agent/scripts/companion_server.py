@@ -76,6 +76,169 @@ _pending_job: dict = {}
 _pending_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
+# Plug-in capability detection (the AgenticFM commercial plug-in, optional)
+# ---------------------------------------------------------------------------
+#
+# The companion is the single detection broker for the OSS agent. It stats the
+# plug-in's macOS Application Support tree (the *installed?* precondition),
+# reads the address + bearer token published in preferences.json, then probes
+# the plug-in's token-free GET /api/health to resolve the *usable?* verdict
+# (installed + reachable + licensed). The result is surfaced in /health.plugin
+# so the agent makes exactly one detection call. The verdict is cached briefly
+# so repeated /health hits do not re-probe the plug-in on every request.
+#
+# This is detection only — nothing here makes any OSS feature depend on the
+# plug-in. When the plug-in is absent or not usable, the block reports it and
+# the agent stays on the pure OSS path.
+
+APP_SUPPORT_DIR = os.path.expanduser("~/Library/Application Support/AgenticFM")
+_PLUGIN_CACHE_TTL = 60.0  # seconds; plug-in's own license heartbeat is far slower
+_plugin_cache: dict = {}
+_plugin_cache_ts: float = 0.0
+_plugin_lock = threading.Lock()
+
+# Behavior gates the plug-in enforces on mutating operations — surfaced so the
+# OSS agent can respect them rather than stacking a redundant confirmation.
+_PLUGIN_GATE_KEYS = (
+    "agenticActions", "scriptExecution", "scriptModification",
+    "schemaModification", "uiInteraction", "hostCapture",
+)
+
+
+def _plugin_http_get_json(url: str, token: str = "", timeout: int = 3) -> dict:
+    """GET a JSON document from the plug-in's HTTP server. Raises on failure."""
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _plugin_read_preferences() -> dict:
+    """Read the plug-in's preferences.json (address, token, gates, bindings)."""
+    path = os.path.join(APP_SUPPORT_DIR, "preferences.json")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _plugin_enumerate_solutions() -> list:
+    """Enumerate indexed solutions under solutions/<key>/manifest.json."""
+    solutions = []
+    sol_dir = os.path.join(APP_SUPPORT_DIR, "solutions")
+    if not os.path.isdir(sol_dir):
+        return solutions
+    for key in sorted(os.listdir(sol_dir)):
+        manifest_path = os.path.join(sol_dir, key, "manifest.json")
+        if not os.path.isfile(manifest_path):
+            continue
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except (OSError, ValueError):
+            continue
+        solutions.append({
+            "key": key,
+            "name": manifest.get("solutionName", ""),
+            "catalog": os.path.join(sol_dir, key),
+            "files": manifest.get("loaded", []),
+            "parsed_at": manifest.get("parsedAt") or manifest.get("parsed_at", ""),
+        })
+    return solutions
+
+
+def _probe_plugin() -> dict:
+    """Resolve the full plug-in capability block. Never raises.
+
+    Shape:
+      {
+        "installed": bool,            # App Support tree present
+        "usable": bool,               # installed AND reachable AND licensed
+        "server": {"reachable", "base", "token", "remote"},
+        "license": {"status", "licensed", ...},
+        "solutions": [ {key, name, catalog, files, parsed_at}, ... ],
+        "repoPath"?, "catalogBaseUrl"?, "gates"?
+      }
+    """
+    block = {"installed": False, "usable": False,
+             "server": {}, "license": {}, "solutions": []}
+
+    if not os.path.isdir(APP_SUPPORT_DIR):
+        return block
+    block["installed"] = True
+
+    try:
+        prefs = _plugin_read_preferences()
+    except (OSError, ValueError):
+        prefs = {}
+
+    if prefs.get("repoPath"):
+        block["repoPath"] = prefs["repoPath"]
+    if prefs.get("catalogBaseUrl"):
+        block["catalogBaseUrl"] = prefs["catalogBaseUrl"]
+    gates = {k: prefs[k] for k in _PLUGIN_GATE_KEYS if k in prefs}
+    if gates:
+        block["gates"] = gates
+
+    # Remote access is the supported posture: a stable port + token in
+    # preferences.json. (Localhost-only random-port mode is not targeted.)
+    port = prefs.get("remoteAccessPort", 8766)
+    token = prefs.get("remoteAccessToken", "")
+    remote_on = bool(prefs.get("allowRemoteAccess")) and bool(prefs.get("remoteAccessConfirmed"))
+    base = f"http://127.0.0.1:{port}"
+    block["server"] = {"reachable": False, "base": base, "token": token, "remote": remote_on}
+
+    # Token-free GET /api/health carries the verdict: licensed + licenseStatus.
+    try:
+        health = _plugin_http_get_json(f"{base}/api/health", timeout=3)
+        block["server"]["reachable"] = True
+        licensed = bool(health.get("licensed"))
+        lic = {"status": health.get("licenseStatus", ""), "licensed": licensed}
+        # Pull richer detail (daysRemaining etc.) — exempt, best-effort.
+        try:
+            detail = _plugin_http_get_json(f"{base}/api/license", token=token, timeout=3)
+            for k in ("status", "edition", "sub", "exp", "daysRemaining"):
+                if k in detail:
+                    lic[k] = detail[k]
+        except Exception:
+            pass
+        block["license"] = lic
+        block["usable"] = bool(licensed)
+    except Exception:
+        # Installed but server not reachable (or down) — not usable.
+        block["license"] = {"status": "unknown", "licensed": False}
+        block["usable"] = False
+
+    # Broker the plug-in's self-describing endpoint suite. GET /api/discover is
+    # token-free (exempt) and returns the *live*, license-gated catalog: the
+    # full endpoint suite when usable, a shrunk list + purchaseUrl when locked.
+    # The OSS agent reads this to choose endpoints for the task at hand rather
+    # than assuming a fixed set — so the integration never hardcodes (or rots
+    # against) the plug-in's API surface. Surfaced even when not usable so the
+    # locked-state purchaseUrl is available for the lapsed-license nudge.
+    if block["server"].get("reachable"):
+        try:
+            block["discover"] = _plugin_http_get_json(f"{base}/api/discover", timeout=3)
+        except Exception:
+            pass
+
+    block["solutions"] = _plugin_enumerate_solutions()
+    return block
+
+
+def _check_plugin(force: bool = False) -> dict:
+    """Return the plug-in capability block, cached ~60 s. Never raises."""
+    global _plugin_cache, _plugin_cache_ts
+    with _plugin_lock:
+        now = time.monotonic()
+        if not force and _plugin_cache and (now - _plugin_cache_ts) < _PLUGIN_CACHE_TTL:
+            return _plugin_cache
+        block = _probe_plugin()
+        _plugin_cache = block
+        _plugin_cache_ts = now
+        return block
+
+# ---------------------------------------------------------------------------
 # Logging setup
 # ---------------------------------------------------------------------------
 
@@ -199,6 +362,8 @@ class CompanionHandler(BaseHTTPRequestHandler):
         elif self.path.startswith("/preview/"):
             layout_name = self.path[len("/preview/"):]
             self._handle_preview_get(layout_name)
+        elif self.path.startswith("/plugin/"):
+            self._handle_plugin_proxy("GET", self.path[len("/plugin/"):])
         else:
             self._send_json({"error": "Not found"}, status=404)
 
@@ -226,6 +391,8 @@ class CompanionHandler(BaseHTTPRequestHandler):
         elif self.path.startswith("/preview/"):
             layout_name = self.path[len("/preview/"):]
             self._handle_preview_post(layout_name)
+        elif self.path.startswith("/plugin/"):
+            self._handle_plugin_proxy("POST", self.path[len("/plugin/"):])
         elif _ext and hasattr(_ext, "handle_post") and _ext.handle_post(self):
             pass
         else:
@@ -236,7 +403,59 @@ class CompanionHandler(BaseHTTPRequestHandler):
     # ------------------------------------------------------------------
 
     def _handle_health(self):
-        self._send_json({"status": "ok", "version": VERSION})
+        self._send_json({"status": "ok", "version": VERSION, "plugin": _check_plugin()})
+
+    def _handle_plugin_proxy(self, method: str, subpath: str):
+        """Thin pass-through to the plug-in's HTTP server, bearer token injected.
+
+        Optional convenience for constrained environments (e.g. a container that
+        can reach the companion but not the plug-in's port) and to keep a single
+        base URL. Direct plug-in access is the baseline; this proxy is inert
+        until explicitly called. Refuses with 502 when the plug-in is not usable,
+        so the agent's fallback stays self-enforcing.
+        """
+        block = _check_plugin()
+        if not block.get("usable"):
+            self._send_json(
+                {"success": False, "error": "Plug-in not usable",
+                 "plugin": {"installed": block.get("installed", False), "usable": False}},
+                status=502,
+            )
+            return
+
+        server = block.get("server", {})
+        base = server.get("base", "").rstrip("/")
+        token = server.get("token", "")
+        url = f"{base}/{subpath}"
+
+        headers = {}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        body = None
+        if method == "POST":
+            body = self._read_body()
+            headers["Content-Type"] = self.headers.get("Content-Type", "application/json")
+
+        req = urllib.request.Request(url, data=body, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                raw = resp.read()
+                status = resp.status
+                ctype = resp.headers.get("Content-Type", "application/json; charset=utf-8")
+        except urllib.error.HTTPError as exc:
+            raw = exc.read()
+            status = exc.code
+            ctype = exc.headers.get("Content-Type", "application/json; charset=utf-8")
+        except Exception as exc:
+            log.warning("Plug-in proxy to %s failed: %s", url, exc)
+            self._send_json({"success": False, "error": f"Proxy failed: {exc}"}, status=502)
+            return
+
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
 
     def _handle_explode(self):
         # Read and parse request body
@@ -884,7 +1103,7 @@ def main():
 
     log.info("companion_server v%s listening on %s:%d", VERSION, BIND_HOST, port)
     threading.Thread(target=_check_for_updates, daemon=True).start()
-    log.info("Endpoints: GET /health  GET /clipboard  GET /webviewer/status  GET /preview/<name>  POST /explode  POST /context  POST /clipboard  POST /trigger  POST /debug  POST /webviewer/start  POST /webviewer/stop  POST /webviewer/push  POST /preview/<name>")
+    log.info("Endpoints: GET /health  GET /clipboard  GET /webviewer/status  GET /preview/<name>  GET|POST /plugin/<path>  POST /explode  POST /context  POST /clipboard  POST /trigger  POST /debug  POST /webviewer/start  POST /webviewer/stop  POST /webviewer/push  POST /preview/<name>")
     log.info("Press Ctrl-C to stop.")
 
     try:
