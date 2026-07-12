@@ -14,7 +14,7 @@ export function createDevControls() {
 
   const panel = document.createElement('div');
   panel.id = 'dev-controls';
-  panel.className = 'fixed bottom-4 right-4 bg-gray-900/95 text-white p-3 rounded-lg shadow-2xl z-50 text-xs';
+  panel.className = 'fixed bottom-4 right-4 bg-gray-900/95 text-white p-3 rounded-lg shadow-2xl z-30 text-xs';
   panel.style.width = '320px';
   document.body.appendChild(panel);
 

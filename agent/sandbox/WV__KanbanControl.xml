@@ -4,7 +4,7 @@
     <Text>PURPOSE: Mutate the kanban scope ($$KANBAN_SCOPE) from the FileMaker-native controls, then re-push the board. The web viewer never owns scope — controls call this script.</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
-    <Text>PARAMS: JSON {"action":"setPeriod|navigate|toggleStatus|clearStatus|page","value":"..."}. setPeriod→day|week|month · navigate→prev|next|today · toggleStatus→a status · page→prev|next</Text>
+    <Text>PARAMS: JSON {"action":"setPeriod|navigate|toggleStatus|clearStatus|setQuery|page","value":"..."}. setPeriod→day|week|month · navigate→prev|next|today · toggleStatus→a status · setQuery→search text (empty clears) · page→prev|next</Text>
   </Step>
   <Step enable="True" id="85" name="Allow User Abort">
     <Set state="False"/>
@@ -66,6 +66,12 @@
       <Calculation><![CDATA[Let ( s = JSONGetElement ( $scope ; "statuses" ) ; If ( Left ( s ; 1 ) = "[" ; s ; "[]" ) )]]></Calculation>
     </Value>
     <Name>$statuses</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( ~q = JSONGetElement ( $scope ; "query" ) ; If ( Left ( ~q ; 1 ) = "?" ; "" ; ~q ) )]]></Calculation>
+    </Value>
+    <Name>$query</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
@@ -264,6 +270,26 @@
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
+    <Text>MARK: setQuery — set/clear the search text (from the web viewer's search box), reset to first page</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$action = "setQuery"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Trim ( $value )]]></Calculation>
+    </Value>
+    <Name>$query</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$offset</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
     <Text>MARK: page — step offset by one page (push clamps the upper bound)</Text>
   </Step>
   <Step enable="True" id="68" name="If">
@@ -284,10 +310,11 @@
     <Value>
       <Calculation><![CDATA[JSONSetElement ( "{}" ;
 	[ "periodMode" ; $periodMode ; JSONString ] ;
-	[ "anchorDate" ; $anchorStr  ; JSONString ] ;
-	[ "statuses"   ; $statuses   ; JSONArray  ] ;
-	[ "offset"     ; $offset     ; JSONNumber ] ;
-	[ "limit"      ; $limit      ; JSONNumber ]
+	[ "anchorDate" ; $anchorStr ; JSONString ] ;
+	[ "statuses" ; $statuses ; JSONArray ] ;
+	[ "query" ; $query ; JSONString ] ;
+	[ "offset" ; $offset ; JSONNumber ] ;
+	[ "limit" ; $limit ; JSONNumber ]
 )]]></Calculation>
     </Value>
     <Name>$$KANBAN_SCOPE</Name>

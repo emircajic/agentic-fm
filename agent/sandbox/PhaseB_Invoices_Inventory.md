@@ -70,15 +70,22 @@ Out of scope (other clusters' own TOs over the same base tables, untouched here)
 | `Mjesečni pregled` | 204 | Invoices | `I__INVOICES` |
 | `RačunŠtampa` | 183 | InvoiceLines | `I__InvoiceLines` |
 
-### Remove (parallel + dev) — the abandoned `_` approach
+### Keep as scratch — repoint, don't delete
+Kept deliberately as experiment/scratch layouts against the new cluster. They
+must come off the legacy TOs anyway (Stage 6 can't amputate a TO anything still
+anchors on), so repointing is required either way.
+| Layout | ID | → repoint to |
+|---|---|---|
+| `Dev Invoices` | 179 | `I__INVOICES` |
+| `Dev InvoiceLines` | 225 | `I__InvoiceLines` |
+
+### Remove (parallel + redundant dev)
 | Layout | ID | note |
 |---|---|---|
 | `Invoices_` | 262 | parallel layout on `I__INVOICES` — redundant once `Invoices` (171) repoints |
 | `Card Invoice Print _` | 263 | parallel print on `I__INVOICES` |
-| `Dev Invoices` | 179 | dev scaffold — **gated**: `INV__CreateRefundHeader` (730) still `Go to Layout [Dev Invoices]`; delete only after that worker goes epSQL |
-| `Dev I__Invoices` | 249 | dev scaffold |
-| `Dev InvoiceLines` | 225 | dev scaffold |
-| `Dev InvoiceLinks` | 253 | dev scaffold |
+| `Dev I__Invoices` | 249 | already on `I__INVOICES` — duplicates the kept `Dev Invoices` (179) |
+| `Dev InvoiceLinks` | 253 | dev scaffold, not kept |
 
 ---
 
@@ -182,7 +189,8 @@ The `... Copy` pairs are almost certainly stale duplicates.
 - [ ] epSQL `FROM`-clauses in 878/879/881 moved to `I__INVOICES`.
 - [ ] Layouts 171/178/172/239/188/222/204/183 repointed on dev; field refs resolve.
 - [ ] `_` parallel set + old fiscal pieces + migration helpers foldered to `_RETIRED/`.
-- [ ] `Invoices_` (262) + `Card Invoice Print _` (263) deleted on dev.
-- [ ] `INV__CreateRefundHeader` off `Dev Invoices` → Dev layouts deletable.
+- [ ] `Invoices_` (262) + `Card Invoice Print _` (263) + `Dev I__Invoices` (249)
+      + `Dev InvoiceLinks` (253) deleted on dev.
+- [ ] `Dev Invoices` (179) + `Dev InvoiceLines` (225) repointed to `I__` and kept.
 - [ ] Legacy TOs (table above) amputated; `table_occurrences.index` re-export clean.
 - [ ] OttoFMS deploy → post-deploy smoke on live.

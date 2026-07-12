@@ -7,11 +7,17 @@ import mockData from './mock-data.json';
  * the controls drive it through WV__KanbanControl, and every change re-runs the
  * push (WV__PushServiceOrdersKanban) which filters + paginates server-side and
  * calls window.receiveFromFileMaker({ orders, meta }). The web viewer never owns
- * the filter state — exactly like production.
+ * the filter state — exactly like production. The search box is the one control
+ * that lives in the viewer, but it too round-trips through WV__KanbanControl
+ * (action "setQuery") so FM stays the single source of truth.
  */
 
 const MONTHS = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
                 'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+// Statuses that stay on the board regardless of the date window (matches the
+// WHERE clause in WV__PushServiceOrdersKanban).
+const PINNED_STATUSES = ['U toku', 'Obračunat', 'Fakturisan'];
 
 // Fixed "today" so the seeded June data is always visible regardless of the wall clock.
 const DEFAULT_ANCHOR = '2026-06-06';
@@ -62,7 +68,7 @@ export class MockFileMaker {
   constructor() {
     this.scriptLog = [];
     // $$KANBAN_SCOPE equivalent
-    this.scope = { periodMode: 'day', anchorDate: DEFAULT_ANCHOR, statuses: [], offset: 0, limit: DEFAULT_LIMIT };
+    this.scope = { periodMode: 'day', anchorDate: DEFAULT_ANCHOR, statuses: [], query: '', offset: 0, limit: DEFAULT_LIMIT };
   }
 
   getScope() { return { ...this.scope, statuses: [...this.scope.statuses] }; }
@@ -100,6 +106,7 @@ export class MockFileMaker {
         break;
       }
       case 'clearStatus': s.statuses = []; s.offset = 0; break;
+      case 'setQuery':    s.query = (value || '').trim(); s.offset = 0; break;
       case 'page':        s.offset = Math.max(0, s.offset + (value === 'next' ? s.limit : -s.limit)); break;
     }
   }
@@ -109,8 +116,18 @@ export class MockFileMaker {
     const s = this.scope;
     const { from, to } = windowFor(s.periodMode, s.anchorDate);
 
-    let rows = mockData.orders.filter(o => o.date >= from && o.date <= to);
-    if (s.statuses.length) rows = rows.filter(o => s.statuses.includes(o.status));
+    // pinned OR (date window [AND status filter]) — matches the SQL WHERE
+    let rows = mockData.orders.filter(o =>
+      PINNED_STATUSES.includes(o.status) ||
+      (o.date >= from && o.date <= to && (!s.statuses.length || s.statuses.includes(o.status))));
+
+    if (s.query) {
+      const q = s.query.toLowerCase();
+      rows = rows.filter(o =>
+        [o.number, o.customer, o.plate, o.make, o.model, o.service]
+          .some(v => (v || '').toLowerCase().includes(q)));
+    }
+
     rows.sort((a, b) => a.date === b.date
       ? (a.timeStart || '').localeCompare(b.timeStart || '')
       : a.date.localeCompare(b.date));
@@ -126,6 +143,7 @@ export class MockFileMaker {
       from, to,
       label: labelFor(s.periodMode, s.anchorDate, from, to),
       statuses: [...s.statuses],
+      query: s.query,
       page: { offset: s.offset, limit: s.limit, total, hasMore: s.offset + s.limit < total },
     };
 
