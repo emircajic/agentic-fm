@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Thin UI shim over the headless SO__CreateInvoicesFromOrder. Owns ONLY front-end concerns: the booking-method dialog, the card-window close, error/success rendering, and navigation to the created invoice. All data work (order read, line collection, returned netting, splitting, inserts) is headless in the orchestrator. Same shim pattern as Process Invoice (UI).</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON, optional): orderId — defaults to the current ServiceOrders record.&#xD;RETURNS: the orchestrator's Response envelope.&#xD;&#xD;DIALOG → method: "DOO dijelovi, OD Ruke" = SPLIT | "Sve na DOO" = ALL_DOO | "Sve na OD" = ALL_OD.&#xD;On success navigates to the (last) created invoice via Navigation_ ( "invoices|id" ).</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$orderId</Name>
+		<Value><Calculation><![CDATA[Let (
+	~p = JSONGetElement ( Get ( ScriptParameter ) ; "orderId" ) ;
+	If ( IsEmpty ( ~p ) ; ServiceOrders::PrimaryKey ; ~p )
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: The one genuine UI decision — booking method</Text>
+	</Step>
+	<Step enable="True" id="87" name="Show Custom Dialog">
+		<Title>
+			<Calculation><![CDATA["Kreiraj račun"]]></Calculation>
+		</Title>
+		<Message>
+			<Calculation><![CDATA["Odaberi način knjiženja"]]></Calculation>
+		</Message>
+		<Buttons>
+			<Button CommitState="True">
+				<Calculation><![CDATA["DOO dijelovi, OD Ruke"]]></Calculation>
+			</Button>
+			<Button CommitState="False">
+				<Calculation><![CDATA["Sve na DOO"]]></Calculation>
+			</Button>
+			<Button CommitState="False">
+				<Calculation><![CDATA["Sve na OD"]]></Calculation>
+			</Button>
+		</Buttons>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$method</Name>
+		<Value><Calculation><![CDATA[Choose ( Get ( LastMessageChoice ) - 1 ; "SPLIT" ; "ALL_DOO" ; "ALL_OD" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[Get ( WindowStyle ) = 3]]></Calculation>
+	</Step>
+	<Step enable="True" id="121" name="Close Window">
+		<Window value="Current"/>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Delegate to the headless orchestrator</Text>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="0" name="SO__CreateInvoicesFromOrder"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "orderId" ; $orderId ; JSONString ] ;
+	[ "method" ; $method ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Render the Response</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[Response_HasErrors ( $r )]]></Calculation>
+	</Step>
+	<Step enable="True" id="87" name="Show Custom Dialog">
+		<Title>
+			<Calculation><![CDATA["Greška"]]></Calculation>
+		</Title>
+		<Message>
+			<Calculation><![CDATA[JSONGetElement ( Response_FirstError ( $r ) ; "text" )]]></Calculation>
+		</Message>
+		<Buttons>
+			<Button CommitState="True">
+				<Calculation><![CDATA["OK"]]></Calculation>
+			</Button>
+		</Buttons>
+	</Step>
+	<Step enable="True" id="69" name="Else"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$invoices</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( Response_GetData ( $r ) ; "invoices" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lastInvoiceId</Name>
+		<Value><Calculation><![CDATA[Let (
+	~n = ValueCount ( JSONListKeys ( $invoices ; "" ) ) ;
+	JSONGetElement ( $invoices ; "[" & ( ~n - 1 ) & "].invoiceId" )
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $lastInvoiceId )]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="450" name="Navigation_"/>
+		<Calculation><![CDATA["invoices|" & $lastInvoiceId]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$r]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

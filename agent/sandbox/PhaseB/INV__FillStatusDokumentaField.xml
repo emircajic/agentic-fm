@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: One-shot backfill — set StatusDokumenta from fiscalization state across ALL invoices via two epSQL UPDATEs. Replaces the Dev-layout loop body of INV__FillStatusDokumentaField (728). Improvement over the original: Reklamacija records are excluded so their status is never clobbered.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON): dryRun (optional — 1 = report counts only, write nothing)&#xD;&#xD;RETURNS: data.racun (rows with a fiscal number), data.predracun (rows without), data.dryRun&#xD;&#xD;RULES: BrojFiskalnogRacuna present → "Račun"; absent → "Predračun"; StatusDokumenta = "Reklamacija" untouched.</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "dryRun" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "INV__FillStatusDokumentaField" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Count</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT ( * ) FROM \"I__INVOICES\" WHERE \"BrojFiskalnogRacuna\" IS NOT NULL AND \"StatusDokumenta\" <> 'Reklamacija'" ;
+	"useSQLResult=rs_c1"
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "count" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$countRacun</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "rs_c1" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_c1" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT ( * ) FROM \"I__INVOICES\" WHERE \"BrojFiskalnogRacuna\" IS NULL AND \"StatusDokumenta\" <> 'Reklamacija'" ;
+	"useSQLResult=rs_c2"
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$countPredracun</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "rs_c2" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_c2" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Write</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[GetAsBoolean ( $dryRun ) = False]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"I__INVOICES\" SET \"StatusDokumenta\" = 'Račun' WHERE \"BrojFiskalnogRacuna\" IS NOT NULL AND \"StatusDokumenta\" <> 'Reklamacija'" ;
+	"" ;
+	""
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAIL" ; $err ; "Račun" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"I__INVOICES\" SET \"StatusDokumenta\" = 'Predračun' WHERE \"BrojFiskalnogRacuna\" IS NULL AND \"StatusDokumenta\" <> 'Reklamacija'" ;
+	"" ;
+	""
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAIL" ; $err ; "Predračun" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "racun" ; $countRacun ; JSONNumber ] ;
+	[ "predracun" ; $countPredracun ; JSONNumber ] ;
+	[ "dryRun" ; GetAsBoolean ( $dryRun ) ; JSONBoolean ]
+) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="780" name="UTIL__FlushLog"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Thin UI shim — generate a Račun or Predračun for the current invoice, then refresh the proforma popover state. Modernized from 673: delegates to Process Invoice (UI) / the New API 2 stack instead of the retired "Process Invoice" (593), and to the dispatcher's proformaPopover action instead of calling PredracuniPopoverScript (642) directly.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON): passed through to Process Invoice (UI) — operation | invoiceId (defaults to current record).&#xD;RETURNS: the Process Invoice (UI) result envelope.</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$p</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$p</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( JSONGetElement ( $p ; "invoiceId" ) ) ;
+	JSONSetElement ( If ( JSONIsValid ( $p ) ; $p ; "{}" ) ; "invoiceId" ; I__INVOICES::PrimaryKey ; JSONString ) ;
+	$p
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="882" name="Process Invoice (UI)"/>
+		<Calculation><![CDATA[$p]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$result</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="0" name="I__InvoicesDispatcher"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "action" ; "proformaPopover" ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[$result]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

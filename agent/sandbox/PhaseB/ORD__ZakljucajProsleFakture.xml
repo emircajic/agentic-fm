@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Headless worker — lock all Primke received before a cutoff date (Locked = 1) via one epSQL UPDATE. Replaces the layout/find/loop body of ORD__ZaključajProšleFakture (663). Shared script — modernized on first encounter per the Phase B worklist; name kept, no re-prefix.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON): cutoffDate (optional — lock Primke with DatumPrimitka strictly before this date; default 1.1.2026)&#xD;&#xD;RETURNS: data.locked — number of rows that were not yet locked, data.cutoff&#xD;&#xD;Idempotent: re-running affects no additional rows.</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "cutoffDate" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "ORD__ZaključajProšleFakture" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$cutoff</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $cutoffDate ) ; Date ( 1 ; 1 ; 2026 ) ; GetAsDate ( $cutoffDate ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: CountUnlocked</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT ( * ) FROM \"Primke\" WHERE \"DatumPrimitka\" < ? AND ( \"Locked\" IS NULL OR \"Locked\" <> 1 )" ;
+	"useSQLResult=rs_cnt" ;
+	$cutoff
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "count" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$countToLock</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "rs_cnt" ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_cnt" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Lock</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"Primke\" SET \"Locked\" = 1 WHERE \"DatumPrimitka\" < ?" ;
+	"" ;
+	$cutoff
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAIL" ; $err ; "Primke.Locked" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "locked" ; $countToLock ; JSONNumber ] ;
+	[ "cutoff" ; GetAsText ( $cutoff ) ; JSONString ]
+) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="780" name="UTIL__FlushLog"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

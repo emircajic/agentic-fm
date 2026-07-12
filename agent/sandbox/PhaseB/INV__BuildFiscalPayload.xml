@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Build the fiscal API payload for one invoice, entirely from invoiceId via epSQL. Context-agnostic — no current-record / relationship dependence, no layout hops. PSoS/OData-safe. PHASE B CHANGE: epSQL FROM-clauses moved off the legacy octopus TOs — "Invoices" → "I__INVOICES", "InvoiceLines" → "I__InvoiceLines" — so the legacy TOs can be amputated. No other change.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON): invoiceId (required).&#xD;RETURNS: data.payload (the fiscal JSON object) on success; Response errors otherwise.</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "invoiceId" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $invoiceId )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "invoiceId is required" ; "invoiceId" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Header + company + client (one joined query)</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sqlHeader</Name>
+		<Value><Calculation><![CDATA["SELECT i.\"BrojFakture\", i.\"NacinPlacanja\", i.\"Napomene\", i.\"Prispijeće\", " &
+"c.\"CompanyType\", c.\"FiscalRateCode\", " &
+"cl.\"IDBroj\", cl.\"PDVBroj\", cl.\"DisplayName_Display\", " &
+"cl.\"MainAddressStreet\", cl.\"MainAddressCity\", cl.\"MainAddressPostalCode\" " &
+"FROM \"I__INVOICES\" i " &
+"LEFT JOIN \"Company\" c ON c.\"PrimaryKey\" = i.\"ForeignKeyCompanyID\" " &
+"LEFT JOIN \"Clients\" cl ON cl.\"PrimaryKey\" = i.\"ForeignKeyClientID\" " &
+"WHERE i.\"PrimaryKey\" = ?"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute ( $sqlHeader ; "useSQLResult=rs_hdr" ; $invoiceId )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "header" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[epSQLResultRowCount ( "rs_hdr" ) = 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND" ; "Invoice not found: " & $invoiceId ; "invoiceId" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$brojFakture</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nacinPlacanja</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$napomene</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$prispijece</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 3 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyType</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 4 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$fiscalRateCode</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 5 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$idBroj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 6 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$pdvBroj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 7 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$displayName</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 8 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$adresa</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 9 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$grad</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 10 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$postanskiBroj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 11 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Business rule — Virman requires buyer ID broj</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $idBroj ) and $nacinPlacanja = "Virman"]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "VIRMAN_NO_IDBROJ" ; "Virman placanje nije dozvoljeno bez ID broja kupca." ; "idBroj" ; JSONSetElement ( "{}" ; "invoiceId" ; $invoiceId ; JSONString ) ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Lines → stavke array</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sqlLines</Name>
+		<Value><Calculation><![CDATA["SELECT \"Description\", \"Qty\", \"Rate\", \"Discount\", \"JM\", \"Sifra\" " &
+"FROM \"I__InvoiceLines\" WHERE \"ForeignKeyInvoiceID\" = ? ORDER BY \"PrimaryKey\""]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute ( $sqlLines ; "useSQLResult=rs_lines" ; $invoiceId )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "lines" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lineCount</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_lines" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavke</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i ≥ $lineCount]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sifraRaw</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( $i ; 5 ; "rs_lines" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$sifra</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $sifraRaw ) ; $sifraRaw ; $brojFakture & "-" & ( $i + 1 ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavka</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $sifra ; JSONString ] ;
+	[ "naziv" ; epSQLResult ( $i ; 0 ; "rs_lines" ) ; JSONString ] ;
+	[ "jm" ; epSQLResult ( $i ; 4 ; "rs_lines" ) ; JSONString ] ;
+	[ "cijena" ; GetAsNumber ( epSQLResult ( $i ; 2 ; "rs_lines" ) ) ; JSONNumber ] ;
+	[ "stopa" ; $fiscalRateCode ; JSONString ] ;
+	[ "kolicina" ; GetAsNumber ( epSQLResult ( $i ; 1 ; "rs_lines" ) ) ; JSONNumber ] ;
+	[ "rabat" ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs_lines" ) ) ; JSONNumber ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavke</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $stavke ; "[" & $i & "]" ; $stavka ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_lines" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Buyer + payment + assemble</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$kupacJSON</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $idBroj ) ;
+	JSONSetElement ( "{}" ;
+		[ "idBroj" ; $idBroj ; JSONString ] ;
+		[ "pdvBroj" ; $pdvBroj ; JSONString ] ;
+		[ "naziv" ; FilterEmojis ( $displayName ) ; JSONString ] ;
+		[ "adresa" ; $adresa ; JSONString ] ;
+		[ "grad" ; $grad ; JSONString ] ;
+		[ "postanskiBroj" ; $postanskiBroj ; JSONString ]
+	) ;
+	"{}"
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$placanjeJSON</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "oznaka" ; $nacinPlacanja ; JSONString ] ;
+	[ "iznos" ; 0 ; JSONNumber ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$nacinPlacanja = "Virman"]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$placanjeJSON</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $placanjeJSON ; "rok" ; $prispijece ; JSONNumber )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "companyType" ; $companyType ; JSONString ] ;
+	[ "brojZahtjeva" ; "FR-" & $invoiceId ; JSONString ] ;
+	[ "brojRacuna" ; $brojFakture ; JSONString ] ;
+	[ "kupac" ; $kupacJSON ; JSONObject ] ;
+	[ "napomena" ; $napomene ; JSONString ] ;
+	[ "stavke" ; $stavke ; JSONArray ] ;
+	[ "placanja[0]" ; $placanjeJSON ; JSONObject ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $idBroj )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $payload ; "pdfKupac" ;
+	JSONSetElement ( "{}" ; "naziv" ; FilterEmojis ( $displayName ) ; JSONString ) ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ; "payload" ; $payload ; JSONObject ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

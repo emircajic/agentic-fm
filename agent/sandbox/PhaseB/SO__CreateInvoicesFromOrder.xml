@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Headless orchestrator — build invoice(s) from a service order entirely via epSQL, split by booking method, delegating each invoice to SO__CreateSingleInvoice. Carries the data half of the old SO__NapraviNoviInvoice (631): header + vehicle read, line collection with returned-quantity netting, type split, company resolution. No layouts, no found sets, no GTRR/Constrain.</Text>
+	</Step>
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON): orderId (required — ServiceOrders PrimaryKey)&#xD;  method (required — "SPLIT" | "ALL_DOO" | "ALL_OD")&#xD;&#xD;RETURNS: data.invoices — array of {invoiceId, companyType, lineCount}; data.skippedReturned — fully-returned lines omitted&#xD;&#xD;PARITY with 631: the old Constrain omitted LineStatus_Calculation = "Returned" (installed qty 0). Reproduced by netting Qty − SUM(StavkePovrata.Kolicina) per line in SQL and skipping rows ≤ 0. SPLIT books Roba lines on DOO and Usluga lines on OD.&#xD;Headless litmus: PSoS/OData-safe. Removes Dev Service Orders / Dev Service Order Lines dependencies.</Text>
+		<Field>$README</Field>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "orderId|method" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "SO__CreateInvoicesFromOrder" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $orderId ) or IsEmpty ( FilterValues ( $method ; List ( "SPLIT" ; "ALL_DOO" ; "ALL_OD" ) ) )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "orderId is required and method must be SPLIT, ALL_DOO or ALL_OD" ; "" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Order header + vehicle (one joined query)</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT so.\"ServiceOrderNumber\", so.\"ForeignKeyClient\", v.\"PlateNumber\", v.\"FullName_Display\" " &
+	"FROM \"ServiceOrders\" so " &
+	"LEFT JOIN \"Vehicles\" v ON v.\"PrimaryKey\" = so.\"ForeignKeyVehicle\" " &
+	"WHERE so.\"PrimaryKey\" = ?" ;
+	"useSQLResult=rs_so" ;
+	$orderId
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "order" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[epSQLResultRowCount ( "rs_so" ) = 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND" ; "Service order not found: " & $orderId ; "orderId" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_so" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$orderNumber</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "rs_so" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$customerID</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 ; "rs_so" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$vehicleDetails</Name>
+		<Value><Calculation><![CDATA[Let ( [
+	~plate = epSQLResult ( 0 ; 2 ; "rs_so" ) ;
+	~fullName = epSQLResult ( 0 ; 3 ; "rs_so" )
+] ;
+
+	Case (
+		IsEmpty ( ~plate ) ; ~fullName ;
+
+		~fullName & " • " & ~plate
+	)
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_so" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Returned quantities per line (replaces the Constrain omit "Returned")</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT sp.\"ForeignKeyServiceOrderLineID\", SUM ( sp.\"Kolicina\" ) " &
+	"FROM \"StavkePovrata\" sp " &
+	"INNER JOIN \"ServiceOrderLines\" sol ON sol.\"PrimaryKey\" = sp.\"ForeignKeyServiceOrderLineID\" " &
+	"WHERE sol.\"ForeignKeyServiceOrder\" = ? " &
+	"GROUP BY sp.\"ForeignKeyServiceOrderLineID\"" ;
+	"useSQLResult=rs_ret" ;
+	$orderId
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "returns" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$returnedMap</Name>
+		<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i ≥ epSQLResultRowCount ( "rs_ret" )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$returnedMap</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $returnedMap ; epSQLResult ( $i ; 0 ; "rs_ret" ) ; GetAsNumber ( epSQLResult ( $i ; 1 ; "rs_ret" ) ) ; JSONNumber )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_ret" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Collect lines, net returned qty, skip fully-returned</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT \"PrimaryKey\", \"Description\", \"Qty\", \"Rate\", \"LineType_Calculation\", \"JM\", \"ForeignKeyStavkaPrimkeID\" " &
+	"FROM \"ServiceOrderLines\" WHERE \"ForeignKeyServiceOrder\" = ? ORDER BY \"PrimaryKey\"" ;
+	"useSQLResult=rs_lines" ;
+	$orderId
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "lines" ; "{}" ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$materijalLines</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$uslugaLines</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$skippedReturned</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+	<Step enable="True" id="72" name="Exit Loop If">
+		<Calculation><![CDATA[$i ≥ epSQLResultRowCount ( "rs_lines" )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$qtyInstalled</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( $i ; 2 ; "rs_lines" ) ) - GetAsNumber ( JSONGetElement ( $returnedMap ; epSQLResult ( $i ; 0 ; "rs_lines" ) ) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$qtyInstalled ≤ 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$skippedReturned</Name>
+		<Value><Calculation><![CDATA[$skippedReturned + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="69" name="Else"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lineType</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( $i ; 4 ; "rs_lines" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lineObject</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "description" ; epSQLResult ( $i ; 1 ; "rs_lines" ) ; JSONString ] ;
+	[ "qty" ; $qtyInstalled ; JSONNumber ] ;
+	[ "rate" ; GetAsNumber ( epSQLResult ( $i ; 3 ; "rs_lines" ) ) ; JSONNumber ] ;
+	[ "type" ; $lineType ; JSONString ] ;
+	[ "jm" ; epSQLResult ( $i ; 5 ; "rs_lines" ) ; JSONString ] ;
+	[ "stavkaPrimkeID" ; epSQLResult ( $i ; 6 ; "rs_lines" ) ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>SPLIT routes by type; ALL_* keeps everything in materijalLines as a single group</Text>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$method = "SPLIT" and $lineType = "Usluga"]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$uslugaLines</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $uslugaLines ; "[+]" ; $lineObject ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="69" name="Else"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$materijalLines</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $materijalLines ; "[+]" ; $lineObject ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_lines" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="False" id="89" name="# (comment)">
+		<Text>MARK: Resolve target companies per group</Text>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$group1Company</Name>
+		<Value><Calculation><![CDATA[If ( $method = "ALL_OD" ; "OD" ; "DOO" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$invoices</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[ValueCount ( JSONListKeys ( $materijalLines ; "" ) ) > 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="630" name="SO__CreateSingleInvoice"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "orderID" ; $orderId ; JSONString ] ;
+	[ "orderNumber" ; $orderNumber ; JSONString ] ;
+	[ "vehicleDetails" ; $vehicleDetails ; JSONString ] ;
+	[ "customerID" ; $customerID ; JSONString ] ;
+	[ "companyID" ; getCompanyID ( $group1Company ) ; JSONString ] ;
+	[ "companyType" ; $group1Company ; JSONString ] ;
+	[ "linesJSON" ; $materijalLines ; JSONArray ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not Response_HasErrors ( $r )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$invoices</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $invoices ; "[+]" ;
+	JSONSetElement ( "{}" ;
+		[ "invoiceId" ; JSONGetElement ( Response_GetData ( $r ) ; "invoiceId" ) ; JSONString ] ;
+		[ "companyType" ; $group1Company ; JSONString ] ;
+		[ "lineCount" ; JSONGetElement ( Response_GetData ( $r ) ; "lineCount" ) ; JSONNumber ]
+	) ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$method = "SPLIT" and ValueCount ( JSONListKeys ( $uslugaLines ; "" ) ) > 0]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="630" name="SO__CreateSingleInvoice"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "orderID" ; $orderId ; JSONString ] ;
+	[ "orderNumber" ; $orderNumber ; JSONString ] ;
+	[ "vehicleDetails" ; $vehicleDetails ; JSONString ] ;
+	[ "customerID" ; $customerID ; JSONString ] ;
+	[ "companyID" ; getCompanyID ( "OD" ) ; JSONString ] ;
+	[ "companyType" ; "OD" ; JSONString ] ;
+	[ "linesJSON" ; $uslugaLines ; JSONArray ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$r</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not Response_HasErrors ( $r )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$invoices</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $invoices ; "[+]" ;
+	JSONSetElement ( "{}" ;
+		[ "invoiceId" ; JSONGetElement ( Response_GetData ( $r ) ; "invoiceId" ) ; JSONString ] ;
+		[ "companyType" ; "OD" ; JSONString ] ;
+		[ "lineCount" ; JSONGetElement ( Response_GetData ( $r ) ; "lineCount" ) ; JSONNumber ]
+	) ; JSONObject )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[ValueCount ( JSONListKeys ( $invoices ; "" ) ) = 0 and not Response_HasErrors ( $response )]]></Calculation>
+	</Step>
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_AddError ( "NO_LINES" ; "Nalog nema stavki za fakturisanje (sve vraćene ili prazan nalog)." ; "orderId" ; JSONSetElement ( "{}" ; "orderId" ; $orderId ; JSONString ) ; "" )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "invoices" ; $invoices ; JSONArray ] ;
+	[ "skippedReturned" ; $skippedReturned ; JSONNumber ]
+) )]]></Calculation></Value>
+	</Step>
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+	<Step enable="True" id="25" name="Perform Script">
+		<Script id="780" name="UTIL__FlushLog"/>
+		<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+	</Step>
+	<Step enable="True" id="70" name="End If"/>
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>
