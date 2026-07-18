@@ -1,0 +1,2576 @@
+<Script>
+	<ScriptReference id="945" name="I__InvoicesDispatcher"></ScriptReference>
+	<ObjectList membercount="142">
+		<Step hash="CCC06E95270D66B4340762893984D1DA" id="89" name="# (comment)" enable="True">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="PURPOSE: Action-routed UI switchboard for the repointed Invoices layout (anchor I__INVOICES). Every button and trigger on the layout binds here with an &quot;action&quot; param. Owns ONLY front-end concerns — found sets, current-record field toggles, dialogs, windows, popovers, object jumps. All data work delegates to headless workers."></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="EF2C3FE4A2771C5111AE75E8DDEB5AA5" id="61" name="Insert Text" enable="False">
+			<Options>5</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Select" id="4096" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Target">
+					<Variable value="$README">
+						<repetition value="1"></repetition>
+					</Variable>
+				</Parameter>
+				<Parameter type="Text">
+					<Text value="PARAMS (JSON): action (required) + per-action keys.&#13;&#13;VERBS:&#13;  init            — OnLayoutEnter: SETTINGS__EnsureLoaded, then find + list refresh&#13;  load            — re-run find + list refresh from current settings&#13;  filter          — optional tip; persists invoices.currentType, then find + list refresh&#13;  toggleType      — toggle StatusDokumenta Račun/Predračun on current record + receipt number + list refresh&#13;  togglePayment   — cycle NacinPlacanja Gotovina → Virman → Kartica&#13;  changeCompany   — toggle invoices.currentCompany OD/DOO, then find + list refresh&#13;  recalcList      — list refresh only (INV__LoadLastInvoices worker)&#13;  regeneratePDF   — delegate to Process Invoice (UI), operation=regeneratePDF&#13;  refund          — delegate to Process Invoice (UI), operation=refund (dialog lives there)&#13;  printOptions    — open Card Invoice Print card window&#13;  pickClient      — open Card Odabir Klijenta card window&#13;  setPaymentDate  — validate Globals::DatumPlacanja, write DatumPlacanja, close popover&#13;  removeProforma  — clear PDFFile (unlocks), jump to generateProforma object&#13;  proformaPopover — optional tip; set Globals::SelectedInvoiceType, list refresh, jump by fiscal state&#13;&#13;RETURNS: Response_Finalize envelope. Worker errors are absorbed via Response_Absorb.&#13;&#13;CONTEXT: must run on a layout anchored on I__INVOICES (record-bound verbs read the current record).&#13;&#13;Example button binding&#13;Perform Script [ Specified: From list ; “I__InvoicesDispatcher” ; Parameter: JSONSetElement ( &quot;{}&quot; ; &quot;action&quot; ; &quot;toggleType&quot; ; JSONString ) ]"></Text>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="066AEFEB919738986C4D93CE0A62C528" id="89" name="# (comment)" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="93B52A407B5E5DEBA344174A699655E6" id="85" name="Allow User Abort" enable="True">
+			<Options>65536</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Boolean">
+					<Boolean id="131072" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6FF2885DD813B02E5D1A38C7BCC29C0A" id="86" name="Set Error Capture" enable="True">
+			<Options>196608</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Boolean">
+					<Boolean id="131072" value="True"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="985160E3EDB506CE1601E7741A4F33C0" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value></value>
+					<Name value="$action"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="8ED90792DD20ADB91C0CD692C0A7F1F2" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value></value>
+					<Name value="$tip"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="688D6B9BF7DC11C7907ADF60E50F3FBD" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value></value>
+					<Name value="$invoiceId"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="CA705A87E6E7F45A53AFFAA8044C5242" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value></value>
+					<Name value="$datum"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F372C83BA21DF3F8914E5639FED7D88D" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "action|tip|invoiceId|datum" )]]></Text>
+								<ChunkList hash="BBC512605F02B9F5032CBF381C148B29">
+									<Chunk type="CustomFunctionRef">Params.parse</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptParameter</Chunk>
+									<Chunk type="NoRef"> ) ; &quot;action|tip|invoiceId|datum&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="7BCB37BA1DDE7FCCEFCA8173162392EA" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Init ( "{}" )]]></Text>
+								<ChunkList hash="3C6C7CFAF8E4854CC69A3B9CD977D83E">
+									<Chunk type="CustomFunctionRef">Response_Init</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="031CE468F0F2AA13DDAF5BC4AFC2E229" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Log.add ( "info" ; "DISPATCH" ; "I__InvoicesDispatcher: " & $action ; Get(ScriptParameter ))]]></Text>
+								<ChunkList hash="E84B44C11D6CE7E5BA5842C6B236BDF9">
+									<Chunk type="CustomFunctionRef">Log.add</Chunk>
+									<Chunk type="NoRef"> ( &quot;info&quot; ; &quot;DISPATCH&quot; ; &quot;I__InvoicesDispatcher: &quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$action</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">ScriptParameter</Chunk>
+									<Chunk type="NoRef"> ))</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="191286D3808F29F7837967842BAF39A6" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[If ( IsEmpty ( $invoiceId ) ; I__INVOICES::PrimaryKey ; $invoiceId )]]></Text>
+								<ChunkList hash="023A1918369DEBFA45B0B8E5FF1CB5FA">
+									<Chunk type="FunctionRef">If</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">IsEmpty</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="VariableReference">$invoiceId</Chunk>
+									<Chunk type="NoRef"> ) ; </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="1" name="PrimaryKey" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="VariableReference">$invoiceId</Chunk>
+									<Chunk type="NoRef"> )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$invoiceId"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="94A888EC8635CED0491C2E65938FA8A4" id="89" name="# (comment)" enable="True">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="Tail flags — branches request shared work instead of duplicating it"></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="B478972659FF24C027D840FD1CDAFD72" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[False]]></Text>
+								<ChunkList hash="01ABFC750A0C942167651C40D088531D">
+									<Chunk type="FunctionRef">False</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doFind"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3F07C1183061EA943F5142D2465CBF91" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[False]]></Text>
+								<ChunkList hash="01ABFC750A0C942167651C40D088531D">
+									<Chunk type="FunctionRef">False</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="E4DFAA1E50859ADD8DF48ADB51507B8E" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[""]]></Text>
+								<ChunkList hash="26631CDF3EEB0CE74C7FC665903CAC32">
+									<Chunk type="NoRef">&quot;&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$gotoObject"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="C43FCA243057E3447551524688A7621B" id="89" name="# (comment)" enable="False">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="MARK: Switch"></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="36472C1A48F2039404F3CFA88DE04A6D" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[IsEmpty ( $action )]]></Text>
+							<ChunkList hash="347A635DDF6D675D1918D87B6D7493EB">
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="A32486AA792AEA572B16E8D2A1E03093" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_AddError ( "MISSING_PARAM" ; "action is required" ; "action" ; "{}" ; "" )]]></Text>
+								<ChunkList hash="5CB6EB8B700B8CA1D25B2E1938F59873">
+									<Chunk type="CustomFunctionRef">Response_AddError</Chunk>
+									<Chunk type="NoRef"> ( &quot;MISSING_PARAM&quot; ; &quot;action is required&quot; ; &quot;action&quot; ; &quot;{}&quot; ; &quot;&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="9FCC1CD4EC45946806278FA70C105A96" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "init"]]></Text>
+							<ChunkList hash="222040CA5B9ADD78ADAD2399580B020F">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;init&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="CE263A96DB4555E358FC6EDEEC586290" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="758" name="SETTINGS__EnsureLoaded"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[""]]></Text>
+								<ChunkList hash="26631CDF3EEB0CE74C7FC665903CAC32">
+									<Chunk type="NoRef">&quot;&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="11A5EE14F2988D0BFFF10A3C2B5B7ACA" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doFind"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3CFC7E8B265C6CDA1A39ACE79284CBE4" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="952741F191667D00BC572100AACA729A" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "load"]]></Text>
+							<ChunkList hash="25A7A8D3227E2ECAE846680A7F189FAF">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;load&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="ECA78063A4F41C0C06E505074A82C9A9" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doFind"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="FF434F46F714238F0292AD343E3889F5" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="22A3BB628463FBAAC4A5F4D071FDDD68" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "filter"]]></Text>
+							<ChunkList hash="22209AE545D87CF978C62A89B81F739C">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;filter&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="95D8F7E15CE159D3BDA01E75C5F28A1F" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[not IsEmpty ( $tip )]]></Text>
+							<ChunkList hash="9A74D94E2692B6F4C2788493421ADDE8">
+								<Chunk type="FunctionRef">not</Chunk>
+								<Chunk type="NoRef"> </Chunk>
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$tip</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="4AFE7CF166344FBD38E3456B60C04E14" id="1" name="Perform Script" enable="False">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="757" name="SETTINGS__SetValue"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ;	[ "key" ; "invoices.currentType" ; JSONString ] ;	[ "value" ; $tip ; JSONString ] ;	[ "traceID" ; $traceID ; JSONString ])]]></Text>
+								<ChunkList hash="1AA2538580E08B443F8B99AAA7255C89">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ;&#13;&#09;[ &quot;key&quot; ; &quot;invoices.currentType&quot; ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;value&quot; ; </Chunk>
+									<Chunk type="VariableReference">$tip</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ]&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="40F885E4F161E900DB998C628783F82A" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[SetSetting ( "invoices.currentType" ; $tip )]]></Text>
+								<ChunkList hash="1FB211B57FE4F2E080DA364D94DD5AB4">
+									<Chunk type="CustomFunctionRef">SetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentType&quot; ; </Chunk>
+									<Chunk type="VariableReference">$tip</Chunk>
+									<Chunk type="NoRef"> )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="ED241583C32012821F21564CF1629FF3" id="141" name="Set Variable" enable="False">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Text>
+								<ChunkList hash="38BA191191148609029005AF3A99CF5E">
+									<Chunk type="CustomFunctionRef">Response_Absorb</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef"> ) )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6E017C866C08940D8EC949F8DD57166E" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="56D17848C328187B654AA96F5F4C985D" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doFind"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="5F631DB25A548993A25D322FF70F42AD" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="68B18F369F2FADE050E63ECA42B44CD4" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "toggleType"]]></Text>
+							<ChunkList hash="4465F6D6A091AB7F49427E50203D7D3C">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;toggleType&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3C1B3DC0822BE8DB420EDA8ED3C69E30" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="21" name="StatusDokumenta">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[If ( I__INVOICES::StatusDokumenta = "Račun" ; "Predračun" ; "Račun" )]]></Text>
+							<ChunkList hash="EECFCE9E79229FB2D2BD328236AD3E12">
+								<Chunk type="FunctionRef">If</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="FieldRef">
+									<FieldReference id="21" name="StatusDokumenta" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> = &quot;Račun&quot; ; &quot;Predračun&quot; ; &quot;Račun&quot; )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F17CD4B053931BD2041BA2257B2A2C03" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[I__INVOICES::StatusDokumenta]]></Text>
+								<ChunkList hash="105E45D8F3889B6EB1B19037C524376F">
+									<Chunk type="FieldRef">
+										<FieldReference id="21" name="StatusDokumenta" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$invoiceType"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="CFE52B31859090BE5C0CFC00D8F795ED" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[I__Company::ReceiptPrefix]]></Text>
+								<ChunkList hash="C670646CC831660BC357CD9C52E45DA3">
+									<Chunk type="FieldRef">
+										<FieldReference id="8" name="ReceiptPrefix" repetition="1">
+											<TableOccurrenceReference id="1065286" name="I__Company"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$prefix"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="5B9F6D111781F53E2F3B63134C5D60B4" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[I__INVOICES::StatusDokumenta = "Predračun"]]></Text>
+							<ChunkList hash="4B591FF2489EA825A67A34E69684EC9D">
+								<Chunk type="FieldRef">
+									<FieldReference id="21" name="StatusDokumenta" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> = &quot;Predračun&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="C670BB4209FF675859DA273A610C6F2A" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA["P" & $prefix]]></Text>
+								<ChunkList hash="CC6921311180E27D5ECADBAB0885188C">
+									<Chunk type="NoRef">&quot;P&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$prefix</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$prefix"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6AA940E0CC002AD155AD28959CBC1820" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="9EA3558579233FEF99D79C1347532E93" id="89" name="# (comment)" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="BCBB996248F437D4F7B2FA96E1405BD4" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Right("0" & Month(Get(CurrentDate)) ; 2)]]></Text>
+								<ChunkList hash="B0AFCC0D870E734253807875C6BB20A3">
+									<Chunk type="FunctionRef">Right</Chunk>
+									<Chunk type="NoRef">(&quot;0&quot; &amp; </Chunk>
+									<Chunk type="FunctionRef">Month</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">CurrentDate</Chunk>
+									<Chunk type="NoRef">)) ; 2)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$month"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D0090F2C118D5EA0A133418196A6F619" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Right(Year(Get(CurrentDate)) ; 2)]]></Text>
+								<ChunkList hash="EBA9C8FB32D837CF208F3A052B8A8780">
+									<Chunk type="FunctionRef">Right</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">Year</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">CurrentDate</Chunk>
+									<Chunk type="NoRef">)) ; 2)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$year"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="054470955E2BD9CF016F85FA31986B38" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Let ( [ searchString = $prefix & "-" & $month & "-%-" & $year ; broj = ExecuteSQL ( "SELECT COUNT (PrimaryKey) FROM I__Invoices WHERE BrojFakture LIKE ?"; ""; "" ; searchString );broj = broj+1] ; Right("0000" & broj; 4))]]></Text>
+								<ChunkList hash="1EAC5473B19B884C6A4047FA77649CF9">
+									<Chunk type="FunctionRef">Let</Chunk>
+									<Chunk type="NoRef"> ( [ &#13;</Chunk>
+									<Chunk type="VariableReference">searchString</Chunk>
+									<Chunk type="NoRef"> = </Chunk>
+									<Chunk type="VariableReference">$prefix</Chunk>
+									<Chunk type="NoRef"> &amp; &quot;-&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$month</Chunk>
+									<Chunk type="NoRef"> &amp; &quot;-%-&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$year</Chunk>
+									<Chunk type="NoRef"> ; &#13;</Chunk>
+									<Chunk type="VariableReference">broj</Chunk>
+									<Chunk type="NoRef"> = </Chunk>
+									<Chunk type="FunctionRef">ExecuteSQL</Chunk>
+									<Chunk type="NoRef"> ( &quot;SELECT COUNT (PrimaryKey) FROM I__Invoices WHERE BrojFakture LIKE ?&quot;; &quot;&quot;; &quot;&quot; ; </Chunk>
+									<Chunk type="VariableReference">searchString</Chunk>
+									<Chunk type="NoRef"> );&#13;</Chunk>
+									<Chunk type="VariableReference">broj</Chunk>
+									<Chunk type="NoRef"> = </Chunk>
+									<Chunk type="VariableReference">broj</Chunk>
+									<Chunk type="NoRef">+1&#13;] ; </Chunk>
+									<Chunk type="FunctionRef">Right</Chunk>
+									<Chunk type="NoRef">(&quot;0000&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">broj</Chunk>
+									<Chunk type="NoRef">; 4))</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$seq"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="9E0348D114D84D8FFE815A0D4092B6DD" id="89" name="# (comment)" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="565B008332AD49700AD1559A3F94FDAF" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[$prefix & "-" & $month & "-" & $seq & "-" & $year]]></Text>
+								<ChunkList hash="3FD89FB9B6A5C1DB0CA3E6A3066EA5DB">
+									<Chunk type="VariableReference">$prefix</Chunk>
+									<Chunk type="NoRef"> &amp; &quot;-&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$month</Chunk>
+									<Chunk type="NoRef"> &amp; &quot;-&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$seq</Chunk>
+									<Chunk type="NoRef"> &amp; &quot;-&quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$year</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$receiptNumber"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6E776325C354B75154B2221D3325A4BB" id="89" name="# (comment)" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F1C6708F6EF33CF15827155562A6C5EA" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="6" name="BrojFakture">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[$receiptNumber]]></Text>
+							<ChunkList hash="F8FB92DAB63B153BA5339755FFCE220C">
+								<Chunk type="VariableReference">$receiptNumber</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="4BB96CAA5ABFEBAE197C1C86CB2DB0CF" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="33" name="SelectedInvoiceType">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[$invoiceType]]></Text>
+							<ChunkList hash="DDD28FA76DB1E752BC0005013D328A87">
+								<Chunk type="VariableReference">$invoiceType</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3DB1EFD515B9822D89312BE3C6809E95" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="4F2D905C1D5310FA8FBCCFF66AA5ED67" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "togglePayment"]]></Text>
+							<ChunkList hash="012AFA80232A04DF6FC2985E5CF8BF33">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;togglePayment&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="1F6E4E89735CB677930D32AE169C0B38" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="9" name="NacinPlacanja">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[Case (	I__INVOICES::NacinPlacanja = "Gotovina" ; "Virman" ;	I__INVOICES::NacinPlacanja = "Virman" ; "Kartica" ;	"Gotovina")]]></Text>
+							<ChunkList hash="9384919A0F368C2A58FB06309EE69F31">
+								<Chunk type="FunctionRef">Case</Chunk>
+								<Chunk type="NoRef"> (&#13;&#09;</Chunk>
+								<Chunk type="FieldRef">
+									<FieldReference id="9" name="NacinPlacanja" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> = &quot;Gotovina&quot; ; &quot;Virman&quot; ;&#13;&#13;&#09;</Chunk>
+								<Chunk type="FieldRef">
+									<FieldReference id="9" name="NacinPlacanja" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> = &quot;Virman&quot; ; &quot;Kartica&quot; ;&#13;&#13;&#09;&quot;Gotovina&quot;&#13;)</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="7A4BFF818B8AA1CC981187A5E4A046A5" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "changeCompany"]]></Text>
+							<ChunkList hash="29362E408B6417FD7DFF59328A2AEAAE">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;changeCompany&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="058A536257573DE392C78545887487B9" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[If ( GetSetting ( "invoices.currentCompany" ) = "OD" ; "DOO" ; "OD" )]]></Text>
+								<ChunkList hash="57D9FA2BC8058E7085EEDD925DE263EB">
+									<Chunk type="FunctionRef">If</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="CustomFunctionRef">GetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentCompany&quot; ) = &quot;OD&quot; ; &quot;DOO&quot; ; &quot;OD&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$newCompany"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="23353BB07BC51CE817331FE61E8AF041" id="1" name="Perform Script" enable="False">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="757" name="SETTINGS__SetValue"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ;	[ "key" ; "invoices.currentCompany" ; JSONString ] ;	[ "value" ; $newCompany ; JSONString ] ;	[ "traceID" ; $traceID ; JSONString ])]]></Text>
+								<ChunkList hash="182C5C6BFB405EA8BDD9E497BE230D7E">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ;&#13;&#09;[ &quot;key&quot; ; &quot;invoices.currentCompany&quot; ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;value&quot; ; </Chunk>
+									<Chunk type="VariableReference">$newCompany</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ]&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="1ACDBCD17C0653C5C878383DDFE0F531" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[SetSetting("invoices.currentCompany"; $newCompany)]]></Text>
+								<ChunkList hash="603CC85717AC36F393AD8B0099688905">
+									<Chunk type="CustomFunctionRef">SetSetting</Chunk>
+									<Chunk type="NoRef">(&quot;invoices.currentCompany&quot;; </Chunk>
+									<Chunk type="VariableReference">$newCompany</Chunk>
+									<Chunk type="NoRef">)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="BEF470A37DD4D811267F46F764A20AB9" id="141" name="Set Variable" enable="False">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Text>
+								<ChunkList hash="38BA191191148609029005AF3A99CF5E">
+									<Chunk type="CustomFunctionRef">Response_Absorb</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef"> ) )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="40EA4B63958CAC9555169AB675093A30" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doFind"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="7A368CB2206CAE2D795101505C657FC9" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="8279D46FC7DE8432963083F9EBE58A8A" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "recalcList"]]></Text>
+							<ChunkList hash="3CBE0823BEC4159C2F0ED5AA0FC0E26F">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;recalcList&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F15C8CEC5206309958F0B663D916D782" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="C0D5EB011FA2D00EEEB47D8AD78A040B" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "regeneratePDF"]]></Text>
+							<ChunkList hash="9116D1D22DA6B0F951442E37430275E2">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;regeneratePDF&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="5F3E9D931D6499C1095268BF3C785BB1" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="882" name="Process Invoice (UI)"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ;	[ "operation" ; "regeneratePDF" ; JSONString ] ;	[ "invoiceId" ; $invoiceId ; JSONString ] ;	[ "traceID" ; $traceID ; JSONString ])]]></Text>
+								<ChunkList hash="DFBF27433976E34830F0F15CDAE4648A">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ;&#13;&#09;[ &quot;operation&quot; ; &quot;regeneratePDF&quot; ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;invoiceId&quot; ; </Chunk>
+									<Chunk type="VariableReference">$invoiceId</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ]&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3CCA5F82D88D528C04997E933F0F54C2" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Text>
+								<ChunkList hash="38BA191191148609029005AF3A99CF5E">
+									<Chunk type="CustomFunctionRef">Response_Absorb</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef"> ) )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="385BC7336E5C67DB86F6B0E40CFE523E" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "refund"]]></Text>
+							<ChunkList hash="EAB5EB897F1DB1FCFF59D80D54707C64">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;refund&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="69BDD9C10DC314CDE05D37A7DCE62FFA" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="882" name="Process Invoice (UI)"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ;	[ "operation" ; "refund" ; JSONString ] ;	[ "invoiceId" ; $invoiceId ; JSONString ] ;	[ "datum" ; $datum ; JSONString ] ;	[ "traceID" ; $traceID ; JSONString ])]]></Text>
+								<ChunkList hash="B7927ED3019D48091D584F5A97C2071E">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ;&#13;&#09;[ &quot;operation&quot; ; &quot;refund&quot; ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;invoiceId&quot; ; </Chunk>
+									<Chunk type="VariableReference">$invoiceId</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;datum&quot; ; </Chunk>
+									<Chunk type="VariableReference">$datum</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ]&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="96FF5A75638D6D781307FB3CE4DC29A3" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Text>
+								<ChunkList hash="38BA191191148609029005AF3A99CF5E">
+									<Chunk type="CustomFunctionRef">Response_Absorb</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef"> ) )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="B2AA9463D4113FA42661F1F091BE3EA3" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D0DD2BEEAF89F5A4D78748950D6CBDD4" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "printOptions"]]></Text>
+							<ChunkList hash="C03346AED210D66D425198DA6C216939">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;printOptions&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="9335289630F2E34BD840C751ED09BD6B" id="75" name="Commit Records/Requests" enable="True">
+			<Options>128</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Skip data entry validation" id="256" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="Force Commit" id="512" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="142A3C2E071AD886A0BAC4DD887FB000" id="122" name="New Window" enable="True">
+			<Options>16394</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="WindowReference">
+					<WindowReference>
+						<Style name="Card" value="3221291024"></Style>
+						<Name>
+							<Calculation datatype="1" position="0">
+								<Calculation>
+									<Text><![CDATA["Opcije štampe"]]></Text>
+									<ChunkList hash="551263D69AFCC5B2152DEB9B98377BB7">
+										<Chunk type="NoRef">&quot;Opcije štampe&quot;</Chunk>
+									</ChunkList>
+								</Calculation>
+							</Calculation>
+						</Name>
+						<LayoutReferenceContainer value="5">
+							<LayoutReference id="239" name="Card Invoice Print"></LayoutReference>
+						</LayoutReferenceContainer>
+						<Bounds>
+							<height></height>
+							<width></width>
+							<top></top>
+							<left></left>
+						</Bounds>
+						<Options value="3221291024">
+							<Close>True</Close>
+							<Minimize>False</Minimize>
+							<Maximize>False</Maximize>
+							<Resize>False</Resize>
+							<MenuBar>False</MenuBar>
+							<Toolbar>False</Toolbar>
+							<DimParentWindow>False</DimParentWindow>
+						</Options>
+					</WindowReference>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="3C90FDAA04B709950457553EB603707C" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "pickClient"]]></Text>
+							<ChunkList hash="FC9AE278AAE84FCD7CAFE1F701E945C5">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;pickClient&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D6478507A7086637EBFE9FDEECB7DC73" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="50" name="ClientSelectorTarget">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[I__INVOICES::PrimaryKey]]></Text>
+							<ChunkList hash="C052665C3DB0D754F7A0AD233BB5C904">
+								<Chunk type="FieldRef">
+									<FieldReference id="1" name="PrimaryKey" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="153646E2C1BD6C1DEBC7ACB41EDAF20B" id="122" name="New Window" enable="True">
+			<Options>16394</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="WindowReference">
+					<WindowReference>
+						<Style name="Card" value="3221291024"></Style>
+						<Name>
+							<Calculation datatype="1" position="0">
+								<Calculation>
+									<Text><![CDATA["Odabir klijenta"]]></Text>
+									<ChunkList hash="59742E4714ED2A90A08B715032CABDE7">
+										<Chunk type="NoRef">&quot;Odabir klijenta&quot;</Chunk>
+									</ChunkList>
+								</Calculation>
+							</Calculation>
+						</Name>
+						<LayoutReferenceContainer value="5">
+							<LayoutReference id="181" name="Card Odabir Klijenta"></LayoutReference>
+						</LayoutReferenceContainer>
+						<Bounds>
+							<height>
+								<Calculation datatype="1" position="1">
+									<Calculation>
+										<Text><![CDATA[CardWindowHeight]]></Text>
+										<ChunkList hash="0E2AC9497E94A50EBD1D56E2FFA45978">
+											<Chunk type="CustomFunctionRef">CardWindowHeight</Chunk>
+										</ChunkList>
+									</Calculation>
+								</Calculation>
+							</height>
+							<width>
+								<Calculation datatype="1" position="2">
+									<Calculation>
+										<Text><![CDATA[CardWindowWidth]]></Text>
+										<ChunkList hash="D6E52DE67A86BC43717381C35DC28524">
+											<Chunk type="CustomFunctionRef">CardWindowWidth</Chunk>
+										</ChunkList>
+									</Calculation>
+								</Calculation>
+							</width>
+							<top></top>
+							<left></left>
+						</Bounds>
+						<Options value="3221291024">
+							<Close>True</Close>
+							<Minimize>False</Minimize>
+							<Maximize>False</Maximize>
+							<Resize>False</Resize>
+							<MenuBar>False</MenuBar>
+							<Toolbar>False</Toolbar>
+							<DimParentWindow>False</DimParentWindow>
+						</Options>
+					</WindowReference>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="BCAF324DB5D63319844172B30F4FF305" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "setPaymentDate"]]></Text>
+							<ChunkList hash="B7D96926E36EB7A885C8F07932F02539">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;setPaymentDate&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="BFA0D507444E9D739C792168B54D56CE" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[IsEmpty ( Globals::DatumPlacanja )]]></Text>
+							<ChunkList hash="CCBA720901111B3780EDC334DEC5FB13">
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="FieldRef">
+									<FieldReference id="6" name="DatumPlacanja" repetition="1">
+										<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="85B48AC873861C50DC2F80C5FCA78605" id="87" name="Show Custom Dialog" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="5">
+				<Parameter type="Title">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA["Greška"]]></Text>
+							<ChunkList hash="5CD445BB337E770028EF6DC7D0070D98">
+								<Chunk type="NoRef">&quot;Greška&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+				<Parameter type="Message">
+					<Calculation datatype="1" position="1">
+						<Calculation>
+							<Text><![CDATA["Morate unijeti datum"]]></Text>
+							<ChunkList hash="025D0061778DE4175678CFFFA48B5217">
+								<Chunk type="NoRef">&quot;Morate unijeti datum&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+				<Parameter type="Button1" value="OK">
+					<Boolean type="Commit" value="True"></Boolean>
+				</Parameter>
+				<Parameter type="Button2">
+					<Boolean type="Commit" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Button3">
+					<Boolean type="Commit" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="DE798726AEC08A995628937CCF5FD6AA" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_AddError ( "MISSING_DATE" ; "Datum plaćanja nije unesen." ; "DatumPlacanja" ; "{}" ; "" )]]></Text>
+								<ChunkList hash="CC4B76AD5D4D0A3A62C23D6B2984F171">
+									<Chunk type="CustomFunctionRef">Response_AddError</Chunk>
+									<Chunk type="NoRef"> ( &quot;MISSING_DATE&quot; ; &quot;Datum plaćanja nije unesen.&quot; ; &quot;DatumPlacanja&quot; ; &quot;{}&quot; ; &quot;&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="198222AE826FA6504366210209D2E09F" id="69" name="Else" enable="True">
+		</Step>
+		<Step hash="0D8B2603441BA480DECC4A8FFEEDFE7D" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="17" name="DatumPlacanja">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[Globals::DatumPlacanja]]></Text>
+							<ChunkList hash="206B1FF021A92DE5C1946DB3B0A47AEA">
+								<Chunk type="FieldRef">
+									<FieldReference id="6" name="DatumPlacanja" repetition="1">
+										<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="B9ECA491B6A36907EAFDC96ADD1AC60E" id="75" name="Commit Records/Requests" enable="True">
+			<Options>128</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Skip data entry validation" id="256" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="Force Commit" id="512" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="03E3024F6AAF924A42259DDEAA5C41DA" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="6" name="DatumPlacanja">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[""]]></Text>
+							<ChunkList hash="26631CDF3EEB0CE74C7FC665903CAC32">
+								<Chunk type="NoRef">&quot;&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6BA2E7C4D20A82B8CC2046A75BC4B163" id="169" name="Close Popover" enable="True">
+		</Step>
+		<Step hash="C5BB6F1B33A171335EAFEE9F17C8CAE8" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="BF90C3A1A1420C422D700DA8B50DDD0F" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "removeProforma"]]></Text>
+							<ChunkList hash="F5EBD5F8EFC983C29B9B39059958C384">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;removeProforma&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="48B4AEF423818CB300B39C6C75D51755" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="30" name="PDFFile">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[""]]></Text>
+							<ChunkList hash="26631CDF3EEB0CE74C7FC665903CAC32">
+								<Chunk type="NoRef">&quot;&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D70024D753EC7C5E38CAC253C99851B6" id="75" name="Commit Records/Requests" enable="True">
+			<Options>128</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Skip data entry validation" id="256" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="Force Commit" id="512" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="8C0E1106D0FF42C97E7C6638C69E7633" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA["generateProforma"]]></Text>
+								<ChunkList hash="A0827BD833AEFBB1AA563CBC39260DAD">
+									<Chunk type="NoRef">&quot;generateProforma&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$gotoObject"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="DE3A2B8C8F872CC0EC9015CBA29EE750" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "proformaPopover"]]></Text>
+							<ChunkList hash="932E9561BD45A1A17E8A2A1F2942CF19">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;proformaPopover&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="01D18FFB081ADDDBB51435BEF86301B6" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="33" name="SelectedInvoiceType">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[If ( not IsEmpty ( $tip ) ; $tip ; I__INVOICES::StatusDokumenta )]]></Text>
+							<ChunkList hash="B14DA785DF1F7CF927231EECCB12F17E">
+								<Chunk type="FunctionRef">If</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="FunctionRef">not</Chunk>
+								<Chunk type="NoRef"> </Chunk>
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$tip</Chunk>
+								<Chunk type="NoRef"> ) ; </Chunk>
+								<Chunk type="VariableReference">$tip</Chunk>
+								<Chunk type="NoRef"> ; </Chunk>
+								<Chunk type="FieldRef">
+									<FieldReference id="21" name="StatusDokumenta" repetition="1">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="DF35DAEB9C13E94E73051BF85635F6D5" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[True]]></Text>
+								<ChunkList hash="B15835F133FF2E27C7CB28117BFAE8F4">
+									<Chunk type="FunctionRef">True</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$doRecalc"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="724B5CCFDB37B4FD812F6EA11E2A70B7" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Case (	not IsEmpty ( I__INVOICES::BrojFiskalnogRacuna ) ; "showInvoice" ;	I__INVOICES::Locked = 1 ; "showProforma" ;	"generateProforma")]]></Text>
+								<ChunkList hash="7937CE7EF6BC8C58DF83EA996585BFD7">
+									<Chunk type="FunctionRef">Case</Chunk>
+									<Chunk type="NoRef"> (&#13;&#09;</Chunk>
+									<Chunk type="FunctionRef">not</Chunk>
+									<Chunk type="NoRef"> </Chunk>
+									<Chunk type="FunctionRef">IsEmpty</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="7" name="BrojFiskalnogRacuna" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ) ; &quot;showInvoice&quot; ;&#13;&#13;&#09;</Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="31" name="Locked" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> = 1 ; &quot;showProforma&quot; ;&#13;&#13;&#09;&quot;generateProforma&quot;&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$gotoObject"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="5D2CFF2EC5F19148891DC69E8195B9CF" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "recalculateInvoiceValue"]]></Text>
+							<ChunkList hash="EE590BC7EAE2CD4BDC6F4C8E26217A0B">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;recalculateInvoiceValue&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D36645C912997A0F644B8AC1107B928B" id="75" name="Commit Records/Requests" enable="True">
+			<Options>128</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Skip data entry validation" id="256" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="Force Commit" id="512" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="2DC84C245320762B9D237551D11B4CCC" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="479" name="INV__CalcInvoiceValue"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[I__INVOICES::PrimaryKey&"|"]]></Text>
+								<ChunkList hash="D6B6A5D2B143AA979BAE9F5D22F5B7A8">
+									<Chunk type="FieldRef">
+										<FieldReference id="1" name="PrimaryKey" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef">&amp;&quot;|&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="5907A3D2D423FC44B6FCD15890372F78" id="125" name="Else If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$action = "addNew"]]></Text>
+							<ChunkList hash="E0FB11F3D41E4AADCEDF9497CB4D0FF0">
+								<Chunk type="VariableReference">$action</Chunk>
+								<Chunk type="NoRef"> = &quot;addNew&quot;</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="066A3C36EA7A7468D55E3ED0B2B19589" id="75" name="Commit Records/Requests" enable="True">
+			<Options>128</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="Skip data entry validation" id="256" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Boolean">
+					<Boolean type="Force Commit" id="512" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="88E058FFA92524723DDC7F28A0CE793F" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="643" name="INV__DodajRacun"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[GetSetting ( "invoices.currentCompany" ) & "|"]]></Text>
+								<ChunkList hash="9226CD0712D68476833B9A84AAC2DD68">
+									<Chunk type="CustomFunctionRef">GetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentCompany&quot; ) &amp; &quot;|&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="ED1DF743745DCAEB8A99D1E763F13EF4" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[JSONGetElement ( Get(ScriptResult) ; "data.invoiceId" )]]></Text>
+								<ChunkList hash="EB67F6701893E3576D3C1A5BE0791371">
+									<Chunk type="FunctionRef">JSONGetElement</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef">(</Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef">) ; &quot;data.invoiceId&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$InvoiceId"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="815B97E74A60F4A32E25C85C3E5E22A6" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[not IsEmpty ( $InvoiceId )]]></Text>
+							<ChunkList hash="4C2B7A81A919534807A8013D69FA3B9F">
+								<Chunk type="FunctionRef">not</Chunk>
+								<Chunk type="NoRef"> </Chunk>
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$InvoiceId</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="18E435BB8DA30BE4628F5E96CD65452B" id="22" name="Enter Find Mode" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Boolean">
+					<Boolean type="Pause" id="16777216" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="A884F5F54FAED2CD3497F57846AE9065" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="1" name="PrimaryKey">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[$InvoiceId]]></Text>
+							<ChunkList hash="181B68281A7F759319591B48C5CCF34D">
+								<Chunk type="VariableReference">$InvoiceId</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="D49DECC74D1A12498E8D957918D744A1" id="28" name="Perform Find" enable="True">
+		</Step>
+		<Step hash="31D6A54CFDBCEFA70B896CC472039307" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="75EDCC08C12CB8DC45EDFDB6F0FF0C26" id="69" name="Else" enable="True">
+		</Step>
+		<Step hash="C1FA02CAE71082ED057A0E9E3667736E" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_AddError ( "UNKNOWN_ACTION" ; "Unknown action: " & $action ; "action" ; "{}" ; "" )]]></Text>
+								<ChunkList hash="5248CB13254C66EECC115F332DC080C0">
+									<Chunk type="CustomFunctionRef">Response_AddError</Chunk>
+									<Chunk type="NoRef"> ( &quot;UNKNOWN_ACTION&quot; ; &quot;Unknown action: &quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$action</Chunk>
+									<Chunk type="NoRef"> ; &quot;action&quot; ; &quot;{}&quot; ; &quot;&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="85953525B6845AF4A927DA798C5909A9" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="F0926ACC17A1421F121ACA344C2A4850" id="89" name="# (comment)" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="7D1E91D6BEC67B50C27F0646781839E0" id="89" name="# (comment)" enable="False">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="MARK: Tail — shared found-set refresh"></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="AED69F5A557973A4206CB4DD7F03734B" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$doFind]]></Text>
+							<ChunkList hash="FBF46E6DDFCA070F140B3CC677EFD379">
+								<Chunk type="VariableReference">$doFind</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="10A976D759C065B947F50D5A27DAA61B" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[GetSetting ( "invoices.currentType" )]]></Text>
+								<ChunkList hash="92FF77B878C8A50B998C8B129E9B91B1">
+									<Chunk type="CustomFunctionRef">GetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentType&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$findType"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="83793B29846D8DB3AE1D699FDEA8426B" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[getCompanyID ( GetSetting ( "invoices.currentCompany"  ) )]]></Text>
+								<ChunkList hash="6D2DF06B4C492E0DB17F8E66AE8D6E0A">
+									<Chunk type="CustomFunctionRef">getCompanyID</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="CustomFunctionRef">GetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentCompany&quot;  ) )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$findCompanyId"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="2EF112F1FB457BB0902D294DA3F6FA3D" id="22" name="Enter Find Mode" enable="True">
+			<ParameterValues membercount="1">
+				<Parameter type="Boolean">
+					<Boolean type="Pause" id="16777216" value="False"></Boolean>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="080B7475534A29EAC275BF8A30DEEF6D" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="21" name="StatusDokumenta">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[$findType]]></Text>
+							<ChunkList hash="3DBB0C2A91C691C575326BDE24FF21EE">
+								<Chunk type="VariableReference">$findType</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="58C46DA196A17E8534C973CE5C3E5030" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="26" name="ForeignKeyCompanyID">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[$findCompanyId]]></Text>
+							<ChunkList hash="291BA5D96D50BAF72A92C949CA92AA06">
+								<Chunk type="VariableReference">$findCompanyId</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F99F4ADB52DE148552AEFC49CA1B4FEC" id="28" name="Perform Find" enable="True">
+		</Step>
+		<Step hash="527600476589DFB89307C414ADDECB0E" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[Get ( LastError ) = 401]]></Text>
+							<ChunkList hash="4EE87C467A1C1FE2512DEBB2BBCE74FE">
+								<Chunk type="FunctionRef">Get</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="FunctionRef">LastError</Chunk>
+								<Chunk type="NoRef"> ) = 401</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="97AF8E52A17E95D9942648403706E0F1" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_AddWarning ( "NO_RECORDS" ; "Nema dokumenata za filter: " & $findType & " / " & $findCompanyId ; "filter" ; "{}" ; "" )]]></Text>
+								<ChunkList hash="6B4A118CA269BF824561E56BCBE53856">
+									<Chunk type="CustomFunctionRef">Response_AddWarning</Chunk>
+									<Chunk type="NoRef"> ( &quot;NO_RECORDS&quot; ; &quot;Nema dokumenata za filter: &quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$findType</Chunk>
+									<Chunk type="NoRef"> &amp; &quot; / &quot; &amp; </Chunk>
+									<Chunk type="VariableReference">$findCompanyId</Chunk>
+									<Chunk type="NoRef"> ; &quot;filter&quot; ; &quot;{}&quot; ; &quot;&quot; )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="6C0452DA1AF93D922708D3925772F8F4" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="430F5CE9265920A1458BE54BB935053A" id="39" name="Sort Records" enable="True">
+			<Options>33587328</Options>
+			<ParameterValues membercount="3">
+				<Parameter type="Boolean">
+					<Boolean type="With dialog" id="128" value="False"></Boolean>
+				</Parameter>
+				<Parameter type="Restore">
+					<Restore value="True"></Restore>
+				</Parameter>
+				<Parameter type="SortSpecification">
+					<SortSpecification value="True" maintain="True">
+						<SortList membercount="2">
+							<Sort type="Ascending">
+								<PrimaryField>
+									<FieldReference id="10" name="Datum">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</PrimaryField>
+							</Sort>
+							<Sort type="Ascending">
+								<PrimaryField>
+									<FieldReference id="6" name="BrojFakture">
+										<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+									</FieldReference>
+								</PrimaryField>
+							</Sort>
+						</SortList>
+					</SortSpecification>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="C8352AC6EAF9F280FD446665C1DFF731" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="087827538A97E5DD506D494FCEBC36F2" id="89" name="# (comment)" enable="False">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="MARK: Tail — shared last-invoices list refresh"></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="E78E2ED819D06313D126C00D963393A3" id="68" name="If" enable="True">
+			<Options>1064960</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$doRecalc]]></Text>
+							<ChunkList hash="AF144B83888826685BF4E67A737D9F3D">
+								<Chunk type="VariableReference">$doRecalc</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="26E47E56F5D2E4456D5E7D7BCD488B20" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[	Case (		not IsEmpty ( Globals::SelectedInvoiceType ) ; Globals::SelectedInvoiceType ;		not IsEmpty ( I__INVOICES::StatusDokumenta ) ; I__INVOICES::StatusDokumenta ;		"Račun"	)]]></Text>
+								<ChunkList hash="7D316CB6C921EDBEA26EC11D98DD7767">
+									<Chunk type="NoRef">&#13;&#09;</Chunk>
+									<Chunk type="FunctionRef">Case</Chunk>
+									<Chunk type="NoRef"> (&#13;&#09;&#09;</Chunk>
+									<Chunk type="FunctionRef">not</Chunk>
+									<Chunk type="NoRef"> </Chunk>
+									<Chunk type="FunctionRef">IsEmpty</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="33" name="SelectedInvoiceType" repetition="1">
+											<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ) ; </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="33" name="SelectedInvoiceType" repetition="1">
+											<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ;&#13;&#13;&#09;&#09;</Chunk>
+									<Chunk type="FunctionRef">not</Chunk>
+									<Chunk type="NoRef"> </Chunk>
+									<Chunk type="FunctionRef">IsEmpty</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="21" name="StatusDokumenta" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ) ; </Chunk>
+									<Chunk type="FieldRef">
+										<FieldReference id="21" name="StatusDokumenta" repetition="1">
+											<TableOccurrenceReference id="1065183" name="I__INVOICES"></TableOccurrenceReference>
+										</FieldReference>
+									</Chunk>
+									<Chunk type="NoRef"> ;&#13;&#13;&#09;&#09;&quot;Račun&quot;&#13;&#09;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$recalcTip"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="0A00F676287C001DDCD126F02BB665CD" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="943" name="INV__LoadLastInvoices"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ;	[ "tip" ; $recalcTip ; JSONString ] ;	[ "companyId" ; getCompanyID ( GetSetting ( "invoices.currentCompany" ) ) ; JSONString ] ;	[ "traceID" ; $traceID ; JSONString ])]]></Text>
+								<ChunkList hash="7570D42F2DAF4D11B62FAE5832C98953">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ;&#13;&#09;[ &quot;tip&quot; ; </Chunk>
+									<Chunk type="VariableReference">$recalcTip</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;companyId&quot; ; </Chunk>
+									<Chunk type="CustomFunctionRef">getCompanyID</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="CustomFunctionRef">GetSetting</Chunk>
+									<Chunk type="NoRef"> ( &quot;invoices.currentCompany&quot; ) ) ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ] ;&#13;&#09;[ &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> ]&#13;)</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="9746D75C4D097AAFF59B0B8D71FCA84C" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Get ( ScriptResult )]]></Text>
+								<ChunkList hash="E91ED0002BAFCDA7E5D131A53E19556B">
+									<Chunk type="FunctionRef">Get</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="FunctionRef">ScriptResult</Chunk>
+									<Chunk type="NoRef"> )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$r"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="A7E91A27990FD5C9C547D8087C5055EC" id="141" name="Set Variable" enable="True">
+			<Options>16388</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Variable">
+					<value>
+						<Calculation datatype="1" position="1">
+							<Calculation>
+								<Text><![CDATA[Response_Absorb ( $r )]]></Text>
+								<ChunkList hash="0BF7C0F5D49445A2C918C7B8291A6B3F">
+									<Chunk type="CustomFunctionRef">Response_Absorb</Chunk>
+									<Chunk type="NoRef"> ( </Chunk>
+									<Chunk type="VariableReference">$r</Chunk>
+									<Chunk type="NoRef"> )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</value>
+					<Name value="$void"></Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="87C9D47CD9D452A112D8A773016A443B" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[not Response_HasErrors ( $r )]]></Text>
+							<ChunkList hash="FAE8D30D0C59BDD31E7BD35D81E9C420">
+								<Chunk type="FunctionRef">not</Chunk>
+								<Chunk type="NoRef"> </Chunk>
+								<Chunk type="CustomFunctionRef">Response_HasErrors</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$r</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="EA74D3E939AC7D20EB1FA021096C098B" id="76" name="Set Field" enable="True">
+			<Options>16385</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="FieldReference">
+					<FieldReference id="34" name="LastInvoiceList">
+						<repetition value="1"></repetition>
+						<TableOccurrenceReference id="1065131" name="Globals"></TableOccurrenceReference>
+					</FieldReference>
+				</Parameter>
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[JSONGetElement ( Response_GetData ( $r ) ; "list" )]]></Text>
+							<ChunkList hash="BE277CCDE02AA92D387EC39C4C768648">
+								<Chunk type="FunctionRef">JSONGetElement</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="CustomFunctionRef">Response_GetData</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$r</Chunk>
+								<Chunk type="NoRef"> ) ; &quot;list&quot; )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="80A7D3FBB85D3342F17AA40FEC402CB9" id="167" name="Refresh Object" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Object">
+					<Name>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA["lastInvoicesList"]]></Text>
+								<ChunkList hash="0BCFD348A9B0AEE0F1665E38B8DD858F">
+									<Chunk type="NoRef">&quot;lastInvoicesList&quot;</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="FF1CDD9FEDB36F54B84D076AE782E061" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="E87955B5A3254C2AA844464A6044E752" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="E8EA6F426D24FE92C0BF01FDE88B8652" id="89" name="# (comment)" enable="False">
+			<Options>4</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Comment">
+					<Comment value="MARK: Tail — deferred object jump (after list refresh, matching old script order)"></Comment>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="128ADD09DAE1675AEDD8BF015D934B71" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[not IsEmpty ( $gotoObject )]]></Text>
+							<ChunkList hash="420299BCE497E672A20AA3A86AD66AB0">
+								<Chunk type="FunctionRef">not</Chunk>
+								<Chunk type="NoRef"> </Chunk>
+								<Chunk type="FunctionRef">IsEmpty</Chunk>
+								<Chunk type="NoRef"> ( </Chunk>
+								<Chunk type="VariableReference">$gotoObject</Chunk>
+								<Chunk type="NoRef"> )</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="77D074090F2D3FDC8902102923EA26FE" id="145" name="Go to Object" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Object">
+					<Name>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[$gotoObject]]></Text>
+								<ChunkList hash="1FDED1FF9EC00FDD339FF6C89AE63036">
+									<Chunk type="VariableReference">$gotoObject</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Name>
+					<repetition></repetition>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="12E8FCAB796858C02A36A25FC0F2BC07" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="B6963503901BF98BF8B0AD474D979A70" id="68" name="If" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="7" position="0">
+						<Calculation>
+							<Text><![CDATA[$isRoot]]></Text>
+							<ChunkList hash="345A68D607C66946067EFB3937CCC2AB">
+								<Chunk type="VariableReference">$isRoot</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="F2478E5239960F1C34D4798B79EB08D8" id="1" name="Perform Script" enable="True">
+			<Options>16448</Options>
+			<ParameterValues membercount="2">
+				<Parameter type="List">
+					<List name="From list" value="1">
+						<ScriptReference id="780" name="UTIL__FlushLog"></ScriptReference>
+					</List>
+				</Parameter>
+				<Parameter type="Parameter">
+					<Parameter>
+						<Calculation datatype="1" position="0">
+							<Calculation>
+								<Text><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Text>
+								<ChunkList hash="1CEEFF67AA20CC0B98090BF78BAC9694">
+									<Chunk type="FunctionRef">JSONSetElement</Chunk>
+									<Chunk type="NoRef"> ( &quot;{}&quot; ; &quot;traceID&quot; ; </Chunk>
+									<Chunk type="VariableReference">$traceID</Chunk>
+									<Chunk type="NoRef"> ; </Chunk>
+									<Chunk type="FunctionRef">JSONString</Chunk>
+									<Chunk type="NoRef"> )</Chunk>
+								</ChunkList>
+							</Calculation>
+						</Calculation>
+					</Parameter>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+		<Step hash="32AECA0002BB2468683337433CDEAF45" id="70" name="End If" enable="True">
+		</Step>
+		<Step hash="17963EF7BC33B59C6962C7554032BC04" id="103" name="Exit Script" enable="True">
+			<Options>16384</Options>
+			<ParameterValues membercount="1">
+				<Parameter type="Calculation">
+					<Calculation datatype="1" position="0">
+						<Calculation>
+							<Text><![CDATA[Response_Finalize]]></Text>
+							<ChunkList hash="D96B025D3C8B2214DDE506411492C2F5">
+								<Chunk type="CustomFunctionRef">Response_Finalize</Chunk>
+							</ChunkList>
+						</Calculation>
+					</Calculation>
+				</Parameter>
+			</ParameterValues>
+		</Step>
+	</ObjectList>
+</Script>

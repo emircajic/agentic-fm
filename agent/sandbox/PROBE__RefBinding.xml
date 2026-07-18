@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>=== FM REFERENCE BINDING PROBE ===  All probe steps are DISABLED. Do not run. Paste, then Select All + Copy, then delete this script.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>--- FIELD CASES --- TO I__INVOICES(1065183): BrojFakture=6, StatusDokumenta=21</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F1 | control | id=6 name=BrojFakture | expect BrojFakture</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F1"]]></Calculation>
+    <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F2 | id zeroed | id=0 name=BrojFakture | does FM sniff by name?</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F2"]]></Calculation>
+    <Field table="I__INVOICES" id="0" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F3 | id attribute absent | name=BrojFakture | does FM sniff by name?</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F3"]]></Calculation>
+    <Field table="I__INVOICES" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F4 | THE MONEY CASE | id=21 name=BrojFakture | binds BrojFakture(name) or StatusDokumenta(id)?</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F4"]]></Calculation>
+    <Field table="I__INVOICES" id="21" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F5 | inverse of F4 | id=6 name=StatusDokumenta | binds StatusDokumenta(name) or BrojFakture(id)?</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F5"]]></Calculation>
+    <Field table="I__INVOICES" id="6" name="StatusDokumenta"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F6 | failure mode | id=0 name=NoSuchField_ZZZ | Unknown? dropped? preserved?</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F6"]]></Calculation>
+    <Field table="I__INVOICES" id="0" name="NoSuchField_ZZZ"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>F7 | stale id | id=99999 name=BrojFakture | Invoices has 39 fields, 99999 cannot exist</Text>
+  </Step>
+  <Step enable="False" id="76" name="Set Field">
+    <Calculation><![CDATA["F7"]]></Calculation>
+    <Field table="I__INVOICES" id="99999" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>--- SCRIPT CASES --- Init_Invoices=638, Init_Client=454</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>S1 | control | id=638 name=Init_Invoices | expect Init_Invoices</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA["S1"]]></Calculation>
+    <Script id="638" name="Init_Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>S2 | id zeroed | id=0 name=Init_Invoices | does FM sniff by name?</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA["S2"]]></Calculation>
+    <Script id="0" name="Init_Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>S3 | THE MONEY CASE | id=454 name=Init_Invoices | binds Init_Invoices(name) or Init_Client(id)?</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA["S3"]]></Calculation>
+    <Script id="454" name="Init_Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>S4 | stale id | id=99999 name=Init_Invoices | nonexistent script id</Text>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA["S4"]]></Calculation>
+    <Script id="99999" name="Init_Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>--- LAYOUT CASES --- Invoices=171, Clients Details=12</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>L1 | control | id=171 name=Invoices | expect Invoices</Text>
+  </Step>
+  <Step enable="False" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="171" name="Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>L2 | id zeroed | id=0 name=Invoices | does FM sniff by name?</Text>
+  </Step>
+  <Step enable="False" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="0" name="Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>L3 | THE MONEY CASE | id=12 name=Invoices | binds Invoices(name) or Clients Details(id)?</Text>
+  </Step>
+  <Step enable="False" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="12" name="Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>L4 | stale id | id=99999 name=Invoices | nonexistent layout id</Text>
+  </Step>
+  <Step enable="False" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="99999" name="Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>=== END PROBE ===</Text>
+  </Step>
+</fmxmlsnippet>

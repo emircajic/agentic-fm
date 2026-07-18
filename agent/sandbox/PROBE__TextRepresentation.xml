@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>=== TEXT REPRESENTATION TORTURE TEST === Each step isolates one param type with no obvious text form. Watch what survives.</Text>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T0 | CONTROL | plain Set Field — must round-trip perfectly. If this breaks, nothing else matters.</Text>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA["T0-control"]]></Calculation>
+    <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T1 | Show Custom Dialog | 3 buttons + 2 input fields. Get(LastMessageChoice) depends on button ORDER. Does the text carry the buttons, their order, and CommitState?</Text>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Potvrda storniranja"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Račun " & I__INVOICES::BrojFakture & " će biti storniran. Unesite razlog."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["Storniraj"]]></Calculation>
+      </Button>
+      <Button CommitState="False">
+        <Calculation><![CDATA["Odustani"]]></Calculation>
+      </Button>
+      <Button CommitState="False">
+        <Calculation><![CDATA["Detalji"]]></Calculation>
+      </Button>
+    </Buttons>
+    <InputFields>
+      <InputField UsePasswordCharacter="False">
+        <Field>$razlog</Field>
+        <Label>
+          <Calculation><![CDATA["Razlog storniranja"]]></Calculation>
+        </Label>
+      </InputField>
+      <InputField UsePasswordCharacter="True">
+        <Field>$pin</Field>
+        <Label>
+          <Calculation><![CDATA["PIN ovlaštenja"]]></Calculation>
+        </Label>
+      </InputField>
+    </InputFields>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T2 | Perform Find [ Restore ] | 2 requests: one Include with 2 AND criteria, one Exclude (omit). Pure structured data — no text form exists. Do the criteria survive?</Text>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="True"/>
+    <Query>
+      <RequestRow operation="Include">
+        <Criteria>
+          <Field table="I__INVOICES" id="21" name="StatusDokumenta"/>
+          <Text>Predračun</Text>
+        </Criteria>
+        <Criteria>
+          <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+          <Text>P-*</Text>
+        </Criteria>
+      </RequestRow>
+      <RequestRow operation="Exclude">
+        <Criteria>
+          <Field table="I__INVOICES" id="21" name="StatusDokumenta"/>
+          <Text>Storno</Text>
+        </Criteria>
+      </RequestRow>
+    </Query>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T3 | Sort Records [ Restore ] | 2 sort keys, Ascending then Descending, Maintain=True. Does the sort order and its direction survive?</Text>
+  </Step>
+  <Step enable="True" id="39" name="Sort Records">
+    <NoInteract state="True"/>
+    <Restore state="True"/>
+    <SortList Maintain="True" value="True">
+      <Sort type="Ascending">
+        <PrimaryField>
+          <Field table="I__INVOICES" id="21" name="StatusDokumenta"/>
+        </PrimaryField>
+      </Sort>
+      <Sort type="Descending">
+        <PrimaryField>
+          <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+        </PrimaryField>
+      </Sort>
+    </SortList>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T4 | Insert Text | DISABLED doc-block targeting $README — agentic-fm's own documented convention. 500+ chars with CR line breaks. Our own HR renderer truncates this at 117 chars and collapses CRs to " | ". Does theirs?</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMETER FORMAT:&#xD;  JSONSetElement ( "{}" ;&#xD;    [ "pologID" ; $pologID ; JSONString ] ;&#xD;    [ "invoiceIDs" ; $invoiceIDs ; JSONArray ] ;&#xD;    [ "racunOd" ; $racunOd ; JSONString ] ;&#xD;    [ "racunDo" ; $racunDo ; JSONString ]&#xD;  )&#xD;&#xD;RETURNS:&#xD;  { status, attachedCount, errors, infos }&#xD;&#xD;NOTES:&#xD;  - Either invoiceIDs OR the racunOd/racunDo range must be supplied, never both.&#xD;  - Validation rejects invoices already attached to a different polog.&#xD;  - Writes ForeignKeyPologID via epSQLExecute; commit before any SELECT.</Text>
+    <Field>$README</Field>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T5 | Go to Related Record | Restore + Table ref + NewWndStyles attrGroup with a numeric Styles bitmask. The bitmask is a magic number with no text form.</Text>
+  </Step>
+  <Step enable="True" id="74" name="Go to Related Record">
+    <Option state="True"/>
+    <MatchAllRecords state="True"/>
+    <ShowInNewWindow state="True"/>
+    <Restore state="True"/>
+    <LayoutDestination value="SelectedLayout"/>
+    <NewWndStyles Style="Card" Close="Yes" Minimize="No" Maximize="No" Resize="No" DimParentWindow="Yes" Toolbars="No" MenuBar="No" Styles="3606018"/>
+    <Table id="1065286" name="I__Company"/>
+    <Layout id="171" name="Invoices"/>
+    <Animation value="ZoomIn"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T6 | New Window | full NewWndStyles bitmask Styles=1076299266 plus geometry calcs. Same attrGroup problem, different step.</Text>
+  </Step>
+  <Step enable="True" id="122" name="New Window">
+    <LayoutDestination value="SelectedLayout"/>
+    <Name>
+      <Calculation><![CDATA["Pregled računa " & $receiptNumber]]></Calculation>
+    </Name>
+    <Height>
+      <Calculation><![CDATA[600]]></Calculation>
+    </Height>
+    <Width>
+      <Calculation><![CDATA[900]]></Calculation>
+    </Width>
+    <DistanceFromTop>
+      <Calculation><![CDATA[Get ( WindowTop ) + 20]]></Calculation>
+    </DistanceFromTop>
+    <DistanceFromLeft>
+      <Calculation><![CDATA[Get ( WindowLeft ) + 20]]></Calculation>
+    </DistanceFromLeft>
+    <NewWndStyles DimParentWindow="No" Toolbars="No" MenuBar="Yes" Style="Dialog" Close="Yes" Minimize="No" Maximize="No" Resize="Yes" Styles="1076299266"/>
+    <Layout id="171" name="Invoices"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T7 | Set Variable with Repetition | repeatGroup — $buffer[3]. Does the repetition index survive?</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["rep-test"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[3]]></Calculation>
+    </Repetition>
+    <Name>$buffer</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>T8 | Calc with embedded brackets, semicolons, quotes and inline comments — the parser torture case. Bracket-depth scanners break here.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [
+  ~sql = "SELECT COUNT(PrimaryKey) FROM I__Invoices WHERE BrojFakture LIKE ? AND Status <> ']' " ; // note the ] inside the string
+  ~n   = ExecuteSQL ( ~sql ; "" ; "" ; $prefix & "-%" ) /* block comment ; with a semicolon */
+] ;
+  If ( IsEmpty ( ~n ) ; 0 ; ~n + 1 )
+)]]></Calculation>
+    </Value>
+    <Name>$seq</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>=== END TORTURE TEST ===</Text>
+  </Step>
+</fmxmlsnippet>

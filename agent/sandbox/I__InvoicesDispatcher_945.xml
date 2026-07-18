@@ -1,0 +1,815 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Action-routed UI switchboard for the repointed Invoices layout (anchor I__INVOICES). Every button and trigger on the layout binds here with an "action" param. Owns ONLY front-end concerns — found sets, current-record field toggles, dialogs, windows, popovers, object jumps. All data work delegates to headless workers.</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMS (JSON): action (required) + per-action keys.&#xD;&#xD;VERBS:&#xD;  init            — OnLayoutEnter: SETTINGS__EnsureLoaded, then find + list refresh&#xD;  load            — re-run find + list refresh from current settings&#xD;  filter          — optional tip; persists invoices.currentType, then find + list refresh&#xD;  toggleType      — toggle StatusDokumenta Račun/Predračun on current record + receipt number + list refresh&#xD;  togglePayment   — cycle NacinPlacanja Gotovina → Virman → Kartica&#xD;  changeCompany   — toggle invoices.currentCompany OD/DOO, then find + list refresh&#xD;  recalcList      — list refresh only (INV__LoadLastInvoices worker)&#xD;  regeneratePDF   — delegate to Process Invoice (UI), operation=regeneratePDF&#xD;  refund          — delegate to Process Invoice (UI), operation=refund (dialog lives there)&#xD;  printOptions    — open Card Invoice Print card window&#xD;  pickClient      — open Card Odabir Klijenta card window&#xD;  setPaymentDate  — validate Globals::DatumPlacanja, write DatumPlacanja, close popover&#xD;  removeProforma  — clear PDFFile (unlocks), jump to generateProforma object&#xD;  proformaPopover — optional tip; set Globals::SelectedInvoiceType, list refresh, jump by fiscal state&#xD;&#xD;RETURNS: Response_Finalize envelope. Worker errors are absorbed via Response_Absorb.&#xD;&#xD;CONTEXT: must run on a layout anchored on I__INVOICES (record-bound verbs read the current record).&#xD;&#xD;Example button binding&#xD;Perform Script [ Specified: From list ; “I__InvoicesDispatcher” ; Parameter: JSONSetElement ( "{}" ; "action" ; "toggleType" ; JSONString ) ]</Text>
+    <Field>$README</Field>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$action</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$tip</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$invoiceId</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$datum</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "action|tip|invoiceId|datum" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Log.add ( "info" ; "DISPATCH" ; "I__InvoicesDispatcher: " & $action ; Get(ScriptParameter ))]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( IsEmpty ( $invoiceId ) ; I__INVOICES::PrimaryKey ; $invoiceId )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$invoiceId</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Tail flags — branches request shared work instead of duplicating it</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[False]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doFind</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[False]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$gotoObject</Name>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Switch</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $action )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "action is required" ; "action" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "init"]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Script id="758" name="SETTINGS__EnsureLoaded"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doFind</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "load"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doFind</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "filter"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $tip )]]></Calculation>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "key" ; "invoices.currentType" ; JSONString ] ;
+	[ "value" ; $tip ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="757" name="SETTINGS__SetValue"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[SetSetting ( "invoices.currentType" ; $tip )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doFind</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "toggleType"]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[If ( I__INVOICES::StatusDokumenta = "Račun" ; "Predračun" ; "Račun" )]]></Calculation>
+    <Field table="I__INVOICES" id="21" name="StatusDokumenta"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[I__INVOICES::StatusDokumenta]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$invoiceType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[I__Company::ReceiptPrefix]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$prefix</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[I__INVOICES::StatusDokumenta = "Predračun"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["P" & $prefix]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$prefix</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Right("0" & Month(Get(CurrentDate)) ; 2)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$month</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Right(Year(Get(CurrentDate)) ; 2)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$year</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [ 
+searchString = $prefix & "-" & $month & "-%-" & $year ; 
+broj = ExecuteSQL ( "SELECT COUNT (PrimaryKey) FROM I__Invoices WHERE BrojFakture LIKE ?"; ""; "" ; searchString );
+broj = broj+1
+] ; Right("0000" & broj; 4))]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$seq</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$prefix & "-" & $month & "-" & $seq & "-" & $year]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$receiptNumber</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$receiptNumber]]></Calculation>
+    <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$invoiceType]]></Calculation>
+    <Field table="Globals" id="33" name="SelectedInvoiceType"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "togglePayment"]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Case (
+	I__INVOICES::NacinPlacanja = "Gotovina" ; "Virman" ;
+
+	I__INVOICES::NacinPlacanja = "Virman" ; "Kartica" ;
+
+	"Gotovina"
+)]]></Calculation>
+    <Field table="I__INVOICES" id="9" name="NacinPlacanja"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "changeCompany"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( GetSetting ( "invoices.currentCompany" ) = "OD" ; "DOO" ; "OD" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$newCompany</Name>
+  </Step>
+  <Step enable="False" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "key" ; "invoices.currentCompany" ; JSONString ] ;
+	[ "value" ; $newCompany ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="757" name="SETTINGS__SetValue"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[SetSetting("invoices.currentCompany"; $newCompany)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doFind</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "recalcList"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "regeneratePDF"]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "operation" ; "regeneratePDF" ; JSONString ] ;
+	[ "invoiceId" ; $invoiceId ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="882" name="Process Invoice (UI)"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "refund"]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "operation" ; "refund" ; JSONString ] ;
+	[ "invoiceId" ; $invoiceId ; JSONString ] ;
+	[ "datum" ; $datum ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="882" name="Process Invoice (UI)"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "printOptions"]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="122" name="New Window"/>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "pickClient"]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[I__INVOICES::PrimaryKey]]></Calculation>
+    <Field table="Globals" id="50" name="ClientSelectorTarget"/>
+  </Step>
+  <Step enable="True" id="122" name="New Window"/>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "setPaymentDate"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( Globals::DatumPlacanja )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Greška"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Morate unijeti datum"]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_DATE" ; "Datum plaćanja nije unesen." ; "DatumPlacanja" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[Globals::DatumPlacanja]]></Calculation>
+    <Field table="I__INVOICES" id="17" name="DatumPlacanja"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="Globals" id="6" name="DatumPlacanja"/>
+  </Step>
+  <Step enable="True" id="169" name="Close Popover"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "removeProforma"]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="I__INVOICES" id="30" name="PDFFile"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["generateProforma"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$gotoObject</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "proformaPopover"]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[If ( not IsEmpty ( $tip ) ; $tip ; I__INVOICES::StatusDokumenta )]]></Calculation>
+    <Field table="Globals" id="33" name="SelectedInvoiceType"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+	not IsEmpty ( I__INVOICES::BrojFiskalnogRacuna ) ; "showInvoice" ;
+
+	I__INVOICES::Locked = 1 ; "showProforma" ;
+
+	"generateProforma"
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$gotoObject</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "recalculateInvoiceValue"]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[I__INVOICES::PrimaryKey&"|"]]></Calculation>
+    <Script id="479" name="INV__CalcInvoiceValue"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "addNew"]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[GetSetting ( "invoices.currentCompany" ) & "|"]]></Calculation>
+    <Script id="643" name="INV__DodajRacun"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( Get(ScriptResult) ; "data.invoiceId" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$InvoiceId</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $InvoiceId )]]></Calculation>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$InvoiceId]]></Calculation>
+    <Field table="I__INVOICES" id="1" name="PrimaryKey"/>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "UNKNOWN_ACTION" ; "Unknown action: " & $action ; "action" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Tail — shared found-set refresh</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$doFind]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetSetting ( "invoices.currentType" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$findType</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[getCompanyID ( GetSetting ( "invoices.currentCompany"  ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$findCompanyId</Name>
+  </Step>
+  <Step enable="True" id="22" name="Enter Find Mode">
+    <Pause state="False"/>
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$findType]]></Calculation>
+    <Field table="I__INVOICES" id="21" name="StatusDokumenta"/>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[$findCompanyId]]></Calculation>
+    <Field table="I__INVOICES" id="26" name="ForeignKeyCompanyID"/>
+  </Step>
+  <Step enable="True" id="28" name="Perform Find">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( LastError ) = 401]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "NO_RECORDS" ; "Nema dokumenata za filter: " & $findType & " / " & $findCompanyId ; "filter" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="39" name="Sort Records">
+    <NoInteract state="True"/>
+    <Restore state="True"/>
+    <SortList Maintain="True" value="True">
+      <Sort type="Ascending">
+        <PrimaryField>
+          <Field table="I__INVOICES" id="10" name="Datum"/>
+        </PrimaryField>
+      </Sort>
+      <Sort type="Ascending">
+        <PrimaryField>
+          <Field table="I__INVOICES" id="6" name="BrojFakture"/>
+        </PrimaryField>
+      </Sort>
+    </SortList>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Tail — shared last-invoices list refresh</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$doRecalc]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[
+	Case (
+		not IsEmpty ( Globals::SelectedInvoiceType ) ; Globals::SelectedInvoiceType ;
+
+		not IsEmpty ( I__INVOICES::StatusDokumenta ) ; I__INVOICES::StatusDokumenta ;
+
+		"Račun"
+	)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$recalcTip</Name>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "tip" ; $recalcTip ; JSONString ] ;
+	[ "companyId" ; getCompanyID ( GetSetting ( "invoices.currentCompany" ) ) ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="943" name="INV__LoadLastInvoices"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not Response_HasErrors ( $r )]]></Calculation>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[JSONGetElement ( Response_GetData ( $r ) ; "list" )]]></Calculation>
+    <Field table="Globals" id="34" name="LastInvoiceList"/>
+  </Step>
+  <Step enable="True" id="167" name="Refresh Object">
+    <ObjectName>
+      <Calculation><![CDATA["lastInvoicesList"]]></Calculation>
+    </ObjectName>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Tail — deferred object jump (after list refresh, matching old script order)</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $gotoObject )]]></Calculation>
+  </Step>
+  <Step enable="True" id="145" name="Go to Object">
+    <ObjectName>
+      <Calculation><![CDATA[$gotoObject]]></Calculation>
+    </ObjectName>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Response_Finalize]]></Calculation>
+  </Step>
+</fmxmlsnippet>

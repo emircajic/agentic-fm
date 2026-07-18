@@ -7,7 +7,7 @@ FileMaker assigns internal numeric IDs to every object (scripts, fields, tables,
 - **IDs are assigned at creation time** and never reused within the same file, even if the object is deleted.
 - **Copying a script (or folder of scripts) from one file to another** assigns entirely new IDs in the destination file. The script *name* is preserved but the ID changes.
 - **The same script installed in two different files will have different IDs.** For example, `AGFMEvaluation` might be ID 16 in `agentic-fm.fmp12` and ID 315 in a test solution — same code, different IDs.
-- **Perform Script references use IDs, not names.** When a script calls another script, the reference is stored as `<Script id="N" name="ScriptName"/>`. If the target script is deleted and re-created, the old caller still points at the old (now non-existent) ID.
+- **Perform Script references are stored internally by ID, not by name.** When a script calls another script, the reference is stored as `<Script id="N" name="ScriptName"/>`. If the target script is deleted and re-created, the old caller still points at the old (now non-existent) ID. This describes how FileMaker stores a reference *inside* a file — it is not how a reference is resolved when pasted from the clipboard, where the name is authoritative and the ID is ignored. See [[reference-binding-on-paste]].
 - **CONTEXT.json provides the correct IDs** for the currently active solution. Always resolve IDs from CONTEXT.json or the solution's index files — never hardcode or carry forward IDs from a different file.
 
 ## Implications for documentation and planning

@@ -110,7 +110,7 @@ Same layout, same name + ID — change the anchor TO only.
 
 ## Stage 5 — Retire & delete on dev
 
-- [ ] Fold to `_RETIRED/Invoices/` (foldering breaks no caller — FM tracks by ID):
+- [ ] Fold to `Retired/Invoices/` (foldering breaks no caller — FM tracks by ID):
       the `_` parallel set (831, 832, 833, 834, 835, 836, 837, 848, 870); the old
       fiscal pipeline (593, 594, 595, 596, 597, 598, 599, 732); spent migration
       helpers (777, 778, 779, 853, 855). Stamp the date → 1-month clock starts.
@@ -146,7 +146,7 @@ Same layout, same name + ID — change the anchor TO only.
 
 ## Post-soak → feeds C.9
 
-- [ ] After the 1-month clock: delete `_RETIRED/Invoices/` scripts + the retired
+- [ ] After the 1-month clock: delete `Retired/Invoices/` scripts + the retired
       layouts, re-tracing each for zero callers first.
 
 ---

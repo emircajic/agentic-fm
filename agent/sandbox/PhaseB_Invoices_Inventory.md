@@ -136,7 +136,7 @@ the repointed `Invoices` layout, returns `Response_Finalize`. Verb vocabulary:
 removeProforma / proformaPopover`. Triggers + buttons rebind to it with an
 `action`.
 
-### 🗑️ REMOVE — superseded (fold to `_RETIRED/Invoices/`, 1-month clock, delete in C.9)
+### 🗑️ REMOVE — superseded (fold to `Retired/Invoices/`, 1-month clock, delete in C.9)
 
 **The entire `_` parallel set** (folder `I__INVOICES` — the abandoned approach):
 | Script | ID |
@@ -188,7 +188,7 @@ The `... Copy` pairs are almost certainly stale duplicates.
 - [ ] `I__InvoicesDispatcher` built; triggers/buttons rebound; smokes by action.
 - [ ] epSQL `FROM`-clauses in 878/879/881 moved to `I__INVOICES`.
 - [ ] Layouts 171/178/172/239/188/222/204/183 repointed on dev; field refs resolve.
-- [ ] `_` parallel set + old fiscal pieces + migration helpers foldered to `_RETIRED/`.
+- [ ] `_` parallel set + old fiscal pieces + migration helpers foldered to `Retired/`.
 - [ ] `Invoices_` (262) + `Card Invoice Print _` (263) + `Dev I__Invoices` (249)
       + `Dev InvoiceLinks` (253) deleted on dev.
 - [ ] `Dev Invoices` (179) + `Dev InvoiceLines` (225) repointed to `I__` and kept.

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="125" name="Else If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$action = "generate"]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "operation" ; If ( I__INVOICES::StatusDokumenta = "Račun" ; "invoice" ; "proforma" ) ; JSONString ] ;
+	[ "invoiceId" ; $invoiceId ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="882" name="Process Invoice (UI)"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( Get ( ScriptResult ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRecalc</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
+	not IsEmpty ( I__INVOICES::BrojFiskalnogRacuna ) ; "showInvoice" ;
+
+	I__INVOICES::Locked = 1 ; "showProforma" ;
+
+	"generateProforma"
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$gotoObject</Name>
+  </Step>
+</fmxmlsnippet>
