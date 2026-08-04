@@ -1313,6 +1313,7 @@
     "params": [
       {
         "xmlElement": "Option",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Find without indexes",
         "xmlAttr": "state",
@@ -1322,6 +1323,7 @@
       },
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Restore",
         "xmlAttr": "state",
@@ -1942,6 +1944,7 @@
       },
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Restore",
         "xmlAttr": "state",
@@ -2372,6 +2375,7 @@
     "params": [
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Restore",
         "xmlAttr": "state",
@@ -2853,6 +2857,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select/perform",
         "xmlAttr": "state",
@@ -3041,7 +3046,7 @@
           "On",
           "Off"
         ],
-        "notes": "Flag-style in HR: shown as \"Select\" when On"
+        "notes": "FM renders this LABELED as \"Select: On|Off\" (live copy-back), NOT flag-style \u2014 do not add flagStyle. Selects the field contents on arrival when On."
       },
       {
         "xmlElement": "RowPageLocation",
@@ -3181,15 +3186,17 @@
     "params": [
       {
         "xmlElement": "Option",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": "Show only related records",
+        "hrLabel": "External",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "Flag-style: shown as \"Show only related records\" when True, omitted when False"
+        "notes": "Flag-style: FM renders the bare token \"External\" when True (live copy-back), omitted when False. NOT \"Show only related records\" — that label belongs to Restore."
       },
       {
         "xmlElement": "MatchAllRecords",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Match found set",
         "xmlAttr": "state",
@@ -3199,6 +3206,7 @@
       },
       {
         "xmlElement": "ShowInNewWindow",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "New window",
         "xmlAttr": "state",
@@ -3208,12 +3216,13 @@
       },
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": "Restore",
+        "hrLabel": "Show only related records",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "FM serializes <Restore state=...> between ShowInNewWindow and LayoutDestination; faithful passthrough."
+        "notes": "Flag-style: FM renders the bare token \"Show only related records\" when True (live copy-back), omitted when False. FM serializes <Restore state=...> between ShowInNewWindow and LayoutDestination."
       },
       {
         "xmlElement": "LayoutDestination",
@@ -3261,7 +3270,7 @@
         "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for Original/Current, <Layout id name/> for Selected, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token."
       }
     ],
-    "hrSignature": "[ Show only related records ; Match found set ; New window ; Restore: <On/Off> ; Using layout: layout ; Window style: ... ; From table: \"table\" ]",
+    "hrSignature": "[ Show only related records ; Match found set ; From table: \"table\" ; External ; Using layout: layout ; New window ; Window style: ... ]",
     "notesAnimation": "FileMaker Go's <Animation> is NOT modeled: desktop FM drops <Animation value=\"None\"/> on paste, so emitting it diverges from the FM baseline and its bare 'None' token mis-binds positionally to Layout.",
     "blockPair": null,
     "status": "complete",
@@ -3365,6 +3374,7 @@
       },
       {
         "xmlElement": "VerifySSLCertificates",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
@@ -3493,6 +3503,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3529,6 +3540,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3558,6 +3570,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3587,6 +3600,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3872,6 +3886,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3901,6 +3916,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3930,6 +3946,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3966,6 +3983,7 @@
       },
       {
         "xmlElement": "VerifySSLCertificates",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
@@ -3982,15 +4000,16 @@
       },
       {
         "xmlElement": "DontEncodeURL",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": null,
+        "hrLabel": "Do not automatically encode URL",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "Not shown in HR. False = auto-encode special chars. True = leave URL as-is."
+        "notes": "Flag-style: FM renders the bare token \"Do not automatically encode URL\" when True, omitted when False (live copy-back, verified with and without CURLOptions). False = auto-encode special chars."
       }
     ],
-    "hrSignature": "[ Select ; With dialog: On|Off ; Target: Table::Field| ; calc_url ; Verify SSL Certificates ; cURL options: calc ]",
+    "hrSignature": "[ Select ; With dialog: On|Off ; Target: Table::Field| ; calc_url ; Verify SSL Certificates ; cURL options: calc ; Do not automatically encode URL ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-url.html"
@@ -7396,6 +7415,7 @@
       },
       {
         "xmlElement": "MultipleEmails",
+        "hrHidden": true,
         "type": "boolean",
         "hrLabel": null,
         "xmlAttr": "state",
