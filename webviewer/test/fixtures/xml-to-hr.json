@@ -1,6 +1,6 @@
 {
   "accounts/Add Account.xml": {
-    "hr": "Add Account [ Account Name: \"Account Name\" ; Password: \"Password\" ; Expire password: On ]",
+    "hr": "Add Account [ Authenticate via: FileMaker ; Account Name: \"Account Name\" ; Password: \"Password\" ; Expire password: On ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"134\" name=\"Add Account\">\n    <ChgPwdOnNextLogin value=\"True\"/>\n    <AccountName>\n      <Calculation><![CDATA[\"Account Name\"]]></Calculation>\n    </AccountName>\n    <Password>\n      <Calculation><![CDATA[\"Password\"]]></Calculation>\n    </Password>\n    <PrivilegeSet id=\"0\" name=\"\"/>\n    <AddAccount>\n      <AccountType>FileMaker</AccountType>\n    </AddAccount>\n  </Step>\n</fmxmlsnippet>"
   },
   "accounts/Change Password.xml": {
@@ -24,15 +24,15 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"136\" name=\"Reset Account Password\">\n    <ChgPwdOnNextLogin value=\"True\"/>\n    <AccountName>\n      <Calculation><![CDATA[\"account name\"]]></Calculation>\n    </AccountName>\n    <Password>\n      <Calculation><![CDATA[\"password\"]]></Calculation>\n    </Password>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure AI Account.xml": {
-    "hr": "Configure AI Account [ Account Name: \"account_name\" ; Model Provider: ChatGPT ; API key: \"api_key\" ]",
+    "hr": "Configure AI Account [ Account Name: \"account_name\" ; Model Provider: OpenAI ; API key: \"api_key\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"212\" name=\"Configure AI Account\">\n    <LLMType value=\"ChatGPT\"/>\n    <SetLLMAccout>\n      <AccoutName>\n        <Calculation><![CDATA[\"account_name\"]]></Calculation>\n      </AccoutName>\n      <AccessAPIKey>\n        <Calculation><![CDATA[\"api_key\"]]></Calculation>\n      </AccessAPIKey>\n    </SetLLMAccout>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure Machine Learning Model.xml": {
-    "hr": "Configure Machine Learning Model [ Name: \"model name\" ]",
-    "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"202\" name=\"Configure Machine Learning Model\">\n    <Field table=\"\" id=\"0\" name=\"\"/>\n    <ConfigureCoreML>General<Name><Calculation><![CDATA[\"model name\"]]></Calculation></Name></ConfigureCoreML>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
+    "hr": "Configure Machine Learning Model [ Operation: Unload ; Name: \"model name\" ]",
+    "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"202\" name=\"Configure Machine Learning Model\">\n    <ConfigureCoreML><Operation>Uninstall</Operation><Name><Calculation><![CDATA[\"model name\"]]></Calculation></Name></ConfigureCoreML>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure Prompt Template.xml": {
-    "hr": "Configure Prompt Template [ Template Name: \"template_name\" ; Model Provider: Custom ; Template Type: SQLQuery ; SQL Prompt: \"prompt\" ]",
+    "hr": "Configure Prompt Template [ Template Name: \"template_name\" ; Model Provider: Custom ; Template Type: SQL Query ; SQL Prompt: \"prompt\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"226\" name=\"Configure Prompt Template\">\n    <Option state=\"False\"/>\n    <ConfigurePromptTemplate>\n      <TemplateName>\n        <Calculation><![CDATA[\"template_name\"]]></Calculation>\n      </TemplateName>\n      <ModelProvider>Custom</ModelProvider>\n      <RequestType>SQLQuery</RequestType>\n      <SQLPrompt>\n        <Calculation><![CDATA[\"prompt\"]]></Calculation>\n      </SQLPrompt>\n    </ConfigurePromptTemplate>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure RAG Account.xml": {
@@ -40,11 +40,11 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"227\" name=\"Configure RAG Account \">\n    <VerifySSLCertificates state=\"False\"/>\n    <ConfigureRAGAccount>\n      <RAGAccountName>\n        <Calculation><![CDATA[\"rag_account_name\"]]></Calculation>\n      </RAGAccountName>\n      <Endpoint>\n        <Calculation><![CDATA[\"endpoint\"]]></Calculation>\n      </Endpoint>\n      <AccessAPIKey>\n        <Calculation><![CDATA[\"api_key\"]]></Calculation>\n      </AccessAPIKey>\n    </ConfigureRAGAccount>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure Regression Model.xml": {
-    "hr": "Configure Regression Model [ Action: LLMTrainTrainModel ; Algorithm: LLMTrainAlgForest ; Model Name: \"model_name\" ]",
+    "hr": "Configure Regression Model [ Action: Train Model ; Algorithm: Random Forest ; Model Name: \"model_name\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"222\" name=\"Configure Regression Model\">\n    <LLMTrain>\n      <LLMTrainAction>LLMTrainTrainModel</LLMTrainAction>\n      <LLMAlgorithm>LLMTrainAlgForest</LLMAlgorithm>\n      <LLMTrainModelName>\n        <Calculation><![CDATA[\"model_name\"]]></Calculation>\n      </LLMTrainModelName>\n    </LLMTrain>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Fine-Tune Model.xml": {
-    "hr": "Fine-Tune Model [ Account Name: \"account\" ; Base Model: \"model\" ; Training Data: DataTable ; Products::Name ; Parameters: \"Fine-Tune-Parameters\" ]",
+    "hr": "Fine-Tune Model [ Account Name: \"account\" ; Base Model: \"model\" ; Training Data: Table ; Products::Name ; Parameters: \"Fine-Tune-Parameters\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"213\" name=\"Fine-Tune Model\">\n    <Option state=\"True\"/>\n    <UniversalPathList type=\"Embedded\"/>\n    <Text/>\n    <Table id=\"1065097\" name=\"Products\"/>\n    <Field>$response_target</Field>\n    <FineTuneLLM>\n      <AccountName>\n        <Calculation><![CDATA[\"account\"]]></Calculation>\n      </AccountName>\n      <FineTuneBaseModelName>\n        <Calculation><![CDATA[\"model\"]]></Calculation>\n      </FineTuneBaseModelName>\n      <Parameters>\n        <Calculation><![CDATA[\"Fine-Tune-Parameters\"]]></Calculation>\n      </Parameters>\n      <DataSource>DataTable</DataSource>\n      <Field table=\"Products\" id=\"30\" name=\"Name\"/>\n    </FineTuneLLM>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Generate Response from Model.xml": {
@@ -404,7 +404,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"127\" name=\"Extend Found Set\">\n    <Restore state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
   },
   "found sets/Find Matching Records.xml": {
-    "hr": "Find Matching Records [ FindMatchingReplace ]",
+    "hr": "Find Matching Records [ Replace ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"155\" name=\"Find Matching Records\">\n    <FindMatchingRecordsByField value=\"FindMatchingReplace\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "found sets/Modify Last Find.xml": {
@@ -476,7 +476,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"65\" name=\"Dial Phone\">\n    <NoInteract state=\"True\"/>\n    <UseDialPreferences value=\"False\"/>\n    <Calculation><![CDATA[]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "miscellaneous/Enable Touch Keyboard.xml": {
-    "hr": "Enable Touch Keyboard [ Show ]",
+    "hr": "Enable Touch Keyboard [ On ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"174\" name=\"Enable Touch Keyboard\">\n    <ShowHide value=\"Show\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "miscellaneous/Execute FileMaker Data API.xml": {
@@ -600,7 +600,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"145\" name=\"Go to Object\">\n    <ObjectName>\n      <Calculation><![CDATA[]]></Calculation>\n    </ObjectName>\n    <Repetition>\n      <Calculation><![CDATA[1]]></Calculation>\n    </Repetition>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Portal Row.xml": {
-    "hr": "Go to Portal Row [ Select: Off ; ByCalculation ; With dialog: Off ; 1 ]",
+    "hr": "Go to Portal Row [ Select: Off ; By Calculation ; With dialog: Off ; 1 ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"99\" name=\"Go to Portal Row\">\n    <NoInteract state=\"True\"/>\n    <SelectAll state=\"False\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Calculation><![CDATA[1]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Previous Field.xml": {
@@ -608,7 +608,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"5\" name=\"Go to Previous Field\"/>\n</fmxmlsnippet>"
   },
   "navigation/Go to Record-Request-Page.xml": {
-    "hr": "Go to Record/Request/Page [ ByCalculation ; With dialog: Off ; \"\" ]",
+    "hr": "Go to Record/Request/Page [ By Calculation ; With dialog: Off ; \"\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"16\" name=\"Go to Record/Request/Page\">\n    <NoInteract state=\"True\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Calculation><![CDATA[\"\"]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Related Record.xml": {
@@ -804,11 +804,11 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"107\" name=\"Spelling Options\"/>\n</fmxmlsnippet>"
   },
   "windows/Adjust Window.xml": {
-    "hr": "Adjust Window [ ResizeToFit ]",
+    "hr": "Adjust Window [ Resize to Fit ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"31\" name=\"Adjust Window\">\n    <WindowState value=\"ResizeToFit\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "windows/Arrange All Windows.xml": {
-    "hr": "Arrange All Windows [ Cascade ]",
+    "hr": "Arrange All Windows [ Cascade Window ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"120\" name=\"Arrange All Windows\">\n    <WindowArrangement value=\"Cascade\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "windows/Close Window.xml": {

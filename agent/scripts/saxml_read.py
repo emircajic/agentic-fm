@@ -544,43 +544,17 @@ _SAXML_ENUM_PARAMS: dict[str, dict[str, str]] = {
 # actually been observed in an export. That is deliberate: the MAPPING is documented
 # either way, and a key that never arrives costs nothing, while a missing one would let a
 # label reach the output. It is not licence to invent a key whose mapping is unattested.
+# Seven steps' entries were removed once the catalog's own ``hrEnumValues`` was corrected
+# to hold FileMaker's values and labels (Adjust Window, Arrange All Windows, AVPlayer Set
+# Options, Configure AI Account, Configure Region Monitor Script, Enable Touch Keyboard,
+# Find Matching Records): the catalog now reverses each of those labels to the same value
+# this map did, so the entries were duplicated data and a second place to drift. What
+# stays is what the catalog CANNOT reverse — a SaXML label that differs from the HR one
+# ("By Calculation…" carries a trailing ellipsis the Script Workspace does not show;
+# "uninstall" arrives lowercased) or a param the catalog models differently.
 _SAXML_ENUM_LABELS: dict[str, dict[str, dict[str, str]]] = {
-    "Adjust Window": {
-        "WindowState": {"Resize to Fit": "ResizeToFit"},
-    },
-    "Arrange All Windows": {
-        "WindowArrangement": {
-            "Tile Horizontally":  "TileHorizontally",
-            "Tile Vertically":    "TileVertically",
-            "Cascade Window":     "Cascade",
-            "Bring All To Front": "BringAllToFront",
-        },
-    },
-    "AVPlayer Set Options": {
-        "Zoom": {
-            "Fit Only":     "FitOnly",
-            "Fill Only":    "FillOnly",
-            "Stretch Only": "StretchOnly",
-        },
-    },
-    "Configure AI Account": {
-        "LLMType": {"OpenAI": "ChatGPT", "Custom": "Other"},
-    },
     "Configure Machine Learning Model": {
         "ConfigureCoreML": {"uninstall": "Uninstall", "Unload": "Uninstall"},
-    },
-    "Configure Region Monitor Script": {
-        "MonitorType": {"Geofence": "GeoLocation"},
-    },
-    "Enable Touch Keyboard": {
-        "ShowHide": {"On": "Show", "Off": "Hide"},
-    },
-    "Find Matching Records": {
-        "FindMatchingRecordsByField": {
-            "Replace":   "FindMatchingReplace",
-            "Constrain": "FindMatchingConstrain",
-            "Extend":    "FindMatchingExtend",
-        },
     },
     "Go to Portal Row": {
         "RowPageLocation": {"By Calculation…": "ByCalculation"},

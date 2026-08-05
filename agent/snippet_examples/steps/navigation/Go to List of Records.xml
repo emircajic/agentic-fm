@@ -10,7 +10,8 @@
   </Step>
 </fmxmlsnippet>
 <!-- ShowInNewWindow state: "True" opens in new window (HR: New window). "False" uses current window (HR: Animation option available). Mutually exclusive with Animation. -->
-<!-- LayoutDestination: see animation-enums.md. "CurrentLayout" (HR: <Current Layout>) | "SelectedLayout" + <Layout id="" name=""/> | "LayoutNameByCalc" + <Layout><Calculation> | "LayoutNumberByCalc" + <Layout><Calculation>. -->
+<!-- LayoutDestination: "CurrentLayout" (HR: <Current Layout>) | "SelectedLayout" | "LayoutNameByCalc" | "LayoutNumberByCalc". -->
+<!-- LayoutDestination shapes: SelectedLayout adds <Layout id="" name=""/>; the two by-calculation values add <Layout><Calculation>. See animation-enums.md. -->
 <!-- RowList: required. List of record IDs (list of values, JSON array, or JSON array of objects with recordId key). -->
 <!-- Animation: see animation-enums.md for all values. Only when ShowInNewWindow=False. FileMaker Go only. -->
 <!-- New window mode: when ShowInNewWindow=True, adds Name, Height, Width, DistanceFromTop, DistanceFromLeft calc siblings. See window-enums.md for NewWndStyles attributes and window types. -->

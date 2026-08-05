@@ -140,7 +140,14 @@ _PLACEMENT_KNOWN_GAPS: set[str] = set()
 # A corpus comment that enumerates a param's legal values, e.g.
 #   <!-- WindowState value: "ResizeToFit" | "Maximize" | … -->
 #   <!-- Action enumeration: "GoToURL" loads new web address…; "Reset" … -->
-_LEGAL_VALUES = re.compile(r"<!--\s*([A-Za-z0-9_]+)\s+(?:value|enumeration)\s*:\s*(.+?)-->", re.S)
+#   <!-- RequestType: "SQLQuery" (HR: SQL Query) | "FindRequest" … -->
+# The bare ``Elem:`` form is as common in the corpus as the ``value:``/``enumeration:``
+# ones and carries exactly the same authority; leaving it out silently halved the
+# oracle's reach and is how six more mis-populated params sat unnoticed. Requiring a
+# quoted value on the right (below) keeps prose comments from matching.
+_LEGAL_VALUES = re.compile(
+    r"<!--\s*([A-Za-z0-9_]+)\s+(?:value|enumeration)\s*:\s*(.+?)-->"
+    r"|<!--\s*([A-Za-z0-9_]+)\s*:\s*(\"[^\"]*\".*?)-->", re.S)
 _QUOTED = re.compile(r'"([^"]*)"')
 
 
@@ -162,7 +169,8 @@ def _filemaker_legal_enum_values():
         except (AttributeError, ET.ParseError):
             continue
         names = {st.get("name", "") for st in root.iter("Step")}
-        for elem, body in _LEGAL_VALUES.findall(text):
+        for a_elem, a_body, b_elem, b_body in _LEGAL_VALUES.findall(text):
+            elem, body = (a_elem or b_elem), (a_body or b_body)
             values = set(_QUOTED.findall(body))
             if not values:
                 continue
@@ -207,6 +215,58 @@ def test_saxml_enum_values_are_filemakers():
 
     # a floor, not an exact count: it catches the oracle silently going empty
     assert checked >= 20, f"only {checked} enum values checked against FileMaker"
+
+
+def test_catalog_enum_values_are_filemakers():
+    """The catalog's ``enumValues`` must be the values FileMaker WRITES.
+
+    Same oracle as the SaXML test above, aimed one level lower — at the catalog
+    itself rather than at one reader's output. ``enumValues`` is defined as the
+    value FileMaker serializes into fmxmlsnippet, and ``hrEnumValues`` maps it to
+    the label FileMaker displays. Ten params shipped with the DISPLAY label in
+    ``enumValues`` and no ``hrEnumValues``, so HR->XML emitted the label as the
+    value — ``<WindowState value="Resize to Fit"/>``, which FileMaker discards.
+
+    Nothing this project generates could see it. The goldens come from these same
+    converters and agree with whatever they emit; the corpus XML->HR->XML diff is
+    structurally unable to move, because the same wrong token travels in both
+    directions. Only FileMaker's own legal-value comments (and FileMaker itself)
+    can say, so this asserts against them.
+
+    A param whose corpus comment does not enumerate its values is not checked
+    here — that gap is real and is tracked in the converter coverage doc, not
+    papered over with a permissive default.
+    """
+    legal = _filemaker_legal_enum_values()
+    assert legal, "no legal-value comments found in the corpus — did it move?"
+
+    offenders, checked = [], 0
+    for entry in load_catalog(fm_xml_to_snippet._find_catalog()):
+        per_elem = legal.get(entry.name)
+        if not per_elem:
+            continue
+        for param in entry.params:
+            allowed = per_elem.get(param.xml_element)
+            values = list(param.enum_values or [])
+            if not allowed or not values:
+                continue
+            checked += 1
+            bad = [v for v in values if v not in allowed]
+            if bad:
+                offenders.append(
+                    f"{entry.name} / {param.xml_element}: {bad} not in "
+                    f"{sorted(allowed)} (FileMaker's own legal set)")
+            # A label belongs in hrEnumValues keyed BY the value, never as a key
+            # that is not one of FileMaker's.
+            stray = [k for k in (param.hr_enum_values or {}) if k not in allowed]
+            if stray:
+                offenders.append(
+                    f"{entry.name} / {param.xml_element}: hrEnumValues keyed on "
+                    f"{stray}, which FileMaker never writes")
+
+    assert not offenders, "catalog enumValues disagree with FileMaker:\n  " + \
+        "\n  ".join(offenders)
+    assert checked >= 10, f"only {checked} catalog enums checked against FileMaker"
 
 
 def test_saxml_calc_placement():

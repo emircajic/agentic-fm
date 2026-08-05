@@ -162,39 +162,59 @@ A SaXML `<List name="…">` carries the label the script editor DISPLAYS, not th
 **No rule relates the two.** De-spacing explains `Resize to Fit` and breaks on `Cascade Window`; a prefix explains `Replace` and breaks on everything else; `On` → `Show` and `OpenAI` → `ChatGPT` share nothing with either.
 Like the calc addresses, this is data, and every entry is sourced from FileMaker's own corpus under `agent/snippet_examples/steps` — either a comment that states the mapping outright (`MonitorType value: "iBeacon" | "GeoLocation" (HR: Geofence) | "Clear"`, `ShowHide value: "Show" [On] | "Hide" [Off]`) or a legal-value list whose unchanged members anchor the changed one.
 Resolution order is the measured map, then the catalog's `hrEnumValues` reversed, then the label unchanged.
+Seven steps' entries were removed from the measured map once the catalog's own `hrEnumValues` was corrected to reverse the same labels (Adjust Window, Arrange All Windows, AVPlayer Set Options, Configure AI Account, Configure Region Monitor Script, Enable Touch Keyboard, Find Matching Records) — see the closed section below.
+What remains is what the catalog cannot reverse: a SaXML label that differs from the displayed one (`By Calculation…` carries a trailing ellipsis the Script Workspace does not show), or a param the catalog models differently.
 
 An unmeasured label still passes through rather than refusing the step: refusing would cost every other param on the step to fix nothing, and most enums do label themselves with their own value.
 `test_converter_conformance.test_saxml_enum_values_are_filemakers` is the guard — it asserts every emitted enum value against those same corpus comments, so a label that reaches the output fails the gate.
 A golden cannot do this job: regenerate it from a reader that emits labels and the labels become the expectation.
 
-#### Open — the catalog's `enumValues` has the same disease, on the HR→XML path
+#### Closed — the catalog's `enumValues` had the same disease, on the HR→XML path
 
-Ten params hold FileMaker's **display label** where the catalog is supposed to hold the value FileMaker writes.
-The SaXML reader routes around it through `_SAXML_ENUM_LABELS` above; **HR→XML does not**, in Python or TypeScript.
-`Adjust Window [ Resize to Fit ]` emits `<WindowState value="Resize to Fit"/>`, and FileMaker will not accept it back.
+Eighteen enum params held FileMaker's **display label** where the catalog is supposed to hold the value FileMaker writes.
+The SaXML reader routed around ten of them through `_SAXML_ENUM_LABELS` above; **HR→XML did not**, in Python or TypeScript.
+`Adjust Window [ Resize to Fit ]` emitted `<WindowState value="Resize to Fit"/>`, which FileMaker discards.
 
-| Step / param | Catalog `enumValues` says | FileMaker writes |
-|---|---|---|
-| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` |
-| `Arrange All Windows` / `WindowArrangement` | `Tile Horizontally`, `Tile Vertically`, `Cascade Window`, `Bring All To Front` | `TileHorizontally`, `TileVertically`, `Cascade`, `BringAllToFront` |
-| `AVPlayer Set Options` / `Zoom` | `Fit Only`, `Fill Only`, `Stretch Only` | `FitOnly`, `FillOnly`, `StretchOnly` |
-| `Configure AI Account` / `LLMType` | `OpenAI`, `Custom` | `ChatGPT`, `Other` |
-| `Configure Machine Learning Model` / `ConfigureCoreML` | `Unload` | `Uninstall` |
-| `Configure Region Monitor Script` / `MonitorType` | `Geofence` | `GeoLocation` |
-| `Enable Touch Keyboard` / `ShowHide` | `On`, `Off` | `Show`, `Hide` |
-| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace`, `Constrain`, `Extend` | `FindMatchingReplace`, `FindMatchingConstrain`, `FindMatchingExtend` |
-| `Go to Record/Request/Page` / `RowPageLocation` | `By Calculation` | `ByCalculation` |
-| `Go to Portal Row` / `RowPageLocation` | `By Calculation` | `ByCalculation` |
+Each now holds FileMaker's value in `enumValues` and FileMaker's label in `hrEnumValues`, so the existing reverse map does the work on emit and the forward map renders the label on read:
 
-Note `RowPageLocation`'s three spellings: SaXML says `By Calculation…`, FileMaker's fmxmlsnippet says `ByCalculation`, and the catalog says `By Calculation`, matching neither.
+| Step / param | was in `enumValues` | FileMaker writes | FileMaker displays |
+|---|---|---|---|
+| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` | `Resize to Fit` |
+| `Arrange All Windows` / `WindowArrangement` | `Tile Horizontally`, `Tile Vertically`, `Cascade Window`, `Bring All To Front` | `TileHorizontally`, `TileVertically`, `Cascade`, `BringAllToFront` | the four label forms |
+| `AVPlayer Set Options` / `Zoom` | `Fit Only`, `Fill Only`, `Stretch Only` | `FitOnly`, `FillOnly`, `StretchOnly` | `Fit Only`, `Fill Only`, `Stretch Only` |
+| `Configure AI Account` / `LLMType` | `OpenAI`, `Custom` | `ChatGPT`, `Other` | `OpenAI`, `Custom` |
+| `Configure Machine Learning Model` / `Operation` | `Unload` | `Uninstall` | `Unload` |
+| `Configure Region Monitor Script` / `MonitorType` | `Geofence` | `GeoLocation` | `Geofence` |
+| `Enable Touch Keyboard` / `ShowHide` | `On`, `Off` | `Show`, `Hide` | `On`, `Off` |
+| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace`, `Constrain`, `Extend` | `FindMatchingReplace`, `FindMatchingConstrain`, `FindMatchingExtend` | `Replace`, `Constrain`, `Extend` |
+| `Go to Record/Request/Page`, `Go to Portal Row` / `RowPageLocation` | `By Calculation` | `ByCalculation` | *(nothing — see below)* |
+| `Add Account` / `AccountType` | `External Server`, `Apple Account`, `Microsoft Entra ID`, `Custom OAuth` | `ExternalServer`, `AppleID`, `Azure`, `CustomOauth`, plus `AzureGroup` and `CustomOauthGroup`, which were missing | `Apple Account`, `Microsoft Entra ID`, `Custom OAuth` |
+| `Configure Prompt Template` / `ModelProvider` | `OpenAI` | `ChatGPT` | `OpenAI` |
+| `Configure Prompt Template` / `RequestType` | `SQL Query`, `Find Request`, `RAG Prompt` | `SQLQuery`, `FindRequest`, `RAGPrompt` | `SQL Query`, `Find Request`, `RAG Prompt` |
+| `Configure Regression Model` / `LLMTrainAction` | `Train Model`, `Save Model`, `Load Model`, `Unload Model` | `LLMTrainTrainModel`, `LLMTrainSaveModel`, `LLMTrainLoadModel`, `LLMTrainUnloadModel` | the four label forms |
+| `Configure Regression Model` / `LLMAlgorithm` | `Random Forest` | `LLMTrainAlgForest` | `Random Forest` |
+| `Fine-Tune Model` / `DataSource` | `Table`, `File` | `DataTable`, `TrainingFile` | `Table`, `File` |
+| `Go to Layout` / `LayoutDestination` | `CurrentLayout`, `LayoutNameByCalc`, `LayoutNumberByCalc` | `SelectedLayout`, `OriginalLayout`, `LayoutNameByCalc`, `LayoutNumberByCalc` | *(the layout token)* |
+| `Go to List of Records` / `LayoutDestination` | `<Current Layout>` | `CurrentLayout` | *(the layout token)* |
+| `Go to Related Record` / `LayoutDestination` | `OriginalLayout` | `UseExternalTableLayouts` was missing; `OriginalLayout` is not accepted | *(the layout token)* |
 
-Correcting it is not a one-line edit, which is why it is listed rather than done: the fix moves FileMaker's value into `enumValues` and FileMaker's label into `hrEnumValues`, and that **changes HR rendering** for these steps — `<WindowState value="ResizeToFit"/>` renders as `ResizeToFit` today and would render as `Resize to Fit` after.
-The label is almost certainly right (the catalog's current string and the SaXML label agree, independently), but "almost certainly" is not the standard this file argues for everywhere else.
+Two spellings that look interchangeable and are not: `RowPageLocation` is `ByCalculation` in fmxmlsnippet, `By Calculation…` in SaXML (with a trailing ellipsis), and the Script Workspace shows **no token at all** — FileMaker puts the calculation in that slot instead.
+And `LayoutDestination` is `LayoutNameByCalc` on `Go to Related Record` and `Go to List of Records` but the *same* short spelling on `Go to Layout`, where the corpus comment had claimed `LayoutNameByCalculation`; FileMaker 26.0.1 discards the long form. `CurrentLayout` is legal on the other two steps and not on `Go to Layout`.
+
+Every value of every corrected param was pasted into a live FileMaker 26.0.1 and read back — the labels above are what its Script Workspace rendered, not what the catalog previously claimed.
+`test_converter_conformance.test_catalog_enum_values_are_filemakers` is the standing guard: it asserts the catalog's `enumValues` against FileMaker's own legal-value comments, which is the check that would have caught this class the day it landed.
+
+Three things this pass measured that are **not** enum-value defects and are still open:
+
+- **`RowPageLocation = ByCalculation` loses the calculation on HR→XML.** FileMaker renders no location token for that value, so parsing FileMaker's own HR line back consumes the calculation as the location. It needs a render-gating facet, not a value.
+- **`LayoutDestination` is a driven discriminator** — its value is re-derived from the layout token, which cannot distinguish `CurrentLayout` / `LayoutNameByCalc` / `LayoutNumberByCalc` / `UseExternalTableLayouts`, so all four resolve to `SelectedLayout` on the way back.
+- **`Add Account`'s group types (`ExternalServer`, `AzureGroup`, `CustomOauthGroup`) cannot round-trip through HR** — FileMaker shows no `Authenticate via` token for them at all, so there is nothing to read back. They are in `enumValues` (FileMaker writes them) with no `hrEnumValues` entry, because no label was observed and one must not be invented.
 
 **Every catalog change must be verified end-to-end against a live FileMaker, through every converter it feeds.**
 The catalog is not a document, it is the program driving HR→XML, XML→HR and SaXML→XML at once, and each direction can be wrong in a way the others hide.
 A green suite is not verification — the goldens are generated from these same converters, so they agree with whatever the converter emits; re-blessing them is a consequence of a fix, never evidence for it.
 Neither is an unchanged corpus diff, nor `snippet_examples` alone: that corpus is FileMaker's own output and the best offline oracle for the value FileMaker *writes*, but it is a fixed sample and it cannot tell you the label FileMaker *displays*.
+For this defect the corpus diff could not move **at all**: `enumValues` is inert on the XML→HR→XML path, because the same wrong token travels in both directions.
 Paste the emitted step into the Script Workspace, confirm FileMaker renders the option you meant, then copy it back out and diff — FileMaker silently discards a parameter it does not recognise, so a clean paste proves nothing until you read the step back.
 Cover every value of every param touched, not one sample per step.
 Full rule: `agent/catalogs/UPDATING_CATALOGS.md` § "The verification rule".

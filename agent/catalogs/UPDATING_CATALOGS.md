@@ -21,7 +21,7 @@ The catalog is not a document; it is the program that drives HR→XML, XML→HR,
 
 **What does count:** emit the step, paste it into FileMaker's Script Workspace, and confirm FileMaker accepts it and renders the step you meant — then copy it back out and confirm FileMaker's own XML matches what the catalog produces. Round-trip both directions for every enum value, every boolean state, and every discriminator branch you touched, not just the one you were looking at. FileMaker silently discards a parameter it does not recognise, so a step that pastes without complaint has not passed: read the pasted step back.
 
-An enum is the sharpest case. `enumValues` must hold the value FileMaker **writes into XML**, and `hrEnumValues` maps that value to the label FileMaker **displays**. Getting these backwards produces a step that looks right in every diff and that FileMaker rejects — see the open list in `agent/docs/CONVERTERS.md`.
+An enum is the sharpest case. `enumValues` must hold the value FileMaker **writes into XML**, and `hrEnumValues` maps that value to the label FileMaker **displays**. Getting these backwards produces a step that looks right in every diff and that FileMaker rejects. Eighteen params shipped that way and were corrected on 2026-08-05 — `agent/docs/CONVERTERS.md` § "Closed — the catalog's `enumValues` had the same disease" is the record. `test_converter_conformance.test_catalog_enum_values_are_filemakers` now asserts every `enumValues` against FileMaker's own legal-value comments in `agent/snippet_examples/steps/**`, so this class fails offline; it still cannot tell you the **label**, which only FileMaker can.
 
 ## Token Efficiency
 

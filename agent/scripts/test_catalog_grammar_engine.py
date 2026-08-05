@@ -85,7 +85,11 @@ def test_parent_element_descent_reveals_nested_named_calcs():
     out = _render("Configure AI Account")
     assert 'Account Name: "account_name"' in out
     assert 'API key: "api_key"' in out
-    assert "Model Provider: ChatGPT" in out
+    # ChatGPT is the value FileMaker WRITES; OpenAI is the label it DISPLAYS, and
+    # the label is what belongs in HR (measured against FileMaker 26.0.1's Script
+    # Workspace). This assertion read "ChatGPT" while the catalog held the label
+    # in `enumValues` with no `hrEnumValues` to map it.
+    assert "Model Provider: OpenAI" in out
 
 
 def test_empty_reference_token_omitted():

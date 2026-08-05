@@ -6,7 +6,8 @@
     <Animation value=""/>
   </Step>
 </fmxmlsnippet>
-<!-- LayoutDestination enumeration: "SelectedLayout" specifies layout by name from list; "OriginalLayout" uses active layout when script initiated; "LayoutNameByCalculation" specifies formula whose result is valid layout name; "LayoutNumberByCalculation" specifies formula whose result is valid layout number (layout numbers correspond to order of layouts in file). -->
+<!-- LayoutDestination enumeration: "SelectedLayout" specifies layout by name from list; "OriginalLayout" uses active layout when script initiated (HR: original layout); "LayoutNameByCalc" specifies formula whose result is valid layout name; "LayoutNumberByCalc" specifies formula whose result is valid layout number (layout numbers correspond to order of layouts in file). -->
+<!-- The two by-calculation values were written here as "LayoutNameByCalculation"/"LayoutNumberByCalculation", which came from the help text rather than from FileMaker. Pro 26.0.1 discards both spellings and re-serializes SelectedLayout; the short forms above survive. It also discards "CurrentLayout", which is legal on Go to Related Record and Go to List of Records but not on this step. -->
 <!-- Animation value: specifies animation for switching to new layout (FileMaker Go only). -->
 <!-- Required: LayoutDestination. -->
 <!-- Optional: Layout (for SelectedLayout; layout id and name), Animation (FileMaker Go only). -->
