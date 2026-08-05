@@ -1099,10 +1099,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
-        "defaultValue": "False"
+        "defaultValue": "False",
+        "notes": "Renders no HR token of its own; FM shows the Natural Language Prompt token when True. DERIVED: handed False alongside a NaturalLanguagePrompt, FM re-canonicalized it to True (live copy-back)."
       }
     ],
     "hrSignature": "[ Template Name: calc ; Model Provider: option ; Template Type: option ; SQL Prompt: calc ; Natural Language Prompt: calc ; Find Request Prompt: calc ; RAG Prompt: calc ]",
@@ -1312,16 +1314,6 @@
     "selfClosing": false,
     "params": [
       {
-        "xmlElement": "Option",
-        "flagStyle": true,
-        "type": "boolean",
-        "hrLabel": "Find without indexes",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "False",
-        "notes": "Flag-style: shown as \"Find without indexes\" when True, omitted when False"
-      },
-      {
         "xmlElement": "Restore",
         "flagStyle": true,
         "type": "boolean",
@@ -1330,6 +1322,16 @@
         "required": false,
         "defaultValue": "True",
         "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
+      },
+      {
+        "xmlElement": "Option",
+        "flagStyle": true,
+        "type": "boolean",
+        "hrLabel": "Find without indexes",
+        "xmlAttr": "state",
+        "required": false,
+        "defaultValue": "False",
+        "notes": "Flag-style: shown as \"Find without indexes\" when True, omitted when False"
       },
       {
         "xmlElement": "Query",
@@ -1704,11 +1706,12 @@
       {
         "xmlElement": "UseDialPreferences",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "False",
-        "notes": "Not shown in HR."
+        "notes": "Renders no HR token in either state (live copy-back; both states landed once forced on the `value` attribute FM actually keys off, not `state`)."
       },
       {
         "xmlElement": "Calculation",
@@ -1931,6 +1934,16 @@
     "selfClosing": false,
     "params": [
       {
+        "xmlElement": "Restore",
+        "flagStyle": true,
+        "type": "boolean",
+        "hrLabel": "Restore",
+        "xmlAttr": "state",
+        "required": false,
+        "defaultValue": "True",
+        "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
+      },
+      {
         "xmlElement": "Pause",
         "type": "boolean",
         "hrLabel": "Pause",
@@ -1941,16 +1954,6 @@
           "On",
           "Off"
         ]
-      },
-      {
-        "xmlElement": "Restore",
-        "flagStyle": true,
-        "type": "boolean",
-        "hrLabel": "Restore",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "True",
-        "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
       },
       {
         "xmlElement": "Query",
@@ -2274,11 +2277,12 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "Not shown in HR. Controls whether stored export order is used."
+        "notes": "Renders no HR token of its own; FM shows the stored export order's character set only when True (live copy-back: <ExportOptions CharacterSet> is serialized in BOTH states, so this gates RENDERING, not presence). FM does NOT re-canonicalize it from content — handed False with a non-default charset it kept False and reset the charset — so the converter derives the state from whether the gated companion carries an HR token."
       },
       {
         "xmlElement": "AutoOpen",
@@ -2319,6 +2323,7 @@
         "xmlElement": "ExportOptions",
         "type": "attrGroup",
         "hrLabel": "Export options",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false,
         "fields": [
           { "key": "FormatUsingCurrentLayout", "kind": "attr", "xmlAttr": "FormatUsingCurrentLayout", "defaultValue": "False" },
@@ -2468,6 +2473,7 @@
         "xmlElement": "Table",
         "type": "complex",
         "hrLabel": null,
+        "visibleWhen": { "param": "Option", "values": ["True"] },
         "required": false,
         "notes": "Sibling. For DataTable source only. <Table id='' name=''/> with table id/name. Shown in HR as quoted table name."
       },
@@ -2505,11 +2511,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "False when no table selected or TrainingFile. True when table explicitly selected for DataTable. Not shown in HR."
+        "notes": "Renders no HR token of its own; FM shows the training table and Completion Field only when True. FM does NOT re-canonicalize it from content — handed False with a real <Table> it kept False and wiped the table to id 0 — so the converter derives the state from whether the gated table carries an HR token. The Completion Field cannot be gated as well until this step's two colliding <Field> params get distinct keys (see CONVERTER_STEP_COVERAGE.md)."
       }
     ],
     "hrSignature": "Fine-Tune Model [ Account Name: {calc} ; Base Model: {calc} ; Training Data: {Table|File} ; {table|path} ; Completion Field: {field} ; Response Target: {field|$variable} ; Parameters: {calc} ]",
@@ -2678,38 +2685,42 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when Parameters present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Parameters. Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "SelectAll",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when ToolDefinitions present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Tool Definitions (and Tool Calls from Model). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "LinkAvail",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when Messages/SlidingWindow present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Save Message History To (the sliding-window group). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when WebScript present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Web Viewer / Function Name (the WebScript group). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       }
     ],
     "hrSignature": "Generate Response from Model [ Account Name: {calc} ; Model: {calc} ; User Prompt: {calc} ; Agentic mode ; Response: {field|$variable} ; Tool Calls from Model: {$variable} ; Instructions: {calc} ; Messages: {$variable} ; Save Message History To: {$variable} ; Message History Count: {calc} ; Temperature: {calc} ; Tool Definitions: {calc} ; Stream ; Parameters: {calc} ; Web Viewer: {$object} ; Function Name: {calc} ]",
@@ -3366,11 +3377,12 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "Internal flag for stored import order. Not directly shown in HR."
+        "notes": "Renders no HR token of its own; FM shows the stored import order (target table, method, character set) only when True (live copy-back: <Table> and <ImportOptions> are serialized in BOTH states, so this gates RENDERING, not presence). FM does NOT re-canonicalize it from content — handed False with a non-default method it kept False, reset the options and wiped the table — so the converter derives the state from whether a gated companion carries an HR token."
       },
       {
         "xmlElement": "VerifySSLCertificates",
@@ -3407,6 +3419,7 @@
         "xmlElement": "ImportOptions",
         "type": "attrGroup",
         "hrLabel": "Import options",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false,
         "fields": [
           { "key": "CharacterSet", "kind": "attr", "xmlAttr": "CharacterSet", "defaultValue": "UTF-8" },
@@ -3422,6 +3435,7 @@
         "xmlElement": "Table",
         "type": "tableRef",
         "hrLabel": "Table",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false
       },
       {
@@ -4888,10 +4902,12 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
-        "defaultValue": "False"
+        "defaultValue": "False",
+        "notes": "Renders no HR token, and FM will not store True: pasted True alongside the step's other three flags (which all landed True), it came back False. A dead flag. Probed with a paired Commit Transaction, since FM rejects the opener alone."
       }
     ],
     "hrSignature": "[ Skip auto-enter options ; Skip data entry validation ; Override ESS locking conflicts ]",
@@ -8725,11 +8741,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when a source password (OpenPassword) is specified"
+        "notes": "Renders no HR token of its own; FM shows a masked Password token when True. DERIVED: handed False alongside an OpenPassword, FM re-canonicalized it to True (live copy-back), so emitting the catalog default here is repaired by FM."
       },
       {
         "xmlElement": "UniversalPathList",
@@ -8782,11 +8799,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when a source password (OpenPassword) is specified"
+        "notes": "Renders no HR token of its own; FM shows a masked Password token when True. DERIVED: handed False alongside an OpenPassword, FM re-canonicalized it to True (live copy-back), so emitting the catalog default here is repaired by FM."
       },
       {
         "xmlElement": "UniversalPathList",
@@ -8931,29 +8949,32 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when stored print options (PrintSettings) are attached"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when stored print options are attached. FM obeys the flag and drops the PrintSettings child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "UsePrintOptionsFromEnabled",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True reads print options from a container (PrintSettings/UsePrintOptionsFrom)"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when print options are read from a container (PrintSettings/UsePrintOptionsFrom). FM obeys the flag and drops that child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "SavePrintOptionsToEnabled",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True saves print options to a container (PrintSettings/SavePrintOptionsTo)"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when print options are saved to a container (PrintSettings/SavePrintOptionsTo). FM obeys the flag and drops that child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "Restore",
