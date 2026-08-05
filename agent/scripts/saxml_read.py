@@ -11,8 +11,8 @@ grammar (``catalog_emit.convert_step_with_catalog``) serves both HR→XML and Sa
                                               │
                                     [convert_step_with_catalog]  →  fmxmlsnippet <Step>
 
-Unlike the fmxmlsnippet↔HR directions, the SaXML direction has **no C++/API reference
-converter** (the C++ handles only fmxmlsnippet↔HR), so this reader is verified by
+Unlike the fmxmlsnippet↔HR directions, the SaXML direction has **no reference
+converter** (the reference covers only fmxmlsnippet↔HR), so this reader is verified by
 coverage + regression against the prior converter + live round-trips, not byte-identity
 against a reference. The structural decoding of SaXML mirrors the OSS Rust exploder
 (``external_tools/fm-xml-export-exploder``), the closest SaXML-side reference.

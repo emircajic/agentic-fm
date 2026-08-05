@@ -14,7 +14,8 @@
  * uses ElementTree-`find` semantics — **direct children only** — never
  * `querySelector` (which would match descendants); see `findChild`/`findChildren`.
  *
- * `ComputeParamHr` → `computeParamHr`; `RenderGenericXmlToHr` → `renderStepHr`.
+ * The reference's per-param HR computation maps here to `computeParamHr` and its
+ * whole-step renderer to `renderStepHr`.
  * Control-flow steps are NOT rendered here — they stay hand-coded in
  * steps/control.ts (the sanctioned exception), exactly as snippet_to_hr.py keeps
  * them hand-coded.
@@ -187,7 +188,7 @@ export function blockIndent(name: string): { closeBefore: boolean; openAfter: bo
 }
 
 /**
- * The ParamKey rule (matches the reference converter and Python `param_key`): a
+ * The param-key rule (matches the reference converter and Python `param_key`): a
  * `namedCalc` param keys off its `wrapperElement`; any other param off its
  * `xmlElement`.
  */
@@ -276,7 +277,7 @@ export function getGrammarEntry(name: string): GrammarEntry | undefined {
 /**
  * FileMaker's universal step-type id for `name` (the `<Step id="N">` constant),
  * resolved from the loaded catalog — 0 when the catalog isn't loaded or the name
- * is unknown. Mirrors the reference converter's `ResolveStepId`; shared so the
+ * is unknown. Mirrors the reference converter's own step-id lookup; shared so the
  * HR→XML emit path and control-flow hand-coders write the same real id FM does.
  */
 export function resolveStepId(name: string): number {
@@ -309,7 +310,7 @@ export function valueRevealsCompanion(
 /**
  * Every label a param's HR token may carry — its base hrLabel plus any
  * `hrLabelWhen` variant labels — longest first (lexicographic tiebreak) with
- * duplicates removed. Port of the reference `CandidateHrLabels`; the HR parse
+ * duplicates removed. Ports the reference converter's candidate-label rule; the HR parse
  * matcher tries each so a variant-labeled value round-trips.
  */
 export function candidateHrLabels(param: GrammarParam): string[] {
@@ -513,9 +514,9 @@ function bitmaskMaskForFlags(param: GrammarParam, labels: string[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Per-param HR fragment (ComputeParamHr)
+// Per-param HR fragment
 // ---------------------------------------------------------------------------
-/** Compute one param's HR fragment ('' = no token). Port of ComputeParamHr. */
+/** Compute one param's HR fragment ('' = no token), as the reference does. */
 export function computeParamHr(entry: GrammarEntry, step: Element, param: GrammarParam): string {
   let val = '';
   let base = !param.parentElement ? step : descendPath(step, param.parentElement);
@@ -748,7 +749,7 @@ function renderDiscriminatorGroup(entry: GrammarEntry, step: Element, param: Gra
 }
 
 /**
- * Render a full step to its HR bracket line. Port of RenderGenericXmlToHr.
+ * Render a full step to its HR bracket line, as the reference does.
  * Returns `entry.name` alone when no param contributes a token, else
  * `Name [ tok ; tok ; … ]`. Does not handle control-flow steps.
  */

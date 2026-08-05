@@ -9,7 +9,7 @@ This module defines, once for the Python side:
   * ``Value`` — a tagged union of the concrete values a parameter can hold.
   * The typed catalog model (``CatalogEntry`` / ``StepParam`` / ``DiscriminatorBranch``
     and the facet carriers) that the grammar engine reads its rules from.
-  * ``param_key()`` — the ParamKey rule (a ``namedCalc`` param keys off its
+  * ``param_key()`` — the param-key rule (a ``namedCalc`` param keys off its
     ``wrapperElement``, every other param off its ``xmlElement``), matching the
     reference converter. Every ``namedCalc`` shares ``xmlElement == "Calculation"``,
     so the wrapper is what disambiguates them.
@@ -74,7 +74,7 @@ KNOWN_PARAM_TYPES: frozenset[str] = frozenset(
 class DiscriminatorBranch:
     """One branch of a ``discriminatorValues`` map (keyed by the enum value).
 
-    ``reveal`` lists sibling ParamKeys that become live for this branch; ``hrToken``
+    ``reveal`` lists sibling param keys that become live for this branch; ``hrToken``
     substitutes a fixed HR string for the whole step slot; ``labeled`` flags a branch
     whose revealed params render with their HR labels rather than positionally.
     """
@@ -232,7 +232,7 @@ class StepParam:
 
     @property
     def key(self) -> str:
-        """The ParamKey for this param — see ``param_key``."""
+        """The param key for this param — see ``param_key``."""
         return param_key(self)
 
 
@@ -281,7 +281,7 @@ class CatalogEntry:
 
 
 def param_key(param: StepParam) -> str:
-    """ParamKey rule (matches the reference converter).
+    """Param-key rule (matches the reference converter).
 
     A ``namedCalc`` param keys off its ``wrapperElement`` (every namedCalc shares
     ``xmlElement == "Calculation"``, so the wrapper disambiguates); any other param
@@ -357,7 +357,7 @@ Value = Union[Absent, Scalar, Calc, Field, Ref, ListValue, Group]  # noqa: UP007
 class StepInstance:
     """The shared in-memory shape every converter reads or writes.
 
-    ``values`` is keyed by ParamKey (see ``param_key``); a param absent from the
+    ``values`` is keyed by param key (see ``param_key``); a param absent from the
     source is either omitted or mapped to ``ABSENT``.
     """
 
@@ -432,9 +432,10 @@ def load_report(path: str) -> LoadReport:
 # (bitmask tables, attrGroup field specs, repeat/list entry shapes) are read from
 # there; the simple values use the typed fields.
 #
-# ``ComputeParamHr`` maps here to ``compute_param_hr``; ``RenderGenericXmlToHr``
-# to ``render_step_hr``. Control-flow steps are NOT rendered here — they stay
-# hand-coded in snippet_to_hr.py (the sanctioned exception).
+# The reference's per-param HR computation maps here to ``compute_param_hr`` and
+# its whole-step renderer to ``render_step_hr``. Control-flow steps are NOT
+# rendered here — they stay hand-coded in snippet_to_hr.py (the sanctioned
+# exception).
 
 
 def _ci_equals(a: str, b: str) -> bool:
@@ -521,8 +522,8 @@ def is_driven_discriminator(entry: CatalogEntry, param: StepParam) -> bool:
 def value_reveals_companion(discrim: StepParam, value: str, elem: str) -> bool:
     """Whether governing discriminator ``discrim``'s XML ``value`` reveals ``elem``.
 
-    Port of the reference ``ValueRevealsCompanion`` (and TS ``valueRevealsCompanion``);
-    shared by the HR→XML emit engine (P6.3 TS / P6.4 Python).
+    Ports the reference converter's companion-reveal predicate (TS
+    ``valueRevealsCompanion``); shared by the HR→XML emit engine.
     """
     branch = discrim.discriminator_values.get(value)
     if branch is None:
@@ -533,7 +534,7 @@ def value_reveals_companion(discrim: StepParam, value: str, elem: str) -> bool:
 def candidate_hr_labels(param: StepParam) -> list[str]:
     """Every label a param's HR token may carry — base ``hr_label`` plus any
     ``hr_label_when`` variant labels — longest first (lexicographic tiebreak),
-    duplicates removed. Port of the reference ``CandidateHrLabels`` (TS
+    duplicates removed. Ports the reference converter's candidate-label rule (TS
     ``candidateHrLabels``); the HR parse matcher tries each so a variant-labeled
     value round-trips.
     """
@@ -730,9 +731,9 @@ def _bitmask_mask_for_flags(param: StepParam, labels: list[str]) -> int:
     return m
 
 
-# --- per-param HR fragment (ComputeParamHr) ---------------------------------
+# --- per-param HR fragment ------------------------------------------------
 def compute_param_hr(entry: CatalogEntry, step: ET.Element, param: StepParam) -> str:
-    """Compute one param's HR fragment ('' = no token). Port of ComputeParamHr."""
+    """Compute one param's HR fragment ('' = no token), as the reference does."""
     val = ""
     base = step if not param.parent_element else _descend_path(step, param.parent_element)
     if base is None:
@@ -983,7 +984,7 @@ def render_discriminator_group(
 
 
 def render_step_hr(entry: CatalogEntry, step: ET.Element) -> str:
-    """Render a full step to its HR bracket line. Port of RenderGenericXmlToHr.
+    """Render a full step to its HR bracket line, as the reference does.
 
     Returns ``entry.name`` alone when no param contributes a token, else
     ``Name [ tok ; tok ; … ]``. Does not handle control-flow steps.

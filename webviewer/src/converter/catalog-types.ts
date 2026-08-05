@@ -130,7 +130,7 @@ export interface StepParam {
   wrapperElement?: string;
   /** Enclosing element the param nests under, when not a direct Step child */
   parentElement?: string;
-  /** HR slot index — overrides catalog order for HR rendering (HrParamOrder) */
+  /** HR slot index — overrides catalog order for HR rendering (see `hrParamOrder`) */
   hrSlot?: number;
   /** When true, the param is hidden from HR but still emitted to XML (attrGroup defaults) */
   hrHidden?: boolean;
@@ -192,7 +192,7 @@ export interface StepBlockPair {
 // ---------------------------------------------------------------------------
 
 /**
- * The ParamKey rule: a `namedCalc` param keys off its `wrapperElement`; every
+ * The param-key rule: a `namedCalc` param keys off its `wrapperElement`; every
  * other param keys off its `xmlElement`. Every namedCalc shares
  * `xmlElement === "Calculation"`, so the wrapper is what disambiguates them.
  * Matches the reference converter's param-key rule.
@@ -219,7 +219,7 @@ export const ABSENT: Value = { kind: 'absent' };
 
 /**
  * The shared in-memory shape every converter reads or writes. `values` is keyed
- * by ParamKey (see `paramKey`); a param absent from the source is either omitted
+ * by param key (see `paramKey`); a param absent from the source is either omitted
  * or mapped to `ABSENT`.
  */
 export interface StepInstance {

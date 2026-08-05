@@ -2,7 +2,7 @@
  * catalog-emit.ts — the shared catalog grammar engine, HR→XML direction (TS port).
  *
  * A faithful TypeScript port of the reference converter's HR→fmxmlsnippet path
- * (`MatchParamValues` + `ConvertStepWithCatalog` + every `Emit*` helper): parse an
+ * (its HR-param matcher, its step orchestrator and every per-type emit helper): parse an
  * HR bracket line into per-param values (two-phase label/flag then positional),
  * then emit the step's XML in **catalog param order** with the full grammar —
  * discriminators, attrGroup/repeatGroup/fieldList/findRequests/parametersList,
@@ -11,7 +11,7 @@
  *
  * The inverse of catalog-grammar.ts (XML→HR). Both read the same catalog grammar
  * model (`GrammarEntry`/`GrammarParam`, incl. the untyped `raw` facet tail) and
- * are kept deliberately parallel to the Python/C++ references so a facet added to
+ * are kept deliberately parallel to the Python port and the reference so a facet added to
  * one direction is obviously missing from the other (plan's structural-parity
  * risk). Control-flow steps are NOT emitted here — they stay hand-coded in
  * steps/control.ts (the sanctioned exception).

@@ -2,8 +2,8 @@
 """test_catalog_emit.py — gate the P6.4 emit engine against the reference fixtures.
 
 ``catalog_emit.py`` is a faithful port of the reference HR→fmxmlsnippet emit path and a
-line-for-line counterpart of the shipped TS ``catalog-emit.ts``. Since no C++ reference
-converter exists for the SaXML direction (P6.4's defining constraint), the emitter is
+line-for-line counterpart of the shipped TS ``catalog-emit.ts``. Since the reference
+converter has no SaXML direction (P6.4's defining constraint), the emitter is
 gated the same way the TS port was: byte-identity against the committed
 ``webviewer/test/fixtures/hr-to-xml.json`` — the reference ``/api/hr-to-xml`` output.
 

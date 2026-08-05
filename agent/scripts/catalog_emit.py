@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """catalog_emit.py — the shared catalog grammar engine, values→XML direction (P6.4).
 
-A faithful Python port of the reference converter's HR→fmxmlsnippet emit path
-(``MatchParamValues`` + ``ConvertStepWithCatalog`` + every ``Emit*`` helper), and a
+A faithful Python port of the reference converter's HR→fmxmlsnippet emit path (its
+HR-param matcher, its step orchestrator and every per-type emit helper), and a
 line-for-line counterpart of the shipped TS ``webviewer/src/converter/catalog-emit.ts``
 (P6.3). Both are kept deliberately parallel so a facet added to one port is obviously
 missing from the other (the plan's "Python↔TS structural parity" risk).
@@ -13,7 +13,7 @@ Two public entry points:
     the per-catalog-param ``values[]`` token array (two-phase: pass 1 flags/labels,
     pass 2 positional). Used to *gate* the emitter against the committed
     ``hr-to-xml.json`` reference fixtures (the same 213/213 oracle the TS port uses),
-    since no C++ reference exists for the SaXML direction.
+    since the reference converter has no SaXML direction to grade against.
   * ``convert_step_with_catalog(entry, disabled, values, resolver)`` — emit the step's
     fmxmlsnippet XML in **catalog param order** from a ``values[]`` array (one token per
     catalog param). This is the shared emitter the P6.4 SaXML reader feeds directly
@@ -21,7 +21,8 @@ Two public entry points:
     HR→XML gate and SaXML→snippet conversion.
 
 The ``values[]`` array *is* the OSS's made-explicit form of the reference's inline
-value threading (the C++ threads values inline with no struct; this names them). Object
+value threading (the reference threads values inline with no struct; this names
+them). Object
 references resolve through an injected ``IdResolver`` — an empty resolver yields the
 ``id="0"`` name-only refs the fixtures use, while the SaXML path seeds the resolver from
 the source's own IDs so real IDs are preserved.
