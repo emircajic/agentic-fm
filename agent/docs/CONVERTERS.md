@@ -90,15 +90,62 @@ With one candidate there is no choice to get wrong, so the positional read stand
 With more than one it refuses, counting the step as unsupported and emitting a marked placeholder.
 Guessing produces a plausible `<Elem state="…"/>` holding a value that means something else, and nothing downstream can tell.
 
-**The calc side has the same blindness and is not fixed.** Calculations are consumed strictly in document order with no matching at all, and FileMaker does not always export them in catalog order.
+#### Placing a SaXML calculation
 
-Two steps are proven to mis-place every calc, both because FileMaker exports them last-to-first: `Perform SQL Query by Natural Language` (`LLMMessage` / `LLMModel` / `LLMAccountName`, so `AccountName` receives the prompt and `PromptMessage` receives the account name) and `Generate Response from Model` (ten calcs deep — `Model` receives the Parameters text, `Temperature` receives Instructions).
+Calculations are placed by **name**, against `saxml_read._SAXML_CALC_PARAMS`.
 
-Neither appears in any processed SaXML corpus, which is why no sweep found them. 44 catalog steps carry more than one calc param, 36 of those are on the generic path, and 21 of *those* have never been observed in a real export — so the corpus being clean is a coverage statement, not a correctness result.
+An address is a path that starts at the top-level `<Parameter type="…">` and reads downward, where a nested `<Parameter type="X">` contributes `X` and any other element contributes its tag.
+It matches as an ordered subsequence anchored at the top, so it only needs to be long enough to separate two params that share a parent: `Go to Object` addresses its object name as `Object/Name` and its repetition as `Object/repetition`, while a param with a parent to itself is just its type.
+Two params may share one address — `Set Field By Name` exports both calcs as `<Parameter type="Calculation">` — and then claim that address's calcs in document order, which is catalog order in every case measured.
 
-A fix needs per-step decoders or a catalog-side SaXML-name facet, not a positional tweak: across every observed pairing, **no** SaXML `<Parameter type>` equals the catalog param's `wrapperElement`, and stripping the `LLM` prefix closes none of the gap (`LLMInstruction` → `Instructions`, `LLMSlidingWindowCount` → `SlidingWindowMessageCount`, `LLMMessage` → `PromptMessage`). The mapping is data, not a rule.
+A step absent from the table still reads positionally.
+A step present in it does not fall back: a param with no address reads as empty, and a calc no address claims makes the reader refuse the step, because on a step whose layout was measured whole a leftover calc means the measurement no longer matches what FileMaker exports.
+
+**The names are data, not a rule.** 88 of the 114 measured addresses differ from the param's own fmxmlsnippet element name, and no prefix rule relates them:
+
+| Catalog element | SaXML `<Parameter type>` |
+|---|---|
+| `Instructions` | `LLMInstruction` |
+| `SlidingWindowMessageCount` | `LLMSlidingWindowCount` |
+| `PromptMessage` | `LLMMessage` |
+| `AccountName` | `Name` (Add Account) / `LLMAccountName` (AI steps) / `FineTuneAccountName` (Fine-Tune Model) |
+| `ShowWhenAppInForeground` | `ShowInForeground` |
+
+Extend the table only by measurement: build a script in which every calculation holds a literal naming its param, export it from FileMaker, and read back which `<Parameter>` carried each literal.
+A guessed address is worse than none, because it looks authoritative.
+
+**Why position could not work.** FileMaker exports `Perform SQL Query by Natural Language` last-to-first, so the account name landed on `PromptMessage` and the prompt on `AccountName`.
+That reversal is the loud case; the quiet one is more common and was live for every one of these.
+Counts are from a measurement sample of ~104k script steps exported from real solutions — not a corpus in this repo, so the numbers are provenance rather than something you can re-run:
+
+| Step | What a positional read did | Steps affected |
+|---|---|---|
+| `Perform Script on Server` | script chosen from a list exports no calc for it, so the script *parameter* shifted up into "specify script by calculated name" | 158 |
+| `Go to Object` / `Refresh Object` | the repetition calc was dropped entirely | 461 |
+| `Set Selection` | the end position was dropped | 30 |
+| `Set Window Title` | the new title was placed as the *window to rename* | 12 |
+| `Configure Local Notification` | an absent button label shifted the foreground flag onto `Button1Label` | 2 |
+
+An **absent optional calc shifts every later one**, which is why a sweep comparing export order against catalog order reported that sample clean while 663 of its steps converted wrongly.
+Tying a known value to an expected param is the only check that sees it.
 
 Because a positional read always emits well-formed XML, a sample that converts cleanly is **not** verified — check that each calc's value sits under the expected wrapper before committing its golden.
+`test_saxml_calc_placement` does exactly that against `fixtures/converter/saxml_calc_placement/`, where every calculation is a literal naming its param.
+
+**Enums have the same defect, unfixed, and it reaches the output.** Two halves:
+
+*The value is FileMaker's display label, not its XML value.* With no `hrEnumValues` to reverse, the SaXML `<List name>` passes straight through to the emitted attribute, and FileMaker does not accept it back. Measured against FileMaker's own fmxmlsnippet spellings in `agent/snippet_examples/steps`:
+
+| Step / param | Emitted | FileMaker writes | Steps affected |
+|---|---|---|---|
+| `Replace Field Contents` / `With` | `Replace with calculation: ` | `Calculation` | 130 |
+| `Go to Record/Request/Page` / `RowPageLocation` | `By Calculation…` | `ByCalculation` | 29 |
+| `Go to Portal Row` / `RowPageLocation` | `By Calculation…` | `ByCalculation` | 18 |
+
+*The param is chosen by position.* `Perform RAG Action` exports its data source ahead of its action, so the two swap, the branch that reveals the step's calcs never fires, and calcs placed correctly are dropped by the emitter.
+
+Both halves are one fix — address enums by name as calcs are — and it needs its own measurement pass. Steps losing calcs to the second half are pinned in `_PLACEMENT_KNOWN_GAPS`.
+`Set Web Viewer`'s `Action` is a third, smaller thing: it emits `Reset` correctly, but the catalog's `enumValues` for it is empty, so nothing validates it.
 
 ### `agent/scripts/snippet_to_hr.py`
 

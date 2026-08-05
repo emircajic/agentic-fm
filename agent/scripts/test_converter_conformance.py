@@ -45,6 +45,7 @@ import re
 import xml.etree.ElementTree as ET
 
 import fm_xml_to_snippet
+from catalog_grammar import load_catalog, param_key
 from snippet_to_hr import snippet_to_hr
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,7 @@ _FIXTURES = os.path.join(_REPO, "agent", "fixtures", "converter")
 _XML_TO_HR = os.path.join(_FIXTURES, "xml-to-hr.json")
 _SAXML_DIR = os.path.join(_FIXTURES, "saxml")
 _SAXML_UNSUPPORTED_DIR = os.path.join(_FIXTURES, "saxml_unsupported")
+_SAXML_PLACEMENT_DIR = os.path.join(_FIXTURES, "saxml_calc_placement")
 _SAXML_TO_SNIPPET = os.path.join(_FIXTURES, "saxml-to-snippet.json")
 _TS_XML_TO_HR = os.path.join(_REPO, "webviewer", "test", "fixtures", "xml-to-hr.json")
 
@@ -124,19 +126,114 @@ def test_saxml_to_snippet_matches_golden():
         assert snippet == golden[name], f"{name}: SaXML -> fmxmlsnippet output drifted"
 
 
+_MARKER = re.compile(r"CP\d+_([A-Za-z0-9]+)")
+
+# Steps whose calcs reach the right param but are then dropped by the emitter, because
+# the reader reads their governing enum positionally and FileMaker exports it out of
+# catalog order. Placement is not the defect here; enum matching is.
+_PLACEMENT_KNOWN_GAPS = {"Perform RAG Action", "Set Web Viewer"}
+
+
+def test_saxml_calc_placement():
+    """Every calculation must reach the param it was ENTERED into, by value.
+
+    The other SaXML tests compare output to a golden, which cannot see this class of
+    defect: reading calcs positionally emits a well-formed, confident document no
+    matter which param each one lands on, so a golden generated from a misplaced read
+    is stable and green forever.
+
+    ``saxml_calc_placement/`` holds FileMaker's own export of a script in which every
+    calculation holds a literal naming the param it belongs to, so the check is direct:
+    find each literal in the emitted fmxmlsnippet and assert it sits under that param's
+    element. A step the reader refuses outright is allowed — refusing is the documented
+    answer to a shape it cannot place — but placing a value on the wrong param is not.
+
+    ``_PLACEMENT_KNOWN_GAPS`` names the steps whose calcs are placed correctly and then
+    lost further down, because the reader still matches ENUMS positionally: FileMaker
+    exports Perform RAG Action's data source ahead of its action, the two swap, and the
+    emitter drops every param the (now wrong) branch would have revealed. The list is
+    asserted, not skipped — a step that leaves it, or joins it, fails here.
+    """
+    catalog = {e.name: e for e in load_catalog(fm_xml_to_snippet._find_catalog())}
+    calc_types = {"calculation", "calc", "namedCalc"}
+    names = sorted(n for n in os.listdir(_SAXML_PLACEMENT_DIR) if n.endswith(".xml"))
+    assert names, "no calc-placement fixtures found"
+
+    checked = 0
+    gaps_seen: set[str] = set()
+    for name in names:
+        root = ET.parse(os.path.join(_SAXML_PLACEMENT_DIR, name)).getroot()
+        for step in root.findall("ObjectList/Step"):
+            entry = catalog.get(step.get("name"))
+            if entry is None:
+                continue
+            present = set(_MARKER.findall(ET.tostring(step, encoding="unicode")))
+            if not present:
+                continue
+            stats = {"unknown": 0, "unsupported": 0}
+            emitted = fm_xml_to_snippet.tx_engine(step, stats)
+            if stats["unsupported"]:
+                continue                      # refused as a whole — covered elsewhere
+            tree = ET.fromstring("<w>" + emitted + "</w>")
+            parents = {c: p for p in tree.iter() for c in p}
+
+            # element path of every marker in the emitted snippet
+            where: dict[str, set[str]] = {}
+            for el in tree.iter():
+                for text in (el.text, el.tail):
+                    hit = _MARKER.search(text or "")
+                    if hit is None:
+                        continue
+                    chain, cur = set(), el
+                    while cur is not None:
+                        chain.add(cur.tag)
+                        cur = parents.get(cur)
+                    where.setdefault(hit.group(1), set()).update(chain)
+
+            for param in entry.params:
+                if param.type not in calc_types:
+                    continue
+                key = re.sub(r"[^A-Za-z0-9]", "", param_key(param))
+                if key not in present:
+                    continue                  # FileMaker did not export this one
+                want = param.wrapper_element or param.xml_element
+                got = where.get(key)
+                if got is None:
+                    assert entry.name in _PLACEMENT_KNOWN_GAPS, (
+                        f"{entry.name}: {param_key(param)} was exported by FileMaker as "
+                        f"{key!r} but reached no param — the value was dropped")
+                    gaps_seen.add(entry.name)
+                    continue
+                assert want in got, (
+                    f"{entry.name}: {key!r} belongs to {param_key(param)} "
+                    f"(<{want}>) but was placed under {sorted(got)}")
+                checked += 1
+
+    # a floor, not an exact count: it catches a fixture that lost its steps
+    assert checked >= 90, f"only {checked} calc placements checked — fixture shrank?"
+    assert gaps_seen == _PLACEMENT_KNOWN_GAPS, (
+        "the known-gap list no longer matches reality: "
+        f"still dropping {sorted(gaps_seen)}, listed {sorted(_PLACEMENT_KNOWN_GAPS)}")
+
+
 def test_saxml_unsupported_fixtures_fail_loud():
     """A SaXML shape the reader cannot place must be COUNTED, never guessed at.
 
-    ``agent/fixtures/converter/saxml_unsupported/`` holds real FileMaker exports whose
-    boolean parameters the reader cannot map onto catalog params. Both current members
-    carry surplus ``<Parameter><Boolean>`` entries that belong to something the catalog
-    does not model as a boolean: ``Revert Transaction``'s Condition / Error Code are
-    presence flags for its optional calcs, and ``Print PDF``'s Password / Use print
-    options from / Save print options to belong to params marked ``hrHidden`` (which
-    the reader skips, leaving their booleans unclaimed).
+    ``agent/fixtures/converter/saxml_unsupported/`` holds real FileMaker exports
+    carrying a value the reader cannot attach to any catalog param. Two shapes:
 
-    Before the reader refused an ambiguous positional pick, each of these silently
-    produced a plausible ``<Elem state="…"/>`` carrying a value that means something
+    *A boolean with no param to land on.* ``Revert Transaction``'s Condition / Error
+    Code are presence flags for its optional calcs, and ``Print PDF``'s Password / Use
+    print options from / Save print options to belong to params marked ``hrHidden``
+    (which the reader skips, leaving their booleans unclaimed).
+
+    *A calculation no address accounts for.* ``Generate Response from Model`` exports
+    its Web Viewer call's parameter list as calcs under ``LLMWebScript``, and the
+    catalog models only that call's object name and function name — the arguments
+    themselves have no param, so there is nowhere to put them.
+
+    Before the reader refused, each of these silently produced a plausible
+    ``<Elem state="…"/>`` or ``<Calculation>`` carrying a value that means something
     else entirely. They are kept OUT of ``saxml/`` — that corpus asserts zero
     unsupported — and pinned here instead, the same way the reader's other
     missing-decoder steps are left uncommitted rather than frozen wrong.
@@ -151,7 +248,9 @@ def test_saxml_unsupported_fixtures_fail_loud():
         assert stats["unknown"] == 0, f"{name}: unexpected uncatalogued step"
         # Fail loud means a marked placeholder, not silently-wrong XML.
         assert "TODO: unsupported SaXML shape" in out, name
-        assert "unclaimed SaXML booleans" in out, f"{name}: not the ambiguity refusal"
+        assert ("unclaimed SaXML booleans" in out
+                or "no catalog param addresses" in out), \
+            f"{name}: not a refusal to place a value"
         ET.fromstring(out)  # still well-formed
 
 

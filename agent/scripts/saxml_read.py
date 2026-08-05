@@ -29,7 +29,12 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-from catalog_grammar import CatalogEntry, StepParam, is_governing_discriminator
+from catalog_grammar import (
+    CatalogEntry,
+    StepParam,
+    is_governing_discriminator,
+    param_key,
+)
 
 # Composite facets whose SaXML shape needs a dedicated decoder (filled in incrementally;
 # a param of one of these types with no decoder yet is reported, never silently wrong).
@@ -122,6 +127,13 @@ _CALC_SKIP = frozenset(
      "ScriptReference", "LayoutReference", "DataSourceReference"}
 )
 
+# The object-reference half of ``_CALC_SKIP`` — a subtree whose calcs belong to the
+# reference itself, never to a param. ``<repetition>`` is absent because it is BOTH:
+# a field reference's repetition is not a param value, while ``Go to Object``'s is.
+# The addresses below separate the two; ``_find_value_calc``'s positional callers
+# cannot, so they keep the blunter ``_CALC_SKIP``.
+_CALC_REF_SKIP = frozenset(_CALC_SKIP - {"repetition"})
+
 
 def _find_value_calc(el: ET.Element, depth: int = 0) -> ET.Element | None:
     """First ``<Calculation>`` reachable from ``el`` through value-wrapper elements
@@ -213,10 +225,278 @@ def _bool_type(sp: ET.Element) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Where FileMaker puts a step's calculations
+# ---------------------------------------------------------------------------
+# A step's calcs cannot be read positionally. FileMaker does not export them in
+# catalog order — ``Perform SQL Query by Natural Language`` exports Account Name,
+# Model and Prompt in the reverse of the order the catalog declares them, so
+# "consume the next Calculation-bearing <Parameter>" hands every calc to the wrong
+# param. The result is well-formed and confident: a positional read cannot produce a
+# malformed document, so nothing downstream can tell.
+#
+# So each calc param is addressed by NAME instead. An address is a path starting at
+# the top-level ``<Parameter type="…">`` and reading downward, where a nested
+# ``<Parameter type="X">`` contributes ``X`` and any other element contributes its
+# tag. It matches as an ordered subsequence anchored at the top, so it only needs to
+# be as long as it takes to separate two params that share a parent — ``Go to
+# Object`` keeps its object name under ``Object/Name`` and its repetition under
+# ``Object/repetition``, while a param with a parent to itself is just its type.
+#
+# Two catalog params MAY share one address (``Set Field By Name`` exports both of its
+# calcs as ``<Parameter type="Calculation">``); they then claim that address's calcs
+# in document order, which is catalog order for every case measured.
+#
+# The names are DATA, not a rule — 88 of the 114 below differ from the param's
+# fmxmlsnippet element name, and no prefix rule relates them (``LLMInstruction`` →
+# ``Instructions``, ``LLMSlidingWindowCount`` → ``SlidingWindowMessageCount``,
+# ``Name`` → ``AccountName``). Every entry was measured, not inferred: each calc was
+# pinned to a distinguishable literal in a script built for the purpose, exported
+# from FileMaker Pro 26.0.1 on macOS, and read back to see which <Parameter> carried
+# it. Extend it the same way — a guessed address is worse than no address, because it
+# looks authoritative. A step absent here still reads positionally.
+_SAXML_CALC_PARAMS: dict[str, dict[str, str]] = {
+    "AVPlayer Play": {
+        "Repetition":       "Source",
+        "PlaybackPosition": "position",
+        "StartOffset":      "Start",
+        "EndOffset":        "End",
+    },
+    "AVPlayer Set Options": {
+        "PlaybackPosition": "position",
+        "StartOffset":      "Start",
+        "EndOffset":        "End",
+        "Volume":           "Volume",
+    },
+    "Add Account": {
+        "AccountName": "Name",
+        "Password":    "Password",
+    },
+    "Change Password": {
+        "OldPassword": "Old",
+        "NewPassword": "New",
+    },
+    "Configure Local Notification": {
+        "Name":                    "Name",
+        "Delay":                   "Delay",
+        "Title":                   "Title",
+        "Body":                    "Body",
+        "Button1Label":            "Button1Label",
+        "Button2Label":            "Button2Label",
+        "Button3Label":            "Button3Label",
+        "Button1ForceFgnd":        "Button1Foreground",
+        "Button2ForceFgnd":        "Button2Foreground",
+        "Button3ForceFgnd":        "Button3Foreground",
+        "ShowWhenAppInForeground": "ShowInForeground",
+    },
+    "Configure NFC Reading": {
+        "Timeout":      "Timeout",
+        "ReadMultiple": "ReadMultiple",
+        "JSONOutput":   "JSONOutput",
+    },
+    "Configure Persistent Data": {
+        "InstanceId": "PersistentStore",
+    },
+    "Configure Prompt Template": {
+        "TemplateName":          "TemplateName",
+        "SQLPrompt":             "SQLPrompt",
+        "NaturalLanguagePrompt": "NaturalLanguagePrompt",
+    },
+    "Configure RAG Account ": {
+        "RAGAccountName": "RAGAccountName",
+        "Endpoint":       "RAGEndpoint",
+        "AccessAPIKey":   "RAGAPIKey",
+    },
+    "Configure Region Monitor Script": {
+        "RangeName":     "Name",
+        "ProximityUUID": "UUID",
+        "MajorID":       "Major",
+        "MinorID":       "Minor",
+    },
+    "Fine-Tune Model": {
+        "AccountName":           "FineTuneAccountName",
+        "FineTuneBaseModelName": "FineTuneBaseModel",
+        "Parameters":            "FineTuneParameters",
+    },
+    "Generate Response from Model": {
+        "AccountName":               "LLMAccountName",
+        "Model":                     "LLMModel",
+        "UserPrompt":                "LLMUserPrompt",
+        "Instructions":              "LLMInstruction",
+        "SlidingWindowMessageCount": "LLMSlidingWindow",
+        "Temperature":               "LLMTemperature",
+        "ToolDefinitions":           "LLMToolDefinitions",
+        "Parameters":                "LLMParameters",
+        "ObjectName":                "LLMWebScript/Name",
+        "FunctionName":              "LLMWebScript/FunctionRef",
+    },
+    "Go to Object": {
+        "ObjectName": "Object/Name",
+        "Repetition": "Object/repetition",
+    },
+    "Insert Embedding": {
+        "AccountName": "LLMEmbeddingAccountName",
+        "Model":       "LLMEmbeddingModel",
+        "InputText":   "LLMEmbeddingInputText",
+    },
+    "Insert Embedding in Found Set": {
+        "AccountName": "LLMEmbeddingAccountName",
+        "Model":       "LLMEmbeddingModel",
+        "Parameters":  "LLMParameters",
+    },
+    "Insert Image Caption": {
+        "AccountName": "LLMEmbeddingAccountName",
+        "Model":       "LLMEmbeddingModel",
+        "InputText":   "LLMEmbeddingInputText",
+    },
+    "Insert Image Captions in Found Set": {
+        "AccountName": "LLMEmbeddingAccountName",
+        "Model":       "LLMEmbeddingModel",
+        "Parameters":  "LLMParameters",
+    },
+    "Insert from URL": {
+        "Calculation": "URL",
+        "CURLOptions": "Calculation",
+    },
+    "Perform Find by Natural Language": {
+        "AccountName":   "LLMAccountName",
+        "Model":         "LLMModel",
+        "PromptMessage": "LLMMessage",
+        "Parameters":    "LLMParameters",
+    },
+    "Perform Find/Replace": {
+        "FindCalc":    "find",
+        "ReplaceCalc": "replace",
+    },
+    "Perform RAG Action": {
+        "RAGAccountName": "RAGAccountName",
+        "SpaceID":        "RAGSpaceID",
+        "InputText":      "RAGInputText",
+        "PromptMessage":  "LLMMessage",
+        "AIAccountName":  "RAGAIAccountName",
+        "Model":          "RAGModel",
+        "TemplateName":   "TemplateName",
+        "Parameters":     "RAGPromptParameters",
+    },
+    "Perform SQL Query by Natural Language": {
+        "AccountName":   "LLMAccountName",
+        "Model":         "LLMModel",
+        "PromptMessage": "LLMMessage",
+        "OptionsName":   "LLMOptionsName",
+        "TemplateName":  "LLMPromptTemplateName",
+        "Parameters":    "LLMParameters",
+    },
+    "Perform Script on Server": {
+        "Calculated":  "List",
+        "Calculation": "Parameter",
+    },
+    "Perform Semantic Find": {
+        "Count":     "Count",
+        "Threshold": "Threshold",
+    },
+    "Re-Login": {
+        "AccountName": "Name",
+        "Password":    "Password",
+    },
+    "Read from Data File": {
+        "Calculation": "id",
+        "Count":       "size",
+    },
+    "Refresh Object": {
+        "ObjectName": "Object/Name",
+        "Repetition": "Object/repetition",
+    },
+    "Reset Account Password": {
+        "AccountName": "Name",
+        "Password":    "Password",
+    },
+    "Revert Transaction": {
+        "Condition":    "Condition",
+        "ErrorCode":    "ErrorCode",
+        "ErrorMessage": "ErrorMessage",
+    },
+    "Save Records as JSONL": {
+        "SystemPrompt":    "SaveAsJSONLSystemPromptField",
+        "UserPrompt":      "SaveAsJSONLUserPromptField",
+        "AssistantPrompt": "SaveAsJSONLAssistantPromptField",
+    },
+    "Set Data File Position": {
+        "Calculation": "id",
+        "position":    "position",
+    },
+    "Set Field By Name": {
+        "TargetName": "Calculation",
+        "Result":     "Calculation",
+    },
+    "Set Selection": {
+        "StartPosition": "Select/Start",
+        "EndPosition":   "Select/End",
+    },
+    "Set Web Viewer": {
+        "ObjectName": "Calculation",
+        "URL":        "action",
+    },
+    "Set Window Title": {
+        "Name":    "WindowReference/WindowReference/Select",
+        "NewName": "WindowReference/WindowReference/Rename",
+    },
+}
+
+
+def _saxml_seg(el: ET.Element) -> str:
+    """One address segment: a ``<Parameter type="X">`` reads as X, anything else as its tag."""
+    return (el.get("type") or "") if el.tag == "Parameter" else el.tag
+
+
+def _addressed_calcs(sparams: list[ET.Element], address: str) -> list[tuple[int, ET.Element]]:
+    """Every ``<Calculation>`` the address reaches, as ``(top-level param index, node)``.
+
+    Document order, which is how two params sharing one address are told apart.
+    """
+    want = address.split("/")
+    out: list[tuple[int, ET.Element]] = []
+
+    def walk(el: ET.Element, matched: int, i: int) -> None:
+        if el.tag == "Calculation":
+            if matched == len(want):
+                out.append((i, el))
+            return
+        for ch in el:
+            seg = _saxml_seg(ch)
+            nxt = matched + 1 if matched < len(want) and seg == want[matched] else matched
+            walk(ch, nxt, i)
+
+    for i, sp in enumerate(sparams):
+        if _saxml_seg(sp) != want[0]:
+            continue
+        walk(sp, 1, i)
+    return out
+
+
+def _value_calcs(el: ET.Element, depth: int = 0) -> list[ET.Element]:
+    """Every value ``<Calculation>`` under ``el``, not crossing an object reference.
+
+    ``_find_value_calc``'s plural form. ``<repetition>`` is NOT skipped here: it holds a
+    real param value on the object steps (``Go to Object``'s Repetition), and the
+    addresses tell those apart from a field reference's own repetition, which the
+    object-reference skip below still excludes.
+    """
+    out: list[ET.Element] = []
+    for ch in el:
+        if ch.tag == "Calculation":
+            out.append(ch)
+        elif ch.tag in _CALC_REF_SKIP:
+            continue
+        elif depth < 4:
+            out.extend(_value_calcs(ch, depth + 1))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Per-param value extraction (simple param types)
 # ---------------------------------------------------------------------------
 def _extract_simple(
-    entry: CatalogEntry, param: StepParam, sparams: list[ET.Element], consumed: list[bool]
+    entry: CatalogEntry, param: StepParam, sparams: list[ET.Element], consumed: list[bool],
+    claimed: set[int] | None = None
 ) -> str:
     """Extract one catalog param's values[] token from the SaXML params.
 
@@ -225,13 +505,39 @@ def _extract_simple(
     ``UnsupportedSaXML`` for a composite facet with no decoder yet.
     """
     ptype = param.type
+    if claimed is None:
+        claimed = set()
 
     if ptype in _COMPOSITE_TYPES:
         raise UnsupportedSaXML(f"{entry.name}: no decoder for {ptype} param {param.xml_element!r}")
 
     if ptype in ("calculation", "calc", "namedCalc"):
-        # Consume the next Calculation-bearing SaXML param (Calculation / Title /
-        # Message / URL / a named calc param), searching through any wrapper.
+        address = _SAXML_CALC_PARAMS.get(entry.name, {}).get(param_key(param))
+        if address is not None:
+            # Addressed by name: take the first calc at this address nothing has
+            # claimed. Nothing there means FileMaker did not export the param — the
+            # emitter applies its default — NOT that the next calc along belongs here.
+            for i, node in _addressed_calcs(sparams, address):
+                if id(node) in claimed:
+                    continue
+                claimed.add(id(node))
+                if all(id(c) in claimed for c in _value_calcs(sparams[i])):
+                    consumed[i] = True
+                return _calc_of(node)
+            return ""
+
+        if entry.name in _SAXML_CALC_PARAMS:
+            # The step's calc layout was measured, and this param was not in it —
+            # FileMaker did not export it in any mode the capture reached. Falling back
+            # to position here would let it claim a calc that belongs to an addressed
+            # param, which is the failure the addresses exist to prevent. Anything
+            # FileMaker does export and no address claims is refused below instead.
+            return ""
+
+        # No address measured for this step: consume the next Calculation-bearing SaXML
+        # param (Calculation / Title / Message / URL / a named calc param), searching
+        # through any wrapper. Correct only while FileMaker's export order matches the
+        # catalog's declaration order, which is why the table above exists.
         for i, sp in enumerate(sparams):
             if consumed[i]:
                 continue
@@ -372,6 +678,30 @@ def _extract_simple(
                 # forward-map to the HR label so the emitter reverses it exactly.
                 raw = lst.get("name", "") or lst.get("value", "")
                 if is_governing_discriminator(param):
+                    # SaXML labels the branch the way the script editor does; the
+                    # emitter keys its branches off the catalog's own value. Reverse
+                    # the catalog's HR mapping to get back to it — FileMaker exports
+                    # Perform RAG Action's Prompt branch as "Send Prompt", and a
+                    # branch value the emitter does not recognise silently hides
+                    # every param that branch reveals, calcs included.
+                    for value, label in param.hr_enum_values.items():
+                        if label == raw:
+                            return value
+                    # An unrecognised value still passes through, and that passthrough
+                    # is KNOWN WRONG for some steps, not merely unmapped: with no
+                    # hrEnumValues to reverse, FileMaker's SaXML display label reaches
+                    # the emitter as if it were the XML value, and FileMaker does not
+                    # accept it back (`Replace Field Contents` emits
+                    # "Replace with calculation: " where FileMaker writes "Calculation";
+                    # `Go to Record/Request/Page` emits "By Calculation…" for
+                    # "ByCalculation"). Refusing instead would not fix them and would
+                    # cost every other param on those steps, so the passthrough stands
+                    # until the labels are measured. Enums are also still matched
+                    # POSITIONALLY, and FileMaker exports them out of catalog order —
+                    # Perform RAG Action exports its data source ahead of its action, so
+                    # the two swap and the branch revealing the step's calcs never
+                    # fires. Both halves are the same fix: address enums by name, the
+                    # way the calcs above are addressed.
                     return raw
                 return param.hr_enum_values.get(raw, raw)
             anim = sp.find("Animation")
@@ -1402,6 +1732,28 @@ def _dec_find_setup(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
 
 # ---------------------------------------------------------------------------
 # Public entry point
+def _reject_unaddressed_calcs(
+    entry: CatalogEntry, sparams: list[ET.Element], claimed: set[int]
+) -> None:
+    """Refuse a calc the addresses do not account for, on a step that HAS addresses.
+
+    A step in ``_SAXML_CALC_PARAMS`` is one whose calc layout was measured whole. A calc
+    left over afterwards therefore means the measurement no longer matches what
+    FileMaker exports — a param added by a later version, or a mode this capture never
+    exercised. Reading the rest and dropping that one would be the silent loss the
+    addresses exist to end, so the step is counted unsupported instead.
+    """
+    if entry.name not in _SAXML_CALC_PARAMS:
+        return
+    for i, sp in enumerate(sparams):
+        for node in _value_calcs(sp):
+            if id(node) not in claimed:
+                raise UnsupportedSaXML(
+                    f"{entry.name}: SaXML carries a calculation at "
+                    f"{_saxml_seg(sp)!r} that no catalog param addresses "
+                    f"({_calc_of(node)!r}) — the measured calc layout is out of date")
+
+
 # ---------------------------------------------------------------------------
 def read_saxml_step(
     entry: CatalogEntry, step_el: ET.Element
@@ -1421,6 +1773,7 @@ def read_saxml_step(
         return disabled, dec(entry, step_el), resolver
     sparams = _params(step_el)
     consumed = [False] * len(sparams)
+    claimed: set[int] = set()
     values = [""] * len(entry.params)
     for pi, param in enumerate(entry.params):
         if param.hr_hidden or param.type == "complex":
@@ -1432,5 +1785,6 @@ def read_saxml_step(
                     f"{entry.name}: no decoder for {param.type} param {param.xml_element!r}")
             values[pi] = builder(entry, param, step_el)
         else:
-            values[pi] = _extract_simple(entry, param, sparams, consumed)
+            values[pi] = _extract_simple(entry, param, sparams, consumed, claimed)
+    _reject_unaddressed_calcs(entry, sparams, claimed)
     return disabled, values, resolver

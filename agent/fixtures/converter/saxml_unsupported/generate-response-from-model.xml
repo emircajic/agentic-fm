@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="220" name="Generate Response from Model" enable="True">
+      <Options>34078469</Options>
+      <ParameterValues membercount="15">
+        <Parameter type="Boolean">
+          <Boolean type="Agentic mode" id="131072" value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Stream" id="32768" value="True" />
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$response">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+        <Parameter type="LLMWebScript">
+          <Parameter type="Name">
+            <Calculation datatype="1" position="20">
+              <Calculation>
+                <Text>$object_name</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+          <Parameter type="FunctionRef">
+            <Calculation datatype="1" position="21">
+              <Calculation>
+                <Text>$function_name</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+          <Parameter type="Parameter">
+            <Calculation datatype="1" position="30">
+              <Calculation>
+                <Text>$parameter1</Text>
+              </Calculation>
+            </Calculation>
+            <Calculation datatype="1" position="31">
+              <Calculation>
+                <Text>$parameter2</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="LLMParameters">
+          <Calculation datatype="1" position="16">
+            <Calculation>
+              <Text>"Parameters"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMAction">
+          <List name="" value="0" />
+        </Parameter>
+        <Parameter type="LLMToolCallsFromModel">
+          <Parameter type="Target">
+            <Variable value="$Tool_Calls_from_Model">
+              <repetition>
+                <Calculation datatype="1" position="15">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </repetition>
+            </Variable>
+          </Parameter>
+        </Parameter>
+        <Parameter type="LLMToolDefinitions">
+          <Calculation datatype="1" position="13">
+            <Calculation>
+              <Text>"Tool_Definitions"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMTemperature">
+          <Calculation datatype="2" position="12">
+            <Calculation>
+              <Text>"Temperature"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMSlidingWindow">
+          <Parameter type="LLMSlidingWindowVariableRepetition">
+            <Calculation datatype="2" position="11">
+              <Calculation>
+                <Text>1</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+          <Parameter type="LLMSlidingWindowCount">
+            <Calculation datatype="2" position="9">
+              <Calculation>
+                <Text>$count</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+          <Parameter type="LLMSlidingWindowVariable">
+            <LLMSlidingWindowVariable IncludeToolCalls="1" value="$Save_Message_History_To" />
+          </Parameter>
+        </Parameter>
+        <Parameter type="LLMMessages">
+          <Parameter type="Target">
+            <Variable value="$Messages">
+              <repetition>
+                <Calculation datatype="1" position="7">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </repetition>
+            </Variable>
+          </Parameter>
+        </Parameter>
+        <Parameter type="LLMInstruction">
+          <Calculation datatype="1" position="5">
+            <Calculation>
+              <Text>"Instructions"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMUserPrompt">
+          <Calculation datatype="1" position="3">
+            <Calculation>
+              <Text>"user-prompt"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMModel">
+          <Calculation datatype="1" position="2">
+            <Calculation>
+              <Text>"model"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="LLMAccountName">
+          <Calculation datatype="1" position="1">
+            <Calculation>
+              <Text>"account"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>
