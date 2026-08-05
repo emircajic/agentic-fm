@@ -146,6 +146,7 @@ export interface GrammarParam {
   parentElement: string | null;
   defaultValue: string | null;
   hrEnumValues: Record<string, string>;
+  hrHiddenValues: string[];
   invertedHr: boolean | null;
   enumStyle: string | null;
   flagStyle: boolean | null;
@@ -229,6 +230,7 @@ function buildParam(d: Record<string, unknown>): GrammarParam {
     parentElement: (d.parentElement as string) ?? null,
     defaultValue: (d.defaultValue as string) ?? null,
     hrEnumValues: (d.hrEnumValues as Record<string, string>) ?? {},
+    hrHiddenValues: (d.hrHiddenValues as string[]) ?? [],
     invertedHr: (d.invertedHr as boolean) ?? null,
     enumStyle: (d.enumStyle as string) ?? null,
     flagStyle: (d.flagStyle as boolean) ?? null,
@@ -551,6 +553,13 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
       const eattr = isElemAttr ? g11Attr : param.xmlAttr || 'value';
       const eelem = isElemAttr ? g11Elem : param.xmlElement;
       val = childAttr(base, eelem, eattr);
+    }
+    // P7.2: FileMaker renders no token at all for some of an enum's values -- it
+    // shows the companion the value reveals, in that companion's own slot
+    // (`Go to Record/Request/Page [ With dialog: Off ; 1 ]` is the ByCalculation
+    // form, and `1` is the row calculation, not the location).
+    if (param.hrHiddenValues.includes(val || param.defaultValue || '\u0000')) {
+      val = '';
     }
     if (!param.flagStyle && Object.keys(param.hrEnumValues).length > 0) {
       const mapped = param.hrEnumValues[val];

@@ -3139,7 +3139,9 @@
         ],
         "hrEnumValues": {
           "ByCalculation": "By Calculation"
-        }
+        },
+        "hrHiddenValues": ["ByCalculation"],
+        "notes": "FileMaker renders NO location token for ByCalculation \u2014 the row calculation appears in that slot instead (live copy-back: `[ With dialog: Off ; 1 ]`), so the calculation's presence is what selects it. The other four values render their own bare token."
       },
       {
         "xmlElement": "Exit",
@@ -3173,10 +3175,11 @@
         "type": "calc",
         "hrLabel": null,
         "required": false,
+        "visibleWhen": { "param": "RowPageLocation", "values": ["ByCalculation"] },
         "notes": "Row number calculation. Only applies when RowPageLocation is ByCalculation"
       }
     ],
-    "hrSignature": "[ Select: On|Off ; First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
+    "hrSignature": "[ Select: On|Off ; First|Last|Previous|Next ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-portal-row.html"
@@ -3216,7 +3219,9 @@
         ],
         "hrEnumValues": {
           "ByCalculation": "By Calculation"
-        }
+        },
+        "hrHiddenValues": ["ByCalculation"],
+        "notes": "FileMaker renders NO location token for ByCalculation \u2014 the row calculation appears in that slot instead (live copy-back: `[ With dialog: Off ; 1 ]`), so the calculation's presence is what selects it. The other four values render their own bare token."
       },
       {
         "xmlElement": "Exit",
@@ -3250,10 +3255,11 @@
         "type": "calc",
         "hrLabel": null,
         "required": false,
+        "visibleWhen": { "param": "RowPageLocation", "values": ["ByCalculation"] },
         "notes": "Record/request/page number calculation. Only applies when RowPageLocation is ByCalculation"
       }
     ],
-    "hrSignature": "[ First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
+    "hrSignature": "[ First|Last|Previous|Next ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-record-request-page.html"

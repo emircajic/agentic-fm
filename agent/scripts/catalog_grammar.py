@@ -168,6 +168,12 @@ class StepParam:
     default_value: str | None = None
     enum_values: list[str] = field(default_factory=list)
     hr_enum_values: dict[str, str] = field(default_factory=dict)
+    # P7.2: enum values FileMaker renders NO HR token for. `hr_hidden` suppresses
+    # a param in every state; this suppresses it in some. FileMaker shows the
+    # companion such a value reveals instead of the value itself, so the value is
+    # read back from that companion's `visibleWhen` gate rather than from a token
+    # of its own. Emit is unaffected -- only HR rendering.
+    hr_hidden_values: list[str] = field(default_factory=list)
     inverted_hr: bool | None = None
     enum_style: str | None = None
     flag_style: bool | None = None
@@ -210,6 +216,7 @@ class StepParam:
             default_value=d.get("defaultValue"),
             enum_values=list(d.get("enumValues", [])),
             hr_enum_values=dict(d.get("hrEnumValues", {})),
+            hr_hidden_values=list(d.get("hrHiddenValues", [])),
             inverted_hr=d.get("invertedHr"),
             enum_style=d.get("enumStyle"),
             flag_style=d.get("flagStyle"),
@@ -770,6 +777,12 @@ def compute_param_hr(entry: CatalogEntry, step: ET.Element, param: StepParam) ->
             eattr = g11_attr if is_elem_attr else (param.xml_attr or "value")
             eelem = g11_elem if is_elem_attr else param.xml_element
             val = _child_attr(base, eelem, eattr)
+        # P7.2: FileMaker renders no token at all for some of an enum's values --
+        # it shows the companion the value reveals, in that companion's own slot
+        # (`Go to Record/Request/Page [ With dialog: Off ; 1 ]` is the
+        # ByCalculation form, and `1` is the row calculation, not the location).
+        if (val or param.default_value) in param.hr_hidden_values:
+            val = ""
         if not param.flag_style and param.hr_enum_values:
             mapped = param.hr_enum_values.get(val)
             if mapped:

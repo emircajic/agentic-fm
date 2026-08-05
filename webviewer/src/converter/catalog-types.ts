@@ -120,6 +120,14 @@ export interface StepParam {
   enumValues?: string[];
   /** HR enum labels mapped to XML state values (e.g. { "True": "Off", "False": "On" }) */
   hrEnumValues?: Record<string, string>;
+  /**
+   * P7.2: the enum values FileMaker renders NO HR token for. `hrHidden`
+   * suppresses a param in every state; this suppresses it in some. FileMaker
+   * shows the companion such a value reveals instead of the value itself, so
+   * the value is read back from that companion's `visibleWhen` gate rather than
+   * from a token of its own. Emit is unaffected -- only HR rendering.
+   */
+  hrHiddenValues?: string[];
   /** When true, the HR label is inverted from the XML attribute value */
   invertedHr?: boolean;
   /** Rendering style for enum values (e.g. bare token vs labeled) */

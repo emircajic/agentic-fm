@@ -600,7 +600,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"145\" name=\"Go to Object\">\n    <ObjectName>\n      <Calculation><![CDATA[]]></Calculation>\n    </ObjectName>\n    <Repetition>\n      <Calculation><![CDATA[1]]></Calculation>\n    </Repetition>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Portal Row.xml": {
-    "hr": "Go to Portal Row [ Select: Off ; By Calculation ; With dialog: Off ; 1 ]",
+    "hr": "Go to Portal Row [ Select: Off ; With dialog: Off ; 1 ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"99\" name=\"Go to Portal Row\">\n    <NoInteract state=\"True\"/>\n    <SelectAll state=\"False\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Calculation><![CDATA[1]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Previous Field.xml": {
@@ -608,7 +608,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"5\" name=\"Go to Previous Field\"/>\n</fmxmlsnippet>"
   },
   "navigation/Go to Record-Request-Page.xml": {
-    "hr": "Go to Record/Request/Page [ By Calculation ; With dialog: Off ; \"\" ]",
+    "hr": "Go to Record/Request/Page [ With dialog: Off ; \"\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"16\" name=\"Go to Record/Request/Page\">\n    <NoInteract state=\"True\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Calculation><![CDATA[\"\"]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Related Record.xml": {
