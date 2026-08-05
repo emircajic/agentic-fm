@@ -90,7 +90,15 @@ With one candidate there is no choice to get wrong, so the positional read stand
 With more than one it refuses, counting the step as unsupported and emitting a marked placeholder.
 Guessing produces a plausible `<Elem state="…"/>` holding a value that means something else, and nothing downstream can tell.
 
-**The calc side has the same blindness and is not fixed.** Calculations are still consumed strictly in order, and SaXML does not present them in catalog order — `Generate Response from Model` exports `LLMAccountName` / `LLMModel` / `LLMUserPrompt` last-to-first, so every calc lands on the wrong param. That is the known gap for that step; it needs a per-step decoder or a catalog-side SaXML-name facet, not a positional tweak.
+**The calc side has the same blindness and is not fixed.** Calculations are consumed strictly in document order with no matching at all, and FileMaker does not always export them in catalog order.
+
+Two steps are proven to mis-place every calc, both because FileMaker exports them last-to-first: `Perform SQL Query by Natural Language` (`LLMMessage` / `LLMModel` / `LLMAccountName`, so `AccountName` receives the prompt and `PromptMessage` receives the account name) and `Generate Response from Model` (ten calcs deep — `Model` receives the Parameters text, `Temperature` receives Instructions).
+
+Neither appears in any processed SaXML corpus, which is why no sweep found them. 44 catalog steps carry more than one calc param, 36 of those are on the generic path, and 21 of *those* have never been observed in a real export — so the corpus being clean is a coverage statement, not a correctness result.
+
+A fix needs per-step decoders or a catalog-side SaXML-name facet, not a positional tweak: across every observed pairing, **no** SaXML `<Parameter type>` equals the catalog param's `wrapperElement`, and stripping the `LLM` prefix closes none of the gap (`LLMInstruction` → `Instructions`, `LLMSlidingWindowCount` → `SlidingWindowMessageCount`, `LLMMessage` → `PromptMessage`). The mapping is data, not a rule.
+
+Because a positional read always emits well-formed XML, a sample that converts cleanly is **not** verified — check that each calc's value sits under the expected wrapper before committing its golden.
 
 ### `agent/scripts/snippet_to_hr.py`
 
