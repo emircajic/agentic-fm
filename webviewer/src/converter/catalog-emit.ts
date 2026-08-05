@@ -882,6 +882,41 @@ export function convertStepWithCatalog(
     govDiscrimValue.set(p.xmlElement, values[pi] === '' ? (p.defaultValue ?? '') : values[pi]);
   }
 
+  // Governed-visibility boolean: an `hrHidden` boolean that some sibling's
+  // `visibleWhen` gates on carries NO HR token of its own — FileMaker's HR shows
+  // none either — so it cannot be read back from HR the way a flag-style boolean
+  // can. Its state is instead DERIVED on emit from whether any gated sibling
+  // contributed a token, which is exactly how FileMaker's own HR encodes it:
+  // Import Records shows Table/method/charset only under Restore=True, and
+  // FileMaker discards the stored import order when the flag is off.
+  //
+  // Without this the flag falls through to its catalog `defaultValue` (True for
+  // both Restore params), so HR that says "no stored import order" would
+  // serialize as "restore the stored order".
+  //
+  // The `values[gi] === ''` guard is what keeps the SaXML reader whole: on the
+  // HR path a hidden param is excluded from matching so its slot is always
+  // empty, but a SaXML decoder may have read the gate's real value from the
+  // source (Export Records sets its own Restore), and that reading wins.
+  const impliedBool = new Map<number, string>(); // param idx -> state
+  for (let gi = 0; gi < params.length; gi++) {
+    const gate = params[gi];
+    if (!gate.hrHidden || gate.type !== 'boolean' || values[gi] !== '') continue;
+    const gateKey = paramKey(gate);
+    let onValue = ''; // the gate value that REVEALS a companion
+    let gates = false, anyContent = false;
+    for (let pi = 0; pi < params.length; pi++) {
+      const vw = params[pi].visibleWhen;
+      if (!vw || vw.param !== gateKey || vw.values.length === 0) continue;
+      gates = true;
+      if (onValue === '') onValue = vw.values[0];
+      if (trim(values[pi]) !== '') anyContent = true;
+    }
+    if (!gates) continue; // hrHidden but nothing gates on it: default emit
+    const offValue = onValue === 'True' ? 'False' : 'True';
+    impliedBool.set(gi, anyContent ? onValue : offValue);
+  }
+
   let prevWasTextElement = false;
   const openGroups: string[] = [];
 
@@ -918,7 +953,12 @@ export function convertStepWithCatalog(
     if (govHandled) {
       // piece already decided (a value or intentionally empty).
     } else if (param.type === 'boolean') {
-      piece = emitBoolean(param, hrValue);
+      if (impliedBool.has(pi)) {
+        const attr = param.xmlAttr || 'state';
+        piece = `    <${param.xmlElement} ${attr}="${impliedBool.get(pi)!}"/>`;
+      } else {
+        piece = emitBoolean(param, hrValue);
+      }
     } else if (param.type === 'enum') {
       if (discrimValue.has(param.xmlElement)) {
         const attr = param.xmlAttr || 'value';

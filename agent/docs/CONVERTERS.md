@@ -249,3 +249,36 @@ The TypeScript HR → fmxmlsnippet direction has no Python counterpart and is ga
 | `blockPair` | Indentation logic | If/Loop open/middle/close roles |
 
 See `agent/docs/SCHEMA_GUIDANCE.md` for the complete param type → XML mapping reference.
+
+### Hidden booleans and the params they gate
+
+Some catalog booleans render no HR token at all.
+FileMaker shows none either, so a converter that printed one would be inventing a token FileMaker cannot read back.
+
+- **`hrHidden: true`** — the param renders no HR token but still emits its XML element.
+- **`visibleWhen: {param, values}`** — a sibling renders at its own HR slot only when the named param holds one of `values`. This is how a hidden boolean's state reaches HR at all: not as a token of its own, but as the presence or absence of what it gates.
+
+Together those two produce a param that XML → HR can read but HR → XML cannot, because the round-trip's return leg has no token to parse.
+The grammar closes that with a derive rule:
+
+> For each `hrHidden` boolean **G** that at least one sibling names in its `visibleWhen.param`: G's emitted state is the gate-open value when **any** of those gated siblings carried a non-empty HR token, and the opposite value otherwise.
+> An `hrHidden` boolean that nothing gates on is untouched — it keeps emitting its catalog default.
+
+Read the gate-open value from a gating sibling's `visibleWhen.values[0]` rather than assuming `True`.
+Letting `defaultValue` answer instead is the defect this replaced: both `Restore` params default to `True`, so HR meaning "no stored import order" serialized as "restore the stored order".
+
+Three params carry the facet today — `Import Records.Restore` (gates `Table`, `ImportOptions`), `Export Records.Restore` (gates `ExportOptions`) and `Fine-Tune Model.Option` (gates `Table`).
+Derive the list rather than trusting it; the catalog is the source of truth.
+
+**Why only these three, when fifteen params are `hrHidden`.**
+FileMaker splits hidden booleans into two classes, and only FileMaker can tell you which one a param belongs to:
+
+- **Derived** — FileMaker recomputes the flag from the content it travels with. Hand `Append PDF` an `Option=False` next to an `OpenPassword` and it comes back `True`; `Generate Response from Model` repairs all four of its flags. Emitting the catalog default is lossless here.
+- **Obeyed** — FileMaker takes the flag at face value and *discards what it gated*. `Import Records` handed `Restore=False` kept `False`, reset the import options and wiped the target table. `Export Records` reset the character set. `Fine-Tune Model` wiped its training table.
+
+Only the obeyed class needs the derive rule; for the derived class it would be redundant.
+The two are indistinguishable from the catalog — the class was established by handing FileMaker Pro 26.0.1 a flag that contradicts the content beside it and reading back what it returned.
+
+**Regression cover.** `agent/scripts/test_catalog_emit.py` and `webviewer/test/catalog-emit.engine.test.ts` pin both directions.
+The byte-identity corpus cannot: every corpus step carrying one of these gates also carries its companion, so the derived value and the catalog default agree there.
+Only the companion-absent case separates them.

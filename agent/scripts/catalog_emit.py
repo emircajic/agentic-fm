@@ -7,6 +7,17 @@ line-for-line counterpart of the shipped TS ``webviewer/src/converter/catalog-em
 (P6.3). Both are kept deliberately parallel so a facet added to one port is obviously
 missing from the other (the plan's "Python↔TS structural parity" risk).
 
+**Caveat to that parallelism — ``convert_step_with_catalog`` has TWO callers here and
+one in the reference.** The reference converter's function is HR→XML only; this one is
+also the emitter for the SaXML→snippet path (``saxml_read.read_saxml_step`` builds
+``values[]`` from a SaXML ``<Step>`` and feeds it straight in). So a facet ported from
+the reference inherits a question the reference never has to answer: *is this rule
+derived from HR semantics that the SaXML input never went through?* Where it is, the
+rule must only fill a slot the caller left EMPTY, never override one. The
+governed-visibility derive below is written that way — an unconditional override would
+discard the gate value a SaXML decoder had read from the source (Export Records seeds
+its own ``Restore``).
+
 Two public entry points:
 
   * ``match_param_values(entry, hr_params)`` — parse an HR bracket line's params into
@@ -1092,6 +1103,44 @@ def convert_step_with_catalog(
             continue
         gov_discrim_value[p.xml_element] = (p.default_value or "") if values[pi] == "" else values[pi]
 
+    # Governed-visibility boolean: an ``hrHidden`` boolean that some sibling's
+    # ``visibleWhen`` gates on carries NO HR token of its own — FileMaker's HR shows
+    # none either — so it cannot be read back from HR the way a flag-style boolean
+    # can. Its state is instead DERIVED on emit from whether any gated sibling
+    # contributed a token, which is exactly how FileMaker's own HR encodes it:
+    # Import Records shows Table/method/charset only under Restore=True, and
+    # FileMaker discards the stored import order when the flag is off.
+    #
+    # Without this the flag falls through to its catalog ``defaultValue`` (True for
+    # both Restore params), so HR that says "no stored import order" would serialize
+    # as "restore the stored order".
+    #
+    # The ``values[gi] == ""`` guard is what keeps the SaXML reader whole: on the HR
+    # path a hidden param is excluded from matching so its slot is always empty, but
+    # a SaXML decoder may have read the gate's real value from the source (Export
+    # Records sets its own Restore), and that reading wins.
+    implied_bool: dict[int, str] = {}
+    for gi, gate in enumerate(params):
+        if not gate.hr_hidden or gate.type != "boolean" or values[gi] != "":
+            continue
+        gate_key = param_key(gate)
+        on_value = ""  # the gate value that REVEALS a companion
+        gates = False
+        any_content = False
+        for pi, p in enumerate(params):
+            vw = p.visible_when
+            if vw is None or vw.param != gate_key or not vw.values:
+                continue
+            gates = True
+            if on_value == "":
+                on_value = vw.values[0]
+            if _trim(values[pi]) != "":
+                any_content = True
+        if not gates:
+            continue  # hrHidden but nothing gates on it: default emit
+        off_value = "False" if on_value == "True" else "True"
+        implied_bool[gi] = on_value if any_content else off_value
+
     prev_was_text_element = False
     open_groups: list[str] = []
 
@@ -1126,7 +1175,11 @@ def convert_step_with_catalog(
         if gov_handled:
             pass  # piece already decided (a value or intentionally empty)
         elif param.type == "boolean":
-            piece = _emit_boolean(param, hr_value)
+            if pi in implied_bool:
+                attr = param.xml_attr or "state"
+                piece = "    <" + param.xml_element + " " + attr + '="' + implied_bool[pi] + '"/>'
+            else:
+                piece = _emit_boolean(param, hr_value)
         elif param.type == "enum":
             if param.xml_element in discrim_value:
                 attr = param.xml_attr or "value"
