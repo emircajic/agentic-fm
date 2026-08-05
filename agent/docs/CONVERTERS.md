@@ -132,20 +132,72 @@ Tying a known value to an expected param is the only check that sees it.
 Because a positional read always emits well-formed XML, a sample that converts cleanly is **not** verified — check that each calc's value sits under the expected wrapper before committing its golden.
 `test_saxml_calc_placement` does exactly that against `fixtures/converter/saxml_calc_placement/`, where every calculation is a literal naming its param.
 
-**Enums have the same defect, unfixed, and it reaches the output.** Two halves:
+#### Placing a SaXML enum, and reading its label
 
-*The value is FileMaker's display label, not its XML value.* With no `hrEnumValues` to reverse, the SaXML `<List name>` passes straight through to the emitted attribute, and FileMaker does not accept it back. Measured against FileMaker's own fmxmlsnippet spellings in `agent/snippet_examples/steps`:
+Enums had both halves of the calc defect and needed one more thing on top, so they are placed the same way and then **translated**.
 
-| Step / param | Emitted | FileMaker writes | Steps affected |
-|---|---|---|---|
-| `Replace Field Contents` / `With` | `Replace with calculation: ` | `Calculation` | 130 |
-| `Go to Record/Request/Page` / `RowPageLocation` | `By Calculation…` | `ByCalculation` | 29 |
-| `Go to Portal Row` / `RowPageLocation` | `By Calculation…` | `ByCalculation` | 18 |
+*Placed by name,* against `saxml_read._SAXML_ENUM_PARAMS`, using the same addresses and the same `_addressed_nodes` walk as the calcs.
+The rules carry over unchanged: a step absent from the table still reads positionally, a step present in it does not fall back, and a param with no address reads as empty rather than claiming the next list along.
+Two params are deliberately absent from their step's map — `AVPlayer Play`'s `Source` and `Perform SQL Query by Natural Language`'s `UniversalPathList` — because FileMaker exports no list for either, and both were previously claiming the next param's.
 
-*The param is chosen by position.* `Perform RAG Action` exports its data source ahead of its action, so the two swap, the branch that reveals the step's calcs never fires, and calcs placed correctly are dropped by the emitter.
+Position fails here for the same two reasons it fails for calcs, plus one that is worse.
+FileMaker exports out of catalog order (`Perform RAG Action` puts its data source ahead of its action, `Configure Regression Model` its algorithm ahead of its action), and an absent optional shifts every later one (`AVPlayer Set Options` omits an unset `Presentation`, and the `Zoom` behind it slides into the slot).
+The extra cost is that an enum can **govern**: a swapped discriminator leaves the emitter unable to recognise the branch, so it drops every param that branch would have revealed, calculations included.
+That is how six correctly-placed calcs disappeared from `Perform RAG Action` and how `Set Web Viewer` lost its URL.
 
-Both halves are one fix — address enums by name as calcs are — and it needs its own measurement pass. Steps losing calcs to the second half are pinned in `_PLACEMENT_KNOWN_GAPS`.
-`Set Web Viewer`'s `Action` is a third, smaller thing: it emits `Reset` correctly, but the catalog's `enumValues` for it is empty, so nothing validates it.
+*Translated by measurement,* against `saxml_read._SAXML_ENUM_LABELS`.
+A SaXML `<List name="…">` carries the label the script editor DISPLAYS, not the value FileMaker writes, and where they differ and nothing reverses the label, the label reaches the emitted attribute unchanged:
+
+| Step / param | SaXML label | FileMaker writes |
+|---|---|---|
+| `Replace Field Contents` / `With` | `Replace with calculation: ` | `Calculation` |
+| `Go to Record/Request/Page`, `Go to Portal Row` / `RowPageLocation` | `By Calculation…` | `ByCalculation` |
+| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` |
+| `Arrange All Windows` / `WindowArrangement` | `Cascade Window` | `Cascade` |
+| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace` | `FindMatchingReplace` |
+| `Enable Touch Keyboard` / `ShowHide` | `On` | `Show` |
+| `Configure AI Account` / `LLMType` | `OpenAI` | `ChatGPT` |
+| `Set Web Viewer` / `Action` | `Go to URL...` | `GoToURL` |
+
+**No rule relates the two.** De-spacing explains `Resize to Fit` and breaks on `Cascade Window`; a prefix explains `Replace` and breaks on everything else; `On` → `Show` and `OpenAI` → `ChatGPT` share nothing with either.
+Like the calc addresses, this is data, and every entry is sourced from FileMaker's own corpus under `agent/snippet_examples/steps` — either a comment that states the mapping outright (`MonitorType value: "iBeacon" | "GeoLocation" (HR: Geofence) | "Clear"`, `ShowHide value: "Show" [On] | "Hide" [Off]`) or a legal-value list whose unchanged members anchor the changed one.
+Resolution order is the measured map, then the catalog's `hrEnumValues` reversed, then the label unchanged.
+
+An unmeasured label still passes through rather than refusing the step: refusing would cost every other param on the step to fix nothing, and most enums do label themselves with their own value.
+`test_converter_conformance.test_saxml_enum_values_are_filemakers` is the guard — it asserts every emitted enum value against those same corpus comments, so a label that reaches the output fails the gate.
+A golden cannot do this job: regenerate it from a reader that emits labels and the labels become the expectation.
+
+#### Open — the catalog's `enumValues` has the same disease, on the HR→XML path
+
+Ten params hold FileMaker's **display label** where the catalog is supposed to hold the value FileMaker writes.
+The SaXML reader routes around it through `_SAXML_ENUM_LABELS` above; **HR→XML does not**, in Python or TypeScript.
+`Adjust Window [ Resize to Fit ]` emits `<WindowState value="Resize to Fit"/>`, and FileMaker will not accept it back.
+
+| Step / param | Catalog `enumValues` says | FileMaker writes |
+|---|---|---|
+| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` |
+| `Arrange All Windows` / `WindowArrangement` | `Tile Horizontally`, `Tile Vertically`, `Cascade Window`, `Bring All To Front` | `TileHorizontally`, `TileVertically`, `Cascade`, `BringAllToFront` |
+| `AVPlayer Set Options` / `Zoom` | `Fit Only`, `Fill Only`, `Stretch Only` | `FitOnly`, `FillOnly`, `StretchOnly` |
+| `Configure AI Account` / `LLMType` | `OpenAI`, `Custom` | `ChatGPT`, `Other` |
+| `Configure Machine Learning Model` / `ConfigureCoreML` | `Unload` | `Uninstall` |
+| `Configure Region Monitor Script` / `MonitorType` | `Geofence` | `GeoLocation` |
+| `Enable Touch Keyboard` / `ShowHide` | `On`, `Off` | `Show`, `Hide` |
+| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace`, `Constrain`, `Extend` | `FindMatchingReplace`, `FindMatchingConstrain`, `FindMatchingExtend` |
+| `Go to Record/Request/Page` / `RowPageLocation` | `By Calculation` | `ByCalculation` |
+| `Go to Portal Row` / `RowPageLocation` | `By Calculation` | `ByCalculation` |
+
+Note `RowPageLocation`'s three spellings: SaXML says `By Calculation…`, FileMaker's fmxmlsnippet says `ByCalculation`, and the catalog says `By Calculation`, matching neither.
+
+Correcting it is not a one-line edit, which is why it is listed rather than done: the fix moves FileMaker's value into `enumValues` and FileMaker's label into `hrEnumValues`, and that **changes HR rendering** for these steps — `<WindowState value="ResizeToFit"/>` renders as `ResizeToFit` today and would render as `Resize to Fit` after.
+The label is almost certainly right (the catalog's current string and the SaXML label agree, independently), but "almost certainly" is not the standard this file argues for everywhere else.
+
+**Every catalog change must be verified end-to-end against a live FileMaker, through every converter it feeds.**
+The catalog is not a document, it is the program driving HR→XML, XML→HR and SaXML→XML at once, and each direction can be wrong in a way the others hide.
+A green suite is not verification — the goldens are generated from these same converters, so they agree with whatever the converter emits; re-blessing them is a consequence of a fix, never evidence for it.
+Neither is an unchanged corpus diff, nor `snippet_examples` alone: that corpus is FileMaker's own output and the best offline oracle for the value FileMaker *writes*, but it is a fixed sample and it cannot tell you the label FileMaker *displays*.
+Paste the emitted step into the Script Workspace, confirm FileMaker renders the option you meant, then copy it back out and diff — FileMaker silently discards a parameter it does not recognise, so a clean paste proves nothing until you read the step back.
+Cover every value of every param touched, not one sample per step.
+Full rule: `agent/catalogs/UPDATING_CATALOGS.md` § "The verification rule".
 
 ### `agent/scripts/snippet_to_hr.py`
 

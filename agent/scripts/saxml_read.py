@@ -442,21 +442,215 @@ _SAXML_CALC_PARAMS: dict[str, dict[str, str]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Where FileMaker puts a step's enums
+# ---------------------------------------------------------------------------
+# The same defect the calc addresses above exist to fix, in the same place: FileMaker
+# does not export a step's ``<List>`` params in catalog order either, so "take the next
+# unconsumed <Parameter> holding a <List>" hands each enum to the wrong param. It is
+# quieter than the calc case because most steps have one enum and cannot be reordered,
+# and louder when it does bite: an enum can GOVERN, so a swapped discriminator leaves
+# the emitter unable to recognise the branch and it drops every param that branch would
+# have revealed, calculations included.
+#
+# ``Perform RAG Action`` exports ``RAGDataSource`` ahead of ``RAGAction``, so the two
+# swap and six correctly-placed calcs are dropped. ``AVPlayer Set Options`` shows the
+# quiet form: FileMaker omits an unset ``Presentation``, and the ``Zoom`` that follows
+# slides into its slot exactly as an absent optional calc shifts every later one.
+#
+# The addresses use the same grammar as ``_SAXML_CALC_PARAMS`` and are read the same way
+# (``_addressed_lists``). Every entry below was derived from FileMaker's own SaXML by
+# VALUE IDENTITY — a ``<List name>`` was attributed to a param only when that label is
+# one the param declares (``enumValues`` or an ``hrEnumValues`` label) and no sibling
+# enum declares it. The one step where the labels collide, ``Perform SQL Query by
+# Natural Language`` (both its selection params render "From list"), was separated by
+# the value only one of them accepts: ``LLMOptionsSelection`` carries "By JSON data",
+# which is ``OptionsSelectionType``'s alone, leaving ``LLMTablesSelection`` for
+# ``TablesSelectionType``. ``Perform Semantic Find``'s three are additionally an exact
+# name match against the catalog's own ``xmlElement``.
+#
+# As with the calcs, a step present here does not fall back to position: a param with no
+# address reads as empty. Two params are deliberately absent from their step's map —
+# ``AVPlayer Play``'s ``Source`` and ``Perform SQL Query by Natural Language``'s
+# ``UniversalPathList`` — because FileMaker exports no ``<List>`` for either in any
+# sample seen, and reading empty is the honest answer. Both were previously claiming the
+# NEXT param's list.
+_SAXML_ENUM_PARAMS: dict[str, dict[str, str]] = {
+    "AVPlayer Play": {
+        "Presentation": "Presentation",
+    },
+    "AVPlayer Set Options": {
+        "Presentation": "Presentation",
+        "Zoom":         "Zoom",
+        "Sequence":     "Sequence",
+    },
+    "Configure Prompt Template": {
+        "ModelProvider": "ModelProvider",
+        "RequestType":   "TemplateType",
+    },
+    "Configure Regression Model": {
+        "LLMTrainAction": "LLMTrainActions",
+        "LLMAlgorithm":   "LLMTrainAlgorithm",
+    },
+    "Perform RAG Action": {
+        "RAGSpaceAction": "RAGAction",
+        "DataSource":     "RAGDataSource",
+    },
+    "Perform Semantic Find": {
+        "Query":     "Query",
+        "Condition": "Condition",
+        "Records":   "Records",
+    },
+    "Perform SQL Query by Natural Language": {
+        "Action":               "LLMAction",
+        "OptionsSelectionType": "LLMOptionsSelection",
+        "TablesSelectionType":  "LLMTablesSelection",
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# What FileMaker's SaXML enum labels mean
+# ---------------------------------------------------------------------------
+# A SaXML ``<List name="…">`` carries the label FileMaker's script editor DISPLAYS, not
+# the value it writes into fmxmlsnippet. Where the two differ and nothing in the catalog
+# reverses the label, the label reaches the emitted attribute unchanged and FileMaker
+# will not accept it back: ``<WindowState value="Resize to Fit"/>`` for a step FileMaker
+# writes as ``ResizeToFit``, ``<With value="Replace with calculation: "/>`` for
+# ``Calculation``.
+#
+# There is NO rule relating the two. De-spacing explains "Resize to Fit" → ResizeToFit
+# and breaks on "Cascade Window" → Cascade; a prefix explains "Replace" →
+# FindMatchingReplace and breaks on everything else; "On" → Show and "OpenAI" → ChatGPT
+# share nothing with either. Like the calc addresses, this is DATA.
+#
+# Every entry is sourced from FileMaker's own fmxmlsnippet corpus in
+# ``agent/snippet_examples/steps/`` — either a comment that states the mapping outright
+# ("MonitorType value: iBeacon | GeoLocation (HR: Geofence) | Clear"; "ShowHide value:
+# Show [On] | Hide [Off]"; "LLMType value: ChatGPT (OpenAI) | …") or a legal-value list
+# in which the unchanged members anchor the changed one by position and wording
+# ("ResizeToFit" is the only member of Adjust Window's list that is not already the
+# label). Do not add an entry any other way: a guessed mapping looks authoritative and
+# is worse than leaving the label to pass through.
+#
+# A label with no entry falls through to the catalog's ``hrEnumValues`` reversed, then to
+# itself. Most enums need nothing here — "Home", "Toggle", "Fit" and the rest are their
+# own values, and ``Set Zoom Level``/``Save a Copy as``/``Undo/Redo`` and friends already
+# carry a full ``hrEnumValues`` that reverses cleanly.
+#
+# Some KEYS are the label FileMaker's corpus documents rather than one seen in a SaXML
+# sample — ``Configure AI Account``'s "Custom" and ``Configure Machine Learning Model``'s
+# "Unload" are both quoted from a corpus comment, but only "OpenAI" and "uninstall" have
+# actually been observed in an export. That is deliberate: the MAPPING is documented
+# either way, and a key that never arrives costs nothing, while a missing one would let a
+# label reach the output. It is not licence to invent a key whose mapping is unattested.
+_SAXML_ENUM_LABELS: dict[str, dict[str, dict[str, str]]] = {
+    "Adjust Window": {
+        "WindowState": {"Resize to Fit": "ResizeToFit"},
+    },
+    "Arrange All Windows": {
+        "WindowArrangement": {
+            "Tile Horizontally":  "TileHorizontally",
+            "Tile Vertically":    "TileVertically",
+            "Cascade Window":     "Cascade",
+            "Bring All To Front": "BringAllToFront",
+        },
+    },
+    "AVPlayer Set Options": {
+        "Zoom": {
+            "Fit Only":     "FitOnly",
+            "Fill Only":    "FillOnly",
+            "Stretch Only": "StretchOnly",
+        },
+    },
+    "Configure AI Account": {
+        "LLMType": {"OpenAI": "ChatGPT", "Custom": "Other"},
+    },
+    "Configure Machine Learning Model": {
+        "ConfigureCoreML": {"uninstall": "Uninstall", "Unload": "Uninstall"},
+    },
+    "Configure Region Monitor Script": {
+        "MonitorType": {"Geofence": "GeoLocation"},
+    },
+    "Enable Touch Keyboard": {
+        "ShowHide": {"On": "Show", "Off": "Hide"},
+    },
+    "Find Matching Records": {
+        "FindMatchingRecordsByField": {
+            "Replace":   "FindMatchingReplace",
+            "Constrain": "FindMatchingConstrain",
+            "Extend":    "FindMatchingExtend",
+        },
+    },
+    "Go to Portal Row": {
+        "RowPageLocation": {"By Calculation…": "ByCalculation"},
+    },
+    "Go to Record/Request/Page": {
+        "RowPageLocation": {"By Calculation…": "ByCalculation"},
+    },
+    "Perform Semantic Find": {
+        # "Query type (HR: Query by): 1 → Natural language | 2 → Vector data | 3 →
+        # Image", and FileMaker's natural-language mode is the one carrying a <Text>
+        # calc — which is what its SaXML list is named, at value="1".
+        "Query": {"Text": "1"},
+    },
+    "Replace Field Contents": {
+        "With": {
+            "Current contents":              "CurrentContents",
+            "Replace with serial numbers: ": "SerialNumbers",
+            "Replace with calculation: ":    "Calculation",
+        },
+    },
+    "Set Web Viewer": {
+        "Action": {
+            "Go to URL...": "GoToURL",
+            "Reset":        "Reset",
+            "Reload":       "Reload",
+            "Go Forward":   "GoForward",
+            "Go Back":      "GoBack",
+        },
+    },
+}
+
+
+def _saxml_enum_value(entry: CatalogEntry, param: StepParam, label: str) -> str:
+    """A SaXML ``<List name>`` → the XML value FileMaker writes for it.
+
+    Measured mapping first, then the catalog's own ``hrEnumValues`` reversed, then the
+    label unchanged. The passthrough is deliberate: an unmeasured label is not
+    necessarily wrong (most enums label themselves with their value), and refusing the
+    step instead would cost every other param on it to fix nothing.
+    """
+    measured = _SAXML_ENUM_LABELS.get(entry.name, {}).get(param_key(param))
+    if measured and label in measured:
+        return measured[label]
+    for value, mapped in param.hr_enum_values.items():
+        if mapped == label:
+            return value
+    return label
+
+
 def _saxml_seg(el: ET.Element) -> str:
     """One address segment: a ``<Parameter type="X">`` reads as X, anything else as its tag."""
     return (el.get("type") or "") if el.tag == "Parameter" else el.tag
 
 
-def _addressed_calcs(sparams: list[ET.Element], address: str) -> list[tuple[int, ET.Element]]:
-    """Every ``<Calculation>`` the address reaches, as ``(top-level param index, node)``.
+def _addressed_nodes(
+    sparams: list[ET.Element], address: str, tag: str
+) -> list[tuple[int, ET.Element]]:
+    """Every ``<tag>`` the address reaches, as ``(top-level param index, node)``.
 
-    Document order, which is how two params sharing one address are told apart.
+    Document order, which is how two params sharing one address are told apart. The walk
+    stops at the first ``tag`` on a branch, so an address never reaches through one node
+    of the kind it is looking for into another nested inside it — ``Replace Field
+    Contents`` nests an entry-option ``<List>`` inside the ``<List>`` that carries its
+    branch, and only the outer one is the param's value.
     """
     want = address.split("/")
     out: list[tuple[int, ET.Element]] = []
 
     def walk(el: ET.Element, matched: int, i: int) -> None:
-        if el.tag == "Calculation":
+        if el.tag == tag:
             if matched == len(want):
                 out.append((i, el))
             return
@@ -470,6 +664,16 @@ def _addressed_calcs(sparams: list[ET.Element], address: str) -> list[tuple[int,
             continue
         walk(sp, 1, i)
     return out
+
+
+def _addressed_calcs(sparams: list[ET.Element], address: str) -> list[tuple[int, ET.Element]]:
+    """Every ``<Calculation>`` the address reaches — see ``_addressed_nodes``."""
+    return _addressed_nodes(sparams, address, "Calculation")
+
+
+def _addressed_lists(sparams: list[ET.Element], address: str) -> list[tuple[int, ET.Element]]:
+    """Every ``<List>`` the address reaches — see ``_addressed_nodes``."""
+    return _addressed_nodes(sparams, address, "List")
 
 
 def _value_calcs(el: ET.Element, depth: int = 0) -> list[ET.Element]:
@@ -668,51 +872,73 @@ def _extract_simple(
         return _bool_on_off(sparams[cands[0]]) or ""
 
     if ptype == "enum":
+        # <Animation> is its own SaXML element, not a <List>, and only ever belongs to
+        # the param named for it — so it is matched by name and never competes for a
+        # list with the layout-destination enum it sits beside.
+        if param.xml_element == "Animation":
+            for i, sp in enumerate(sparams):
+                if consumed[i]:
+                    continue
+                anim = sp.find("Animation")
+                if anim is not None:
+                    consumed[i] = True
+                    raw = anim.get("name", "")
+                    # FM stores <Animation name="None"> in SaXML but omits the value in
+                    # its fmxmlsnippet (empty <Animation value=""/>); mirror that.
+                    if raw == "None":
+                        return ""
+                    return param.hr_enum_values.get(raw, raw)
+            return ""
+
+        def token(lst: ET.Element) -> str:
+            # The SaXML label is the script editor's, and the value FileMaker writes is
+            # frequently a different string; translate before anything else looks at it.
+            value = _saxml_enum_value(entry, param, lst.get("name", "") or lst.get("value", ""))
+            # A governing discriminator is matched against the catalog's own value, so
+            # hand that over as-is — a branch value the emitter does not recognise
+            # silently hides every param the branch reveals, calculations included.
+            # A simple enum forward-maps to its HR label, which the emitter reverses.
+            if is_governing_discriminator(param):
+                return value
+            return param.hr_enum_values.get(value, value)
+
+        def take(i: int, node: ET.Element) -> str:
+            # An enum claims the LIST, not the whole <Parameter> that holds it — a
+            # branch's list carries the branch's calculation inside it (Replace Field
+            # Contents keeps its replacement calc under <List name="Replace with
+            # calculation: ">), and marking the param consumed hides that calc from
+            # every later param. Retire the param only once nothing is left in it, the
+            # same test the addressed calcs use.
+            claimed.add(id(node))
+            if all(id(c) in claimed for c in _value_calcs(sparams[i])):
+                consumed[i] = True
+            return token(node)
+
+        address = _SAXML_ENUM_PARAMS.get(entry.name, {}).get(param_key(param))
+        if address is not None:
+            for i, node in _addressed_lists(sparams, address):
+                if id(node) in claimed:
+                    continue
+                return take(i, node)
+            return ""
+
+        if entry.name in _SAXML_ENUM_PARAMS:
+            # The step's enum layout was measured whole and this param was not in it, so
+            # FileMaker exports no list for it. Falling back to position here would let
+            # it claim a list belonging to an addressed param — the failure the
+            # addresses exist to prevent.
+            return ""
+
+        # No address measured for this step: consume the next list-bearing SaXML param.
+        # Correct only while FileMaker's export order matches the catalog's declaration
+        # order, which is why the table above exists — but a step with a single enum
+        # has no order to get wrong, and that is most of the catalog.
         for i, sp in enumerate(sparams):
             if consumed[i]:
                 continue
             lst = sp.find("List")
-            if lst is not None:
-                consumed[i] = True
-                # governing-discriminator enums want the raw XML value; simple enums
-                # forward-map to the HR label so the emitter reverses it exactly.
-                raw = lst.get("name", "") or lst.get("value", "")
-                if is_governing_discriminator(param):
-                    # SaXML labels the branch the way the script editor does; the
-                    # emitter keys its branches off the catalog's own value. Reverse
-                    # the catalog's HR mapping to get back to it — FileMaker exports
-                    # Perform RAG Action's Prompt branch as "Send Prompt", and a
-                    # branch value the emitter does not recognise silently hides
-                    # every param that branch reveals, calcs included.
-                    for value, label in param.hr_enum_values.items():
-                        if label == raw:
-                            return value
-                    # An unrecognised value still passes through, and that passthrough
-                    # is KNOWN WRONG for some steps, not merely unmapped: with no
-                    # hrEnumValues to reverse, FileMaker's SaXML display label reaches
-                    # the emitter as if it were the XML value, and FileMaker does not
-                    # accept it back (`Replace Field Contents` emits
-                    # "Replace with calculation: " where FileMaker writes "Calculation";
-                    # `Go to Record/Request/Page` emits "By Calculation…" for
-                    # "ByCalculation"). Refusing instead would not fix them and would
-                    # cost every other param on those steps, so the passthrough stands
-                    # until the labels are measured. Enums are also still matched
-                    # POSITIONALLY, and FileMaker exports them out of catalog order —
-                    # Perform RAG Action exports its data source ahead of its action, so
-                    # the two swap and the branch revealing the step's calcs never
-                    # fires. Both halves are the same fix: address enums by name, the
-                    # way the calcs above are addressed.
-                    return raw
-                return param.hr_enum_values.get(raw, raw)
-            anim = sp.find("Animation")
-            if anim is not None and param.xml_element == "Animation":
-                consumed[i] = True
-                raw = anim.get("name", "")
-                # FM stores <Animation name="None"> in SaXML but omits the value in
-                # its fmxmlsnippet (empty <Animation value=""/>); mirror that.
-                if raw == "None":
-                    return ""
-                return param.hr_enum_values.get(raw, raw)
+            if lst is not None and id(lst) not in claimed:
+                return take(i, lst)
         return ""
 
     # Unrecognized-but-simple type: no token (emitter applies default).

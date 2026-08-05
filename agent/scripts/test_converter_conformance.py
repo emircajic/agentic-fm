@@ -128,10 +128,85 @@ def test_saxml_to_snippet_matches_golden():
 
 _MARKER = re.compile(r"CP\d+_([A-Za-z0-9]+)")
 
-# Steps whose calcs reach the right param but are then dropped by the emitter, because
-# the reader reads their governing enum positionally and FileMaker exports it out of
-# catalog order. Placement is not the defect here; enum matching is.
-_PLACEMENT_KNOWN_GAPS = {"Perform RAG Action", "Set Web Viewer"}
+# Steps whose calcs reach the right param and are then dropped further down. Empty since
+# enums were addressed by name the way calcs are (``saxml_read._SAXML_ENUM_PARAMS`` /
+# ``_SAXML_ENUM_LABELS``): ``Perform RAG Action`` no longer swaps its action with its
+# data source, and ``Set Web Viewer``'s branch value is now the one the emitter knows.
+# Keep the assertion below exact — a step that starts dropping calcs must fail here, not
+# be absorbed by a permissive list.
+_PLACEMENT_KNOWN_GAPS: set[str] = set()
+
+
+# A corpus comment that enumerates a param's legal values, e.g.
+#   <!-- WindowState value: "ResizeToFit" | "Maximize" | … -->
+#   <!-- Action enumeration: "GoToURL" loads new web address…; "Reset" … -->
+_LEGAL_VALUES = re.compile(r"<!--\s*([A-Za-z0-9_]+)\s+(?:value|enumeration)\s*:\s*(.+?)-->", re.S)
+_QUOTED = re.compile(r'"([^"]*)"')
+
+
+def _filemaker_legal_enum_values():
+    """{step name -> {element -> {legal value}}} from FileMaker's own corpus.
+
+    The corpus files under ``snippet_examples/steps`` are FileMaker's output, and many
+    carry a comment spelling out the full legal set for an enumerated element. That is
+    the only offline oracle for what FileMaker will ACCEPT — a golden regenerated from
+    this project's own converters cannot serve, because it freezes whatever the reader
+    happened to emit.
+    """
+    legal: dict[str, dict[str, set[str]]] = {}
+    for _rel, full in _corpus_files():
+        with open(full, encoding="utf-8") as fh:
+            text = fh.read()
+        try:
+            root = ET.fromstring(re.search(r"<fmxmlsnippet.*?</fmxmlsnippet>", text, re.S).group(0))
+        except (AttributeError, ET.ParseError):
+            continue
+        names = {st.get("name", "") for st in root.iter("Step")}
+        for elem, body in _LEGAL_VALUES.findall(text):
+            values = set(_QUOTED.findall(body))
+            if not values:
+                continue
+            for name in names:
+                legal.setdefault(name, {}).setdefault(elem, set()).update(values)
+    return legal
+
+
+def test_saxml_enum_values_are_filemakers():
+    """Every enum value read out of SaXML must be one FileMaker itself writes.
+
+    SaXML names an enumerated choice with the label FileMaker's script editor DISPLAYS,
+    which is regularly not the value FileMaker writes into fmxmlsnippet — "Resize to
+    Fit" against ``ResizeToFit``, "Replace with calculation: " against ``Calculation``,
+    "OpenAI" against ``ChatGPT``. A label that reaches the emitted attribute unchanged
+    produces a well-formed document FileMaker will not accept, and no golden can see it:
+    regenerate the golden from a reader that emits labels and the labels become the
+    expectation.
+
+    So this asserts against FileMaker's corpus instead of against ourselves.
+    ``saxml_read._SAXML_ENUM_LABELS`` is what makes it pass; every entry there is
+    sourced from the same comments this reads.
+    """
+    legal = _filemaker_legal_enum_values()
+    assert legal, "no legal-value comments found in the corpus — did it move?"
+
+    checked = 0
+    for name, snippet in compute_saxml_to_snippet().items():
+        for step in ET.fromstring(snippet).iter("Step"):
+            per_elem = legal.get(step.get("name", ""))
+            if not per_elem:
+                continue
+            for el in step.iter():
+                allowed = per_elem.get(el.tag)
+                value = el.get("value")
+                if allowed is None or value in (None, ""):
+                    continue
+                assert value in allowed, (
+                    f"{name}: {step.get('name')} emits <{el.tag} value={value!r}> — "
+                    f"FileMaker writes one of {sorted(allowed)}")
+                checked += 1
+
+    # a floor, not an exact count: it catches the oracle silently going empty
+    assert checked >= 20, f"only {checked} enum values checked against FileMaker"
 
 
 def test_saxml_calc_placement():
@@ -149,10 +224,11 @@ def test_saxml_calc_placement():
     answer to a shape it cannot place — but placing a value on the wrong param is not.
 
     ``_PLACEMENT_KNOWN_GAPS`` names the steps whose calcs are placed correctly and then
-    lost further down, because the reader still matches ENUMS positionally: FileMaker
-    exports Perform RAG Action's data source ahead of its action, the two swap, and the
-    emitter drops every param the (now wrong) branch would have revealed. The list is
-    asserted, not skipped — a step that leaves it, or joins it, fails here.
+    lost further down. It is empty, and asserted exact rather than skipped, so a step
+    that starts dropping calcs fails here. It was last non-empty while the reader still
+    matched ENUMS positionally: FileMaker exports Perform RAG Action's data source ahead
+    of its action, the two swapped, and the emitter dropped every param the wrong branch
+    would have revealed.
     """
     catalog = {e.name: e for e in load_catalog(fm_xml_to_snippet._find_catalog())}
     calc_types = {"calculation", "calc", "namedCalc"}

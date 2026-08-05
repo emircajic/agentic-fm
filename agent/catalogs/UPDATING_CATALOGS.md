@@ -6,6 +6,23 @@ Maintain 100% coverage of `agent/catalogs/step-catalog-en.json`, and any other l
 
 Every entry must conform to the structural contract in [`CATALOG_SCHEMA.md`](./CATALOG_SCHEMA.md) — the normative definition of every `type`, key, and grammar rule the catalog uses. Consult it before adding or changing a parameter shape.
 
+## The verification rule — non-negotiable
+
+> **Every catalog change MUST be verified end-to-end against a live FileMaker, through every converter it feeds.**
+
+The catalog is not a document; it is the program that drives HR→XML, XML→HR, and SaXML→XML at once. A one-word edit reshapes all of them, and each direction can be wrong in a way the others hide.
+
+**Nothing short of live FileMaker counts as verification.** Specifically, none of these are evidence a change is correct:
+
+- A green test suite. The goldens are generated from these same converters, so a golden agrees with whatever the converter happens to emit. A converter that has never been compared to FileMaker has only been compared to itself.
+- An unchanged corpus diff. "The output did not change" is not "the output is correct" — it is equally consistent with the change never taking effect, and with the output having been wrong before and after. This has mis-sized two separate defects in this project.
+- A reading of `snippet_examples/`. It is FileMaker's own output and is the best **offline** oracle, so use it to *design* a change — but it is a fixed sample, and it cannot show you what FileMaker does with a value you invented.
+- Agreement with the existing catalog entry. That is the thing under test.
+
+**What does count:** emit the step, paste it into FileMaker's Script Workspace, and confirm FileMaker accepts it and renders the step you meant — then copy it back out and confirm FileMaker's own XML matches what the catalog produces. Round-trip both directions for every enum value, every boolean state, and every discriminator branch you touched, not just the one you were looking at. FileMaker silently discards a parameter it does not recognise, so a step that pastes without complaint has not passed: read the pasted step back.
+
+An enum is the sharpest case. `enumValues` must hold the value FileMaker **writes into XML**, and `hrEnumValues` maps that value to the label FileMaker **displays**. Getting these backwards produces a step that looks right in every diff and that FileMaker rejects — see the open list in `agent/docs/CONVERTERS.md`.
+
 ## Token Efficiency
 
 **NEVER read `step-catalog-en.json` in full.** It is large (~200KB+) and reading it wastes tokens. Always use Grep to extract only the entry being worked on:
@@ -24,6 +41,7 @@ The user either pastes both the HR format and fmxmlsnippet XML for each step or 
 2. **Extract** the `id` from the fmxmlsnippet
 3. **Map** HR labels and enum values (which often differ from XML values)
 4. **Cross-check** against snippet_examples — always explicitly present the comparison result to the user, even when there are no differences
+4b. **Verify against live FileMaker** — round-trip the step through the Script Workspace in both directions, per § "The verification rule" above. This step is mandatory and cannot be satisfied by tests, goldens, or snippet_examples alone.
 5. **Update catalog**: set id, add hrLabels, HR enumValues, order params to **XML serialization order** (the order FileMaker writes the child elements/attributes — this is the normative param order per `CATALOG_SCHEMA.md`, used for positional HR↔XML round-tripping; `hrSignature` separately conveys HR display order), set hrSignature, status→"complete"
 6. **Update snippet_examples** if needed: fix wrong comments, add missing structure/elements, add HR annotations to comments
 7. **Do NOT** include XML comments in code output — they are reference only
