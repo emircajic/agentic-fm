@@ -53,6 +53,7 @@ _CORPUS = os.path.join(_REPO, "agent", "snippet_examples", "steps")
 _FIXTURES = os.path.join(_REPO, "agent", "fixtures", "converter")
 _XML_TO_HR = os.path.join(_FIXTURES, "xml-to-hr.json")
 _SAXML_DIR = os.path.join(_FIXTURES, "saxml")
+_SAXML_UNSUPPORTED_DIR = os.path.join(_FIXTURES, "saxml_unsupported")
 _SAXML_TO_SNIPPET = os.path.join(_FIXTURES, "saxml-to-snippet.json")
 _TS_XML_TO_HR = os.path.join(_REPO, "webviewer", "test", "fixtures", "xml-to-hr.json")
 
@@ -121,6 +122,37 @@ def test_saxml_to_snippet_matches_golden():
     for name, snippet in actual.items():
         ET.fromstring(snippet)  # well-formed
         assert snippet == golden[name], f"{name}: SaXML -> fmxmlsnippet output drifted"
+
+
+def test_saxml_unsupported_fixtures_fail_loud():
+    """A SaXML shape the reader cannot place must be COUNTED, never guessed at.
+
+    ``agent/fixtures/converter/saxml_unsupported/`` holds real FileMaker exports whose
+    boolean parameters the reader cannot map onto catalog params. Both current members
+    carry surplus ``<Parameter><Boolean>`` entries that belong to something the catalog
+    does not model as a boolean: ``Revert Transaction``'s Condition / Error Code are
+    presence flags for its optional calcs, and ``Print PDF``'s Password / Use print
+    options from / Save print options to belong to params marked ``hrHidden`` (which
+    the reader skips, leaving their booleans unclaimed).
+
+    Before the reader refused an ambiguous positional pick, each of these silently
+    produced a plausible ``<Elem state="…"/>`` carrying a value that means something
+    else entirely. They are kept OUT of ``saxml/`` — that corpus asserts zero
+    unsupported — and pinned here instead, the same way the reader's other
+    missing-decoder steps are left uncommitted rather than frozen wrong.
+    """
+    names = sorted(n for n in os.listdir(_SAXML_UNSUPPORTED_DIR) if n.endswith(".xml"))
+    assert names, "no unsupported SaXML fixtures found"
+    for name in names:
+        stats = {"unknown": 0, "unsupported": 0}
+        out = fm_xml_to_snippet.translate_script(
+            os.path.join(_SAXML_UNSUPPORTED_DIR, name), stats)
+        assert stats["unsupported"] == 1, f"{name}: expected 1 unsupported, got {stats}"
+        assert stats["unknown"] == 0, f"{name}: unexpected uncatalogued step"
+        # Fail loud means a marked placeholder, not silently-wrong XML.
+        assert "TODO: unsupported SaXML shape" in out, name
+        assert "unclaimed SaXML booleans" in out, f"{name}: not the ambiguity refusal"
+        ET.fromstring(out)  # still well-formed
 
 
 def test_python_xml_to_hr_matches_web_viewer():

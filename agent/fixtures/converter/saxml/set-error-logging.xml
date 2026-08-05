@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="200" name="Set Error Logging" enable="True">
+      <Options>16640</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="enabled" id="256" value="True" />
+        </Parameter>
+        <Parameter type="CustomDebugInfo">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>"custom_debug_info"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

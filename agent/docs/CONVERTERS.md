@@ -73,6 +73,25 @@ python3 agent/scripts/fm_xml_to_snippet.py \
 - Maps nested SaXML `<ParameterValues>` to flat fmxmlsnippet child elements
 - See `agent/scripts/XML_TRANSFORMATION.md` for the structural mapping reference
 
+#### Placing a SaXML boolean
+
+A step's booleans are matched by the SaXML `<Boolean type="…">` attribute against the catalog param's `hrLabel`.
+When that fails the reader falls back to position — but **only when exactly one unclaimed `<Parameter><Boolean>` is left**.
+
+The fallback has to be that strict because FileMaker's SaXML carries booleans the catalog does not model as params:
+
+| Kind | Example |
+|---|---|
+| Script-editor state, not a step param at all | `<Boolean type="Collapsed">` on block steps |
+| A presence flag for a companion the catalog models as a calc | `Revert Transaction`'s `Condition` / `Error Code` |
+| The boolean of a param the reader skipped because it is `hrHidden` | `Print PDF`'s `Password` / `Use print options from` / `Save print options to` |
+
+With one candidate there is no choice to get wrong, so the positional read stands — FileMaker omits `type` entirely on single-boolean steps (`Allow User Abort`, `Set Error Capture`) and names it differently from the catalog on others (`Set Error Logging` exports `enabled` against a `Logging` label).
+With more than one it refuses, counting the step as unsupported and emitting a marked placeholder.
+Guessing produces a plausible `<Elem state="…"/>` holding a value that means something else, and nothing downstream can tell.
+
+**The calc side has the same blindness and is not fixed.** Calculations are still consumed strictly in order, and SaXML does not present them in catalog order — `Generate Response from Model` exports `LLMAccountName` / `LLMModel` / `LLMUserPrompt` last-to-first, so every calc lands on the wrong param. That is the known gap for that step; it needs a per-step decoder or a catalog-side SaXML-name facet, not a positional tweak.
+
 ### `agent/scripts/snippet_to_hr.py`
 
 **fmxmlsnippet → HR**
@@ -224,7 +243,8 @@ An offline, dependency-free gate freezes the verified output as golden fixtures 
   - `xml-to-hr.json` — `{corpus file → HR}` from `snippet_to_hr.py` over `agent/snippet_examples/steps`.
   - `saxml/*.xml` — SaXML input samples, one per step type.
   - `saxml-to-snippet.json` — `{sample → fmxmlsnippet}` from `fm_xml_to_snippet.py` over those samples.
-- **Checks:** fmxmlsnippet → HR matches the golden; SaXML → fmxmlsnippet matches the golden and is well-formed; and the Python fmxmlsnippet → HR output matches the web viewer's committed `webviewer/test/fixtures/xml-to-hr.json`, keeping the Python and TypeScript readers in lockstep.
+  - `saxml_unsupported/*.xml` — real exports whose shape the reader cannot place. Pinned to prove it **refuses** rather than guesses; kept out of `saxml/`, which asserts zero unsupported.
+- **Checks:** fmxmlsnippet → HR matches the golden; SaXML → fmxmlsnippet matches the golden and is well-formed; every `saxml_unsupported/` fixture is counted unsupported and emits a marked placeholder; and the Python fmxmlsnippet → HR output matches the web viewer's committed `webviewer/test/fixtures/xml-to-hr.json`, keeping the Python and TypeScript readers in lockstep.
 
 ```bash
 uvx pytest agent/scripts/test_converter_conformance.py            # the gate

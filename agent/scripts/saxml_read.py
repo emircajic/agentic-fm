@@ -327,14 +327,39 @@ def _extract_simple(
                 if _bool_type(sp) == param.hr_label:
                     consumed[i] = True
                     return _bool_on_off(sp) or ""
-        # Fallback: next unconsumed Boolean param, positionally.
-        for i, sp in enumerate(sparams):
-            if consumed[i]:
-                continue
-            if sp.find("Boolean") is not None:
-                consumed[i] = True
-                return _bool_on_off(sp) or ""
-        return ""
+        # Fallback: the one unconsumed Boolean left, positionally — and ONLY when
+        # exactly one is left.
+        #
+        # FileMaker's SaXML carries booleans this reader must not claim: editor
+        # state that is no step param at all (``<Boolean type="Collapsed">`` on
+        # block steps), presence flags for optional companions the catalog models
+        # as calcs (``Revert Transaction``'s Condition / Error Code), and the
+        # boolean of a param this reader skipped because it is ``hrHidden``.
+        # Taking "the next one" when several are unclaimed is a coin flip, and a
+        # wrong pick is silent — it emits a plausible ``<Elem state="…"/>`` that
+        # simply means something else.
+        #
+        # With exactly one candidate there is no choice to get wrong, so the
+        # positional read stands (FileMaker omits the ``type`` entirely on the
+        # single-boolean steps, and names it differently from the catalog's
+        # hrLabel on others — ``Set Error Logging`` is ``enabled`` against a
+        # ``Logging`` label). With more than one, fail loud, exactly as an
+        # undecodable composite facet does: the caller counts it rather than
+        # emitting XML that is confidently wrong.
+        cands = [
+            i for i, sp in enumerate(sparams)
+            if not consumed[i] and sp.find("Boolean") is not None
+        ]
+        if not cands:
+            return ""
+        if len(cands) > 1:
+            offered = ", ".join(repr(_bool_type(sparams[i])) for i in cands)
+            raise UnsupportedSaXML(
+                f"{entry.name}: cannot place boolean param {param.xml_element!r} "
+                f"(hrLabel {param.hr_label!r}) — {len(cands)} unclaimed SaXML "
+                f"booleans to choose from ({offered})")
+        consumed[cands[0]] = True
+        return _bool_on_off(sparams[cands[0]]) or ""
 
     if ptype == "enum":
         for i, sp in enumerate(sparams):

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="207" name="Revert Transaction" enable="True">
+      <Options>17152</Options>
+      <ParameterValues membercount="5">
+        <Parameter type="Boolean">
+          <Boolean type="Condition" id="256" value="True" />
+        </Parameter>
+        <Parameter type="Condition">
+          <Calculation datatype="7" position="0">
+            <Calculation>
+              <Text>"condition"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Error Code" id="512" value="True" />
+        </Parameter>
+        <Parameter type="ErrorCode">
+          <Calculation datatype="2" position="1">
+            <Calculation>
+              <Text>0</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="ErrorMessage">
+          <Calculation datatype="1" position="2">
+            <Calculation>
+              <Text>"Error message"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>
