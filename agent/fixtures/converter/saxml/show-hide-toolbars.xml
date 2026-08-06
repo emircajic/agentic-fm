@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="29" name="Show/Hide Toolbars" enable="True">
+      <Options>524546</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="Lock" id="524288" value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Include Edit Record Toolbar" id="256" value="True" />
+        </Parameter>
+        <Parameter type="List">
+          <List name="Hide" value="2" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="119" name="Move/Resize Window" enable="True">
+      <Options>-2147467262</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="WindowReference">
+          <WindowReference>
+            <Select kind="0" type="current" />
+            <Bounds>
+              <height>
+                <Calculation datatype="1" position="1">
+                  <Calculation>
+                    <Text>900</Text>
+                  </Calculation>
+                </Calculation>
+              </height>
+              <width>
+                <Calculation datatype="1" position="2">
+                  <Calculation>
+                    <Text>1200</Text>
+                  </Calculation>
+                </Calculation>
+              </width>
+              <top>
+                <Calculation datatype="1" position="3">
+                  <Calculation>
+                    <Text>0</Text>
+                  </Calculation>
+                </Calculation>
+              </top>
+              <left>
+                <Calculation datatype="1" position="4">
+                  <Calculation>
+                    <Text>0</Text>
+                  </Calculation>
+                </Calculation>
+              </left>
+            </Bounds>
+          </WindowReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

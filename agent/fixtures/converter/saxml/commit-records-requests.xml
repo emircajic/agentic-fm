@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="75" name="Commit Records/Requests" enable="True">
+      <Options>0</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="Skip data entry validation" id="256" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Force Commit" id="512" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

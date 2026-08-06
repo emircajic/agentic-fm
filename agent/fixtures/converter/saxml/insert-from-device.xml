@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="161" name="Insert from Device" enable="True">
+      <Options>2</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="List">
+          <List name="Camera" value="3">
+            <Options type="Camera">
+              <Parameter type="Camera">
+                <List name="Back" value="1" />
+              </Parameter>
+              <Parameter type="LightMode">
+                <List name="Auto" value="0" />
+              </Parameter>
+              <Parameter type="Resolution">
+                <List name="Full" value="0" />
+              </Parameter>
+            </Options>
+          </List>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="210" name="Perform Script on Server with Callback" enable="True">
+      <Options>16962</Options>
+      <ParameterValues membercount="4">
+        <Parameter type="CallbackScriptState">
+          <List name="Continue" value="0" />
+        </Parameter>
+        <Parameter type="CallbackScriptParameter">
+          <Parameter type="Calculation">
+            <Calculation datatype="1" position="4">
+              <Calculation>
+                <Text>$optional_parameter</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="List">
+          <List name="From list" value="1" />
+        </Parameter>
+        <Parameter type="Parameter">
+          <Parameter>
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>$optional_parameter</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="37" name="Save a Copy as" enable="True">
+      <Options>546</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="List">
+          <List name="clone (no records)" value="3" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

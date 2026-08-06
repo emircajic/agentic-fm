@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="191" name="Open Data File" enable="True">
+      <Options>37</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$target</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$fileID">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

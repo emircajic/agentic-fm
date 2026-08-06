@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="97" name="Set Zoom Level" enable="True">
+      <Options>524290</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Lock" id="524288" value="True" />
+        </Parameter>
+        <Parameter type="List">
+          <List name="100%" value="4" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

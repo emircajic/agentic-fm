@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="111" name="Open URL" enable="True">
+      <Options>16512</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="In external browser" id="256" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="URL">
+          <URL autoEncode="True">
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>"www.isolutionstraining.com"</Text>
+              </Calculation>
+            </Calculation>
+          </URL>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

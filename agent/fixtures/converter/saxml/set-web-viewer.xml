@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="146" name="Set Web Viewer" enable="True">
+      <Options>16386</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>$object</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="action">
+          <List name="Go to URL..." value="5">
+            <Calculation datatype="1" position="1">
+              <Calculation>
+                <Text>$param</Text>
+              </Calculation>
+            </Calculation>
+          </List>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

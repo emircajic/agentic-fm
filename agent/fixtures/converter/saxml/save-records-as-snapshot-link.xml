@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="152" name="Save Records as Snapshot Link" enable="True">
+      <Options>546</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$snapshotPath</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="List">
+          <List name="Records being browsed" value="1" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

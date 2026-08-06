@@ -11,22 +11,22 @@ import { createIdResolver } from './id-resolver';
 import type { FMContext } from '@/context/types';
 import type { StepCatalogEntry } from './catalog-types';
 import { registerCatalogConverters } from './catalog-converter';
+import { initGrammar } from './catalog-grammar';
 
-// Import step registrations (side-effect imports — must come before catalog registration)
+// Control-flow hand-coders (the sanctioned catalog exception) — side-effect
+// import, must come before catalog registration so they win over the engine.
+// Every other step (data steps) is now rendered from the catalog grammar by the
+// shared engine; their former steps/*.ts hand-coders were retired in P6.3.
 import './steps/control';
-import './steps/fields';
-import './steps/navigation';
-import './steps/records';
-import './steps/windows';
-import './steps/miscellaneous';
 
 let catalogLoaded = false;
 
-/** Load catalog entries into the converter registry (idempotent). */
+/** Load catalog entries into both converter registries (idempotent). */
 export function loadCatalog(catalog: StepCatalogEntry[]): void {
   if (catalogLoaded) return;
   catalogLoaded = true;
-  registerCatalogConverters(catalog);
+  initGrammar(catalog); // grammar registry (catalog-grammar.ts) — powers both directions
+  registerCatalogConverters(catalog); // HR→XML: engine for every non-control step
 }
 
 export interface ConversionResult {

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="35" name="Import Records" enable="True">
+      <Options>33587362</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="Verify SSL Certificates" id="268435456" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="ImportField">
+          <ImportField addasnew="False">
+            <Options keepOriginalData="False" copyContainersAsIs="False" matchFieldNames="False" doAutoEntry="True" splitRepetitions="False" />
+            <Target />
+            <Field membercount="0" />
+            <CharacterSet name="UTF-8" value="5" />
+            <action name="Add" value="0" />
+          </ImportField>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

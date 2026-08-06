@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="61" name="Insert Text" enable="False">
+      <Options>5</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="Select" id="4096" value="False" />
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$README">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+        <Parameter type="Text">
+          <Text value="CALLED BY: companion server /trigger endpoint via AppleScript&#13;  The companion sets the job via POST /pending before firing do script.&#13;  This script GETs /pending to retrieve: target (script name), auto_save (bool), select_all (bool).&#13;&#13;PARAMETERS (from /pending JSON):&#13;  target      — name of the script to paste into&#13;  auto_save   — if true, saves all scripts after paste&#13;  select_all  — if true (default), runs Select All before paste (replaces all steps)&#13;               if false, pastes after existing steps (append mode)&#13;&#13;RETURNS: JSON { success, script, auto_save, select_all } or { success, error }&#13;&#13;REQUIRES: MBS Plugin with ScriptWorkspace and Menubar functions&#13;&#13;WARNING: FileMaker will block script execution with a dialog if any scripts have&#13;  unsaved changes. Ensure Agentic-fm Paste itself is saved before running deployments.&#13;  auto_save uses &quot;Save All Scripts&quot; which saves all open scripts in the workspace.&#13;&#13;NOTE: Replace sequence is Cmd+A → Delete (key code 51) → Cmd+V.&#13;  The Script Workspace does NOT overwrite a selection on paste — selected steps&#13;  must be explicitly deleted before pasting or the new steps are appended.&#13;  System Events keystrokes are used (not MBS Menubar commands) because MBS&#13;  commands are panel-focus-sensitive and unreliable in the Script Workspace.&#13;&#13;DIAGNOSTIC: If you hear a system beep after a deploy with auto_save enabled,&#13;  the paste likely failed — Cmd+S beeps when the script has no unsaved changes." />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

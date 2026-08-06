@@ -14,7 +14,6 @@
       }
     ],
     "hrSignature": "# {text}",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/comment.html"
@@ -73,7 +72,6 @@
       }
     ],
     "hrSignature": "[ Authenticate via: type ; Account Name: calc ; Password: calc ; Privilege Set: name ; Expire password ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/add-account.html"
@@ -102,7 +100,6 @@
       }
     ],
     "hrSignature": "[ Resize to Fit|Maximize|Minimize|Restore|Hide ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/adjust-window.html"
@@ -128,7 +125,6 @@
       }
     ],
     "hrSignature": "[ On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/allow-formatting-bar.html"
@@ -150,7 +146,6 @@
       }
     ],
     "hrSignature": "[ On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -178,7 +173,6 @@
       }
     ],
     "hrSignature": "[ Tile Horizontally|Tile Vertically|Cascade Window|Bring All To Front ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/arrange-all-windows.html"
@@ -272,7 +266,6 @@
       }
     ],
     "hrSignature": "[ Object Name|Field|URL : source ; Repetition: n ; Presentation: option ; Position: n ; Start Offset: n ; End Offset: n ; Hide Controls: Yes ; Disable Interaction: Yes ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/avplayer-play.html"
@@ -390,7 +383,6 @@
       }
     ],
     "hrSignature": "[ Presentation: option ; Disable Interaction: Yes ; Hide Controls: Yes ; Disable External Controls: Yes ; Pause in Background: Yes ; Position: n ; Start Offset: n ; End Offset: n ; Volume: n ; Zoom: option ; Sequence: option ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/avplayer-set-options.html"
@@ -417,7 +409,6 @@
       }
     ],
     "hrSignature": "[ Stopped|Paused|Playing ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/avplayer-set-playback-state.html"
@@ -430,7 +421,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/beep.html"
@@ -467,7 +457,6 @@
       }
     ],
     "hrSignature": "[ Old Password: calc ; Password: calc ; With dialog: On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/change-password.html"
@@ -480,7 +469,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/check-found-set.html"
@@ -493,7 +481,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/check-record.html"
@@ -521,7 +508,6 @@
       }
     ],
     "hrSignature": "[ Select ; field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/check-selection.html"
@@ -549,7 +535,6 @@
       }
     ],
     "hrSignature": "[ Select ; field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/clear.html"
@@ -565,11 +550,11 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "File ID",
-        "required": false
+        "required": false,
+        "omitWhenEmpty": true
       }
     ],
     "hrSignature": "[ File ID: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/close-data-file.html"
@@ -589,7 +574,6 @@
       }
     ],
     "hrSignature": "[ Current File | \"filename\" ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/close-file.html"
@@ -602,12 +586,11 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/close-popover.html"
   },
-  {
+    {
     "name": "Close Window",
     "id": 121,
     "category": "windows",
@@ -617,8 +600,9 @@
       {
         "xmlElement": "LimitToWindowsOfCurrentFile",
         "type": "boolean",
-        "hrLabel": null,
+        "hrLabel": "Current file",
         "xmlAttr": "state",
+        "flagStyle": true,
         "required": false,
         "defaultValue": "True"
       },
@@ -632,18 +616,28 @@
         "enumValues": [
           "ByName",
           "Current"
-        ]
+        ],
+        "discriminatorValues": {
+          "ByName": {
+            "reveal": [
+              "Name",
+              "LimitToWindowsOfCurrentFile"
+            ]
+          },
+          "Current": {
+            "hrToken": "Current Window"
+          }
+        }
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Name",
         "wrapperElement": "Name",
         "required": false
       }
     ],
-    "hrSignature": "[ Current ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Current Window | Name: <name> [ ; Current file ] ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/close-window.html"
@@ -656,32 +650,34 @@
     "selfClosing": false,
     "params": [
       {
+        "xmlElement": "Option",
+        "type": "boolean",
+        "flagStyle": true,
+        "hrLabel": "Skip data entry validation",
+        "xmlAttr": "state",
+        "required": false,
+        "defaultValue": "False"
+      },
+      {
         "xmlElement": "NoInteract",
         "type": "boolean",
-        "hrLabel": null,
+        "invertedHr": true,
+        "hrLabel": "With dialog",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True"
       },
       {
-        "xmlElement": "Option",
-        "type": "boolean",
-        "hrLabel": null,
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "False"
-      },
-      {
         "xmlElement": "ESSForceCommit",
         "type": "boolean",
-        "hrLabel": null,
+        "flagStyle": true,
+        "hrLabel": "Force Commit",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False"
       }
     ],
-    "hrSignature": "[ With dialog: Off ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Skip data entry validation ; With dialog: <On/Off> ; Force Commit ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/commit-records-requests.html"
@@ -694,7 +690,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": {
       "role": "close",
       "partners": [
@@ -759,7 +754,6 @@
       }
     ],
     "hrSignature": "[ Account Name: calc ; Model Provider: option ; Endpoint: calc ; Verify SSL Certificates ; API key: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -879,7 +873,6 @@
       }
     ],
     "hrSignature": "[ Action: Queue|Clear ; Name: calc ; Script: script ; Delay: calc ; Title: calc ; Body: calc ; Button 1 Label: calc ; Button 2 Label: calc ; Button 3 Label: calc ; Button 1 Foreground: calc ; Button 2 Foreground: calc ; Button 3 Foreground: calc ; Show when app in foreground: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/configure-local-notification.html"
@@ -919,7 +912,6 @@
       }
     ],
     "hrSignature": "[ Operation: Unload|Vision|General ; Name: calc ; From: field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -981,7 +973,6 @@
       }
     ],
     "hrSignature": "[ Action: Read|Cancel ; Script: script ; Timeout: calc ; Continuous Reading: calc ; Format Result as JSON: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -1011,12 +1002,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
-        "hrLabel": "Delete Entry",
+        "hrLabel": "Delete",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
         "flagStyle": true,
-        "notes": "True = delete the entry (omit Value); False = set/update. Mutually exclusive with Value."
+        "notes": "True = delete the entry (omit Value); False = set/update. Mutually exclusive with Value. FM renders the flag as the bare label 'Delete' (live-verified 2026-07-31)."
       },
       {
         "xmlElement": "Calculation",
@@ -1024,9 +1015,10 @@
         "hrLabel": "Value",
         "wrapperElement": "Value",
         "required": false,
-        "notes": "Set mode only. Mutually exclusive with Delete Entry (Option state=True)."
+        "notes": "Set mode only. Mutually exclusive with Delete (Option state=True)."
       }
-    ]
+    ],
+    "hrSignature": "[ <name> ; Instance ID: <calc> ; Value: <calc> ; Delete ]"
   },
   {
     "name": "Configure Prompt Template",
@@ -1114,7 +1106,6 @@
       }
     ],
     "hrSignature": "[ Template Name: calc ; Model Provider: option ; Template Type: option ; SQL Prompt: calc ; Natural Language Prompt: calc ; Find Request Prompt: calc ; RAG Prompt: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -1160,7 +1151,6 @@
       }
     ],
     "hrSignature": "[ RAG Account Name: calc ; Endpoint: calc ; API key: calc ; Verify SSL Certificates ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -1255,7 +1245,6 @@
       }
     ],
     "hrSignature": "[ Monitor: Clear|iBeacon|Geofence ; Name: calc ; Script: script ; Parameter: calc ; UUID: calc ; Major: calc ; Minor: calc ; Latitude: calc ; Longitude: calc ; Radius: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/configure-region-monitor-script.html"
@@ -1311,7 +1300,6 @@
       }
     ],
     "hrSignature": "[ Action: option ; Model Name: calc ; Algorithm: option ; Save Model To|Load Model From: field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -1350,7 +1338,6 @@
       }
     ],
     "hrSignature": "[ Restore ; Find without indexes ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/constrain-found-set.html"
@@ -1450,7 +1437,6 @@
       }
     ],
     "hrSignature": "Convert File [ With dialog: {On|Off} ; Open File ; Skip Indexes ; Verify SSL Certificates ; {source} ; Profile: ... ; Import options: ... ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/convert-file.html"
@@ -1478,7 +1464,6 @@
       }
     ],
     "hrSignature": "Copy [ Select ; {field} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/copy.html"
@@ -1491,7 +1476,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "Copy All Records/Requests",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/copy-all-records-requests.html"
@@ -1504,7 +1488,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/copy-record-request.html"
@@ -1517,7 +1500,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/correct-word.html"
@@ -1549,7 +1531,6 @@
       }
     ],
     "hrSignature": "Create Data File [ {path} ; Create folders: {On|Off} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/create-data-file.html"
@@ -1577,7 +1558,6 @@
       }
     ],
     "hrSignature": "Cut [ Select ; {field} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/cut.html"
@@ -1598,7 +1578,6 @@
       }
     ],
     "hrSignature": "Delete Account [ Account Name: {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/delete-account.html"
@@ -1625,7 +1604,6 @@
       }
     ],
     "hrSignature": "[ With dialog: On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/delete-all-records.html"
@@ -1645,7 +1623,6 @@
       }
     ],
     "hrSignature": "Delete File [ Target file: {path} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/delete-file.html"
@@ -1672,7 +1649,6 @@
       }
     ],
     "hrSignature": "Delete Portal Row [ With dialog: {On|Off} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/delete-portal-row.html"
@@ -1699,7 +1675,6 @@
       }
     ],
     "hrSignature": "[ With dialog: On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/delete-record-request.html"
@@ -1741,7 +1716,6 @@
       }
     ],
     "hrSignature": "Dial Phone [ With dialog: {On|Off} ; {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/dial-phone.html"
@@ -1754,7 +1728,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/duplicate-record-request.html"
@@ -1767,7 +1740,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/edit-user-dictionary.html"
@@ -1789,7 +1761,6 @@
       }
     ],
     "hrSignature": "Else",
-    "monacoSnippet": null,
     "blockPair": {
       "role": "middle",
       "partners": [
@@ -1823,7 +1794,6 @@
       }
     ],
     "hrSignature": "[ condition ]",
-    "monacoSnippet": "Else If [ ${1:condition} ]",
     "blockPair": {
       "role": "middle",
       "partners": [
@@ -1862,7 +1832,6 @@
       }
     ],
     "hrSignature": "Enable Account [ Account Name: {calc} ; {Activate|Deactivate} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/enable-account.html"
@@ -1889,7 +1858,6 @@
       }
     ],
     "hrSignature": "Enable Touch Keyboard [ {On|Off|Toggle} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/enable-touch-keyboard.html"
@@ -1902,7 +1870,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "End If",
-    "monacoSnippet": null,
     "blockPair": {
       "role": "close",
       "partners": [
@@ -1920,7 +1887,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "End Loop",
-    "monacoSnippet": null,
     "blockPair": {
       "role": "close",
       "partners": [
@@ -1951,7 +1917,6 @@
       }
     ],
     "hrSignature": "[ Pause: On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/enter-browse-mode.html"
@@ -1993,7 +1958,6 @@
       }
     ],
     "hrSignature": "[ Restore ; Pause: On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/enter-find-mode.html"
@@ -2019,7 +1983,6 @@
       }
     ],
     "hrSignature": "Enter Preview Mode [ Pause: {On|Off} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/enter-preview-mode.html"
@@ -2054,7 +2017,6 @@
       }
     ],
     "hrSignature": "Execute FileMaker Data API [ Select ; Target: {field|$variable} ; {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/execute-filemaker-data-api.html"
@@ -2154,7 +2116,6 @@
       }
     ],
     "hrSignature": "Execute SQL [ With dialog: {On|Off} ; {SQL Text: {text}|Calculated SQL Text: {calc}} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "notes": {
       "behavioral": "Executes SQL statements on ODBC data sources only — not FileMaker data sources. Use the ExecuteSQL() function for SELECT queries against FileMaker tables. QueryType 'Query' uses a literal SQL string in the <Query> child element (HR: 'SQL Text:'). QueryType 'Calculation' uses a calculated expression in <QueryCalc><Calculation> (HR: 'Calculated SQL Text:'). The Profile element carries the ODBC DSN, UserName, and password. Maximum query length is 256 K characters (512 KB).",
@@ -2173,7 +2134,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/exit-application.html"
@@ -2193,9 +2153,8 @@
       }
     ],
     "hrSignature": "[ condition ]",
-    "monacoSnippet": "Exit Loop If [ ${1:condition} ]",
     "blockPair": {
-      "role": "middle",
+      "role": "inner",
       "partners": [
         "Loop",
         "End Loop"
@@ -2219,7 +2178,6 @@
       }
     ],
     "hrSignature": "[ Result: value ]",
-    "monacoSnippet": "Exit Script [ Result: ${1:value} ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/exit-script.html"
@@ -2274,7 +2232,6 @@
       }
     ],
     "hrSignature": "Export Field Contents [ Create folders: {On|Off} ; Automatically open ; Create email ; {path} ; {field} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/export-field-contents.html"
@@ -2385,7 +2342,6 @@
       }
     ],
     "hrSignature": "Export Records [ With dialog: {On|Off} ; Create folders: {On|Off} ; {path} ; {characterSet} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/export-records.html",
@@ -2432,7 +2388,6 @@
       }
     ],
     "hrSignature": "[ Restore ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/extend-found-set.html"
@@ -2466,7 +2421,6 @@
       }
     ],
     "hrSignature": "Find Matching Records [ {Replace|Constrain|Extend} ; {field} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/find-matching-records.html"
@@ -2555,7 +2509,6 @@
       }
     ],
     "hrSignature": "Fine-Tune Model [ Account Name: {calc} ; Base Model: {calc} ; Training Data: {Table|File} ; {table|path} ; Completion Field: {field} ; Response Target: {field|$variable} ; Parameters: {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -2568,7 +2521,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/flush-cache-to-disk.html"
@@ -2581,7 +2533,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "Freeze Window",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/freeze-window.html"
@@ -2758,7 +2709,6 @@
       }
     ],
     "hrSignature": "Generate Response from Model [ Account Name: {calc} ; Model: {calc} ; User Prompt: {calc} ; Agentic mode ; Response: {field|$variable} ; Tool Calls from Model: {$variable} ; Instructions: {calc} ; Messages: {$variable} ; Save Message History To: {$variable} ; Message History Count: {calc} ; Temperature: {calc} ; Tool Definitions: {calc} ; Stream ; Parameters: {calc} ; Web Viewer: {$object} ; Function Name: {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -2774,7 +2724,8 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "File ID",
-        "required": true
+        "required": true,
+        "omitWhenEmpty": true
       },
       {
         "xmlElement": "Field",
@@ -2785,7 +2736,6 @@
       }
     ],
     "hrSignature": "Get Data File Position [ File ID: {calc} ; Target: {field|$variable} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/get-data-file-position.html"
@@ -2812,7 +2762,6 @@
       }
     ],
     "hrSignature": "Get File Exists [ {path} ; Target: {field|$variable} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/get-file-exists.html"
@@ -2839,7 +2788,6 @@
       }
     ],
     "hrSignature": "Get File Size [ {path} ; Target: {field|$variable} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/get-file-size.html"
@@ -2892,7 +2840,6 @@
       }
     ],
     "hrSignature": "Get Folder Path [ Allow Folder Creation ; Repetition: <n> ; Dialog title: <calc> ; Default location: <calc> ; $variable ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/get-directory.html"
@@ -2922,7 +2869,6 @@
       }
     ],
     "hrSignature": "[ Select/perform ; Table::Field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-field.html"
@@ -2954,6 +2900,7 @@
         "type": "layout",
         "hrLabel": null,
         "required": false,
+        "notes": "Sibling of LayoutDestination — NOT nested inside it. Must use explicit open/close tags: <Layout id=\"N\" name=\"Name\"></Layout>. Self-closing form is silently dropped by FileMaker on paste.",
         "discriminator": "LayoutDestination"
       },
       {
@@ -2965,9 +2912,11 @@
       }
     ],
     "hrSignature": "[ \"LayoutName\" ]",
-    "monacoSnippet": "Go to Layout [ \"${1:LayoutName}\" ]",
     "blockPair": null,
     "status": "complete",
+    "notes": {
+      "gotchas": "Layout is a sibling of LayoutDestination, both direct children of Step — do NOT nest Layout inside LayoutDestination. Layout must use explicit open/close tags; self-closing form is silently dropped on paste into FileMaker."
+    },
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-layout.html"
   },
   {
@@ -3031,20 +2980,18 @@
       }
     ],
     "hrSignature": "Go to List of Records [ List of record IDs: {calc} ; Using layout: {layout} ; Animation: {type} | New window ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-list-of-records.html"
   },
   {
     "name": "Go to Next Field",
-    "id": 5,
+    "id": 4,
     "category": "navigation",
     "snippetFile": "navigation/Go to Next Field.xml",
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-next-field.html"
@@ -3059,20 +3006,19 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Object Name",
         "wrapperElement": "ObjectName",
         "required": false
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Repetition",
         "wrapperElement": "Repetition",
         "required": false
       }
     ],
-    "hrSignature": "[ Object Name: \"objectName\" ]",
-    "monacoSnippet": "Go to Object [ Object Name: \"${1:objectName}\" ]",
+    "hrSignature": "[ Object Name: <value> ; Repetition: <value> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-object.html"
@@ -3148,20 +3094,18 @@
       }
     ],
     "hrSignature": "[ Select: On|Off ; First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-portal-row.html"
   },
   {
     "name": "Go to Previous Field",
-    "id": 4,
+    "id": 5,
     "category": "navigation",
     "snippetFile": "navigation/Go to Previous Field.xml",
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-previous-field.html"
@@ -3224,7 +3168,6 @@
       }
     ],
     "hrSignature": "[ First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-record-request-page.html"
@@ -3320,7 +3263,6 @@
     ],
     "hrSignature": "[ Show only related records ; Match found set ; New window ; Restore: <On/Off> ; Using layout: layout ; Window style: ... ; From table: \"table\" ]",
     "notesAnimation": "FileMaker Go's <Animation> is NOT modeled: desktop FM drops <Animation value=\"None\"/> on paste, so emitting it diverges from the FM baseline and its bare 'None' token mis-binds positionally to Layout.",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-related-record.html",
@@ -3356,7 +3298,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "Halt Script",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/halt-script.html"
@@ -3384,7 +3325,6 @@
       }
     ],
     "hrSignature": "[ condition ]",
-    "monacoSnippet": "If [ ${1:condition} ]\n\t$0\nEnd If",
     "blockPair": {
       "role": "open",
       "partners": [
@@ -3488,7 +3428,6 @@
       }
     ],
     "hrSignature": "[ With dialog: On|Off ; Table: table ; path ; Add|Update|Replace ; charset ; Verify SSL Certificates ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/import-records.html",
@@ -3541,7 +3480,6 @@
       }
     ],
     "hrSignature": "[ Reference ; path ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-audio-video.html"
@@ -3578,7 +3516,6 @@
       }
     ],
     "hrSignature": "[ Select ; calc ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-calculated-result.html"
@@ -3608,7 +3545,6 @@
       }
     ],
     "hrSignature": "[ Select ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-current-date.html"
@@ -3638,7 +3574,6 @@
       }
     ],
     "hrSignature": "[ Select ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-current-time.html"
@@ -3668,7 +3603,6 @@
       }
     ],
     "hrSignature": "[ Select ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-current-user-name.html"
@@ -3714,7 +3648,6 @@
       }
     ],
     "hrSignature": "[ Account Name: calc ; Embedding Model: calc ; Input: calc ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -3791,7 +3724,6 @@
       }
     ],
     "hrSignature": "[ Account Name: calc ; Embedding Model: calc ; Source Field: Table::Field ; Target Field: Table::Field ; Replace target contents ; Continue on error ; Show summary ; Parameters: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -3852,7 +3784,6 @@
       }
     ],
     "hrSignature": "Insert File [ <path> ; <Reference ;> Target: Table::Field|$var ; Dialog: asFile=<True|False>, enable=<True|False>, Title=<calc>, Storage=( type=<token> ), Compress=( type=<token> ), FilterList=() ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-file.html"
@@ -3928,7 +3859,6 @@
       }
     ],
     "hrSignature": "Insert from Device [ Type: <Camera|Video Camera|Microphone|Photo Library|Music Library|Barcode|Signature> ; Target: Table::Field|$var ; Device: ( per-type children, e.g. Camera=(choice=Back), Resolution=(choice=Full), LightMode=(choice=Auto), MaxDuration=(state=True, duration=<calc>), StartImmediately=(state=True), ScanFrom=(type=Field, source=Table::Field), Barcodes=(types=4194303), Title=<calc>, Message=<calc>, Prompt=<calc>, Presentation=(choice=Full Screen) ) ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-device.html"
@@ -3958,7 +3888,6 @@
       }
     ],
     "hrSignature": "[ Select ; Table::Field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-index.html"
@@ -3988,7 +3917,6 @@
       }
     ],
     "hrSignature": "[ Select ; Table::Field ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-last-visited.html"
@@ -4063,7 +3991,6 @@
       }
     ],
     "hrSignature": "[ Select ; With dialog: On|Off ; Target: Table::Field| ; calc_url ; Verify SSL Certificates ; cURL options: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-url.html"
@@ -4098,7 +4025,6 @@
       }
     ],
     "hrSignature": "Insert PDF [ <Reference ;> \"$path\" ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-pdf.html"
@@ -4133,7 +4059,6 @@
       }
     ],
     "hrSignature": "Insert Picture [ <Reference ;> \"$path\" ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-picture.html"
@@ -4167,7 +4092,6 @@
       }
     ],
     "hrSignature": "Insert Text [ <Select ;> Target: <target> ; \"<text>\" ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-text.html"
@@ -4200,7 +4124,6 @@
       }
     ],
     "hrSignature": "[ \"<menu set>\" ; Use as file default: On/Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/install-menu-set.html"
@@ -4227,7 +4150,6 @@
       }
     ],
     "hrSignature": "[ <script> ; Interval: <seconds> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/install-ontimer-script.html"
@@ -4247,7 +4169,6 @@
       }
     ],
     "hrSignature": "[ <container field> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/install-plug-in-file.html"
@@ -4286,7 +4207,6 @@
       }
     ],
     "hrSignature": "Loop [ Collapsed: {Off|On} ; Flush: {Always|Minimum|Defer} ]",
-    "monacoSnippet": "Loop\n\t$0\nEnd Loop",
     "blockPair": {
       "role": "open",
       "partners": [
@@ -4304,18 +4224,26 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/modify-last-find.html"
   },
-  {
+    {
     "name": "Move/Resize Window",
     "id": 119,
     "category": "windows",
     "snippetFile": "windows/Move_Resize Window.xml",
     "selfClosing": false,
     "params": [
+      {
+        "xmlElement": "LimitToWindowsOfCurrentFile",
+        "type": "boolean",
+        "hrLabel": "Current file",
+        "xmlAttr": "state",
+        "flagStyle": true,
+        "required": false,
+        "defaultValue": "True"
+      },
       {
         "xmlElement": "Window",
         "type": "enum",
@@ -4327,9 +4255,16 @@
           "ByName",
           "Current"
         ],
-        "hrEnumValues": {
-          "ByName": "ByName",
-          "Current": "Current Window"
+        "discriminatorValues": {
+          "ByName": {
+            "reveal": [
+              "Name",
+              "LimitToWindowsOfCurrentFile"
+            ]
+          },
+          "Current": {
+            "hrToken": "Current Window"
+          }
         }
       },
       {
@@ -4338,14 +4273,6 @@
         "hrLabel": "Name",
         "wrapperElement": "Name",
         "required": false
-      },
-      {
-        "xmlElement": "LimitToWindowsOfCurrentFile",
-        "type": "boolean",
-        "hrLabel": "Current file",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "True"
       },
       {
         "xmlElement": "Calculation",
@@ -4376,8 +4303,7 @@
         "required": false
       }
     ],
-    "hrSignature": "[ <Current Window | Name: <name>> ; Height: <height> ; Width: <width> ; Top: <top> ; Left: <left> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Current Window | Name: <name> [ ; Current file ] ; Height: <h> ; Width: <w> ; Top: <t> ; Left: <l> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/move-resize-window.html"
@@ -4390,7 +4316,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/new-file.html"
@@ -4403,12 +4328,11 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "New Record/Request",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/new-record-request.html"
   },
-  {
+    {
     "name": "New Window",
     "id": 122,
     "category": "windows",
@@ -4420,56 +4344,193 @@
         "type": "enum",
         "hrLabel": null,
         "xmlAttr": "value",
-        "required": false,
         "defaultValue": "SelectedLayout",
         "enumValues": [
           "SelectedLayout"
-        ]
+        ],
+        "hrHidden": true
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Name",
         "wrapperElement": "Name",
-        "required": false
+        "hrSlot": 1
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Height",
         "wrapperElement": "Height",
-        "required": false
+        "hrSlot": 3
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Width",
         "wrapperElement": "Width",
-        "required": false
+        "hrSlot": 4
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Top",
         "wrapperElement": "DistanceFromTop",
-        "required": false
+        "hrSlot": 5
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": null,
+        "hrLabel": "Left",
         "wrapperElement": "DistanceFromLeft",
-        "required": false
+        "hrSlot": 6
       },
       {
         "xmlElement": "NewWndStyles",
-        "type": "text",
-        "hrLabel": null,
-        "required": false
+        "type": "bitmaskGroup",
+        "hrLabel": "Style",
+        "hrControlsLabel": "Controls",
+        "hrSlot": 0,
+        "bitmaskStyleAttr": "Style",
+        "bitmaskValueAttr": "Styles",
+        "bitmaskResizeFlag": "Resize",
+        "bitmaskBase": 1073741824,
+        "bitmaskFixedBit": 2147483648,
+        "bitmaskAttrOrder": [
+          "DimParentWindow",
+          "Toolbars",
+          "MenuBar",
+          "Style",
+          "Close",
+          "Minimize",
+          "Maximize",
+          "Resize",
+          "Styles"
+        ],
+        "bitmaskFlags": [
+          {
+            "hrLabel": "Dim parent window",
+            "xmlAttr": "DimParentWindow",
+            "bit": 1048576
+          },
+          {
+            "hrLabel": "Toolbars",
+            "xmlAttr": "Toolbars",
+            "bit": 2097152
+          },
+          {
+            "hrLabel": "Menu Bar",
+            "xmlAttr": "MenuBar",
+            "bit": 1024
+          },
+          {
+            "hrLabel": "Close",
+            "xmlAttr": "Close",
+            "bit": 65536
+          },
+          {
+            "hrLabel": "Minimize",
+            "xmlAttr": "Minimize",
+            "bit": 131072
+          },
+          {
+            "hrLabel": "Maximize",
+            "xmlAttr": "Maximize",
+            "bit": 262144
+          },
+          {
+            "hrLabel": "Resize",
+            "xmlAttr": "Resize",
+            "bit": 512
+          }
+        ],
+        "bitmaskStyles": [
+          {
+            "hrToken": "Document",
+            "xmlValue": "Document",
+            "baseBit": 2,
+            "docResizable": true,
+            "legalFlags": [
+              "Close",
+              "Minimize",
+              "Maximize",
+              "Resize",
+              "Menu Bar",
+              "Toolbars"
+            ],
+            "defaultFlags": [
+              "Close",
+              "Minimize",
+              "Maximize",
+              "Resize"
+            ]
+          },
+          {
+            "hrToken": "Floating Document",
+            "xmlValue": "Floating",
+            "baseBit": 256,
+            "aliases": [
+              "Floating"
+            ],
+            "legalFlags": [
+              "Close",
+              "Minimize",
+              "Maximize",
+              "Resize",
+              "Menu Bar",
+              "Toolbars"
+            ],
+            "defaultFlags": [
+              "Close",
+              "Minimize",
+              "Maximize",
+              "Resize",
+              "Menu Bar",
+              "Toolbars"
+            ]
+          },
+          {
+            "hrToken": "Dialog",
+            "xmlValue": "Dialog",
+            "baseBit": 4,
+            "legalFlags": [
+              "Close",
+              "Maximize",
+              "Resize",
+              "Menu Bar",
+              "Toolbars"
+            ],
+            "defaultFlags": [
+              "Close",
+              "Maximize",
+              "Resize",
+              "Menu Bar",
+              "Toolbars"
+            ]
+          },
+          {
+            "hrToken": "Card",
+            "xmlValue": "Card",
+            "baseBit": 16,
+            "legalFlags": [
+              "Close",
+              "Dim parent window"
+            ],
+            "defaultFlags": [
+              "Close"
+            ]
+          }
+        ]
+      },
+      {
+        "xmlElement": "Layout",
+        "type": "layout",
+        "hrLabel": "Layout",
+        "required": true,
+        "hrSlot": 2
       }
     ],
-    "hrSignature": "[ Name: \"name\" ; Style: Document ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Style: Document ; Name: \"name\" ; Layout: <unknown> ; Controls: Close, Resize ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/new-window.html"
@@ -4502,7 +4563,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; <count> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/omit-multiple-records.html"
@@ -4515,7 +4575,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/omit-record.html"
@@ -4541,7 +4600,6 @@
       }
     ],
     "hrSignature": "[ <path> ; Target: <field or variable> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-data-file.html"
@@ -4554,7 +4612,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-edit-saved-finds.html"
@@ -4567,7 +4624,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -4599,7 +4655,6 @@
       }
     ],
     "hrSignature": "Open File [ Open hidden: {On|Off} ; {file} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "notes": {
       "behavioral": "Opens a FileMaker file or reestablishes the link to an ODBC data source. If the FileReference element is omitted, the Open File dialog is presented to the user. Script steps following Open File execute in the file that contains the script, not in the newly opened file.",
@@ -4617,7 +4672,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-file-options.html"
@@ -4630,7 +4684,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-find-replace.html"
@@ -4643,7 +4696,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-help.html"
@@ -4656,7 +4708,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-hosts.html"
@@ -4669,7 +4720,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-containers.html"
@@ -4682,7 +4732,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-data-sources.html"
@@ -4695,7 +4744,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-database.html"
@@ -4708,7 +4756,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-layouts.html"
@@ -4721,7 +4768,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-themes.html"
@@ -4734,7 +4780,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-manage-value-lists.html"
@@ -4747,7 +4792,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-record-request.html"
@@ -4760,7 +4804,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-script-workspace.html"
@@ -4773,7 +4816,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-preferences.html"
@@ -4786,7 +4828,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-sharing.html"
@@ -4835,7 +4876,6 @@
       }
     ],
     "hrSignature": "[ Skip auto-enter options ; Skip data entry validation ; Override ESS locking conflicts ]",
-    "monacoSnippet": null,
     "blockPair": {
       "role": "open",
       "partners": [
@@ -4853,7 +4893,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/upload-to-server.html"
@@ -4895,7 +4934,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; In external browser ; <url> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-url.html"
@@ -4939,7 +4977,6 @@
       }
     ],
     "hrSignature": "[ <Select> ; <No style> ; <Table::Field> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/paste.html"
@@ -4962,20 +4999,26 @@
           "Indefinitely",
           "ForDuration"
         ],
-        "hrEnumValues": {
-          "Indefinitely": "Indefinitely",
-          "ForDuration": "Duration (seconds)"
+        "discriminatorValues": {
+          "Indefinitely": {
+            "hrToken": "Indefinitely"
+          },
+          "ForDuration": {
+            "reveal": [
+              "Calculation"
+            ]
+          }
         }
       },
       {
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "Duration (seconds)",
-        "required": false
+        "required": false,
+        "omitWhenEmpty": true
       }
     ],
     "hrSignature": "[ Indefinitely | Duration (seconds): <n> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/pause-resume-script.html"
@@ -5015,7 +5058,6 @@
       }
     ],
     "hrSignature": "[ <applescript or calculation> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-applescript-os-x.html"
@@ -5044,7 +5086,6 @@
       }
     ],
     "hrSignature": "[ Restore ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-find.html"
@@ -5063,7 +5104,8 @@
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "note": "Internal flag; True when Parameters is present"
+        "note": "Internal flag; True when Parameters is present",
+        "hrHidden": true
       },
       {
         "xmlElement": "SelectAll",
@@ -5072,13 +5114,8 @@
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "note": "Always True; no HR representation"
-      },
-      {
-        "xmlElement": "Field",
-        "type": "field",
-        "hrLabel": "Response Target",
-        "required": false
+        "note": "Always True; no HR representation",
+        "hrHidden": true
       },
       {
         "xmlElement": "AccountName",
@@ -5102,13 +5139,6 @@
         "required": true
       },
       {
-        "xmlElement": "Parameters",
-        "type": "namedCalc",
-        "hrLabel": "Parameters",
-        "parentElement": "LLMCreateFind",
-        "required": false
-      },
-      {
         "xmlElement": "Action",
         "type": "enum",
         "hrLabel": "Get",
@@ -5119,12 +5149,19 @@
           "Data API",
           "None"
         ],
+        "enumStyle": "text",
         "hrEnumValues": {
           "Query": "Found Set",
           "Data API": "Found Set as JSON",
           "None": "Find Request as JSON"
-        },
-        "enumStyle": "text"
+        }
+      },
+      {
+        "xmlElement": "Parameters",
+        "type": "namedCalc",
+        "hrLabel": "Parameters",
+        "parentElement": "LLMCreateFind",
+        "required": false
       },
       {
         "xmlElement": "PromptTemplateName",
@@ -5133,10 +5170,23 @@
         "parentElement": "LLMCreateFind",
         "required": false,
         "note": "XML element name unconfirmed — likely <PromptTemplateName><Calculation/></PromptTemplateName> inside LLMCreateFind"
+      },
+      {
+        "xmlElement": "Field",
+        "type": "fieldOrVariable",
+        "hrLabel": "Response Target",
+        "required": false,
+        "visibleWhen": {
+          "param": "Action",
+          "values": [
+            "Data API",
+            "None"
+          ]
+        },
+        "emitEmptyDefault": true
       }
     ],
     "hrSignature": "[ Account Name: <name> ; Model: <model> ; Prompt: <prompt> ; Get: <Found Set | Found Set as JSON | Find Request as JSON> ; Parameters: <params> ; Response Target: <field or variable> ; Prompt Template Name: <name> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -5192,7 +5242,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; <find text> ; <replace text> ; <Find Next | Replace and Find | Replace | Replace All> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-find-replace.html"
@@ -5227,7 +5276,6 @@
       }
     ],
     "hrSignature": "[ Object Name: <name> ; Function Name: <function> ; Parameters: <p1>, <p2>, ... ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-javascript-in-web-viewer.html"
@@ -5247,7 +5295,6 @@
       }
     ],
     "hrSignature": "[ <search text> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-quick-find.html"
@@ -5264,20 +5311,21 @@
         "type": "boolean",
         "hrLabel": "Stream",
         "xmlAttr": "state",
-        "flagStyle": true,
         "required": false,
+        "omitWhenEmpty": true,
         "hrEnumValues": {
           "True": "On",
           "False": "Off"
         },
-        "note": "Outside RAGSpace; only present for Send Prompt action"
+        "note": "Outside RAGSpace. Governed companion revealed only by the Send Prompt action (RAGSpaceAction=Prompt). Renders 'Stream: On|Off' (labeled, NOT flagStyle — FM shows both states). omitWhenEmpty: as a governed boolean it is OMITTED for Add/Remove Data (FM drops the <Stream> element outside Send Prompt), unlike the Window family's always-serialized flag."
       },
       {
         "xmlElement": "Field",
-        "type": "field",
+        "type": "fieldOrVariable",
         "hrLabel": "Response Target",
         "required": false,
-        "note": "Outside RAGSpace. FM ALWAYS serializes this empty <Field> target (do NOT omitWhenEmpty — unlike SQL/CRM where FM drops it). The PromptMessage/InputText labels keep the prompt token from positional-stealing into this bare field."
+        "emitEmptyDefault": true,
+        "note": "Outside RAGSpace. Governed companion revealed only by the Send Prompt action (RAGSpaceAction=Prompt). emitEmptyDefault: when revealed but unset FM serializes the empty <Field table=\"\" id=\"0\" name=\"\"/> target; when NOT revealed (Add/Remove Data) the governed-companion emit gate drops it, matching FM. fieldOrVariable so a $variable Response Target round-trips."
       },
       {
         "xmlElement": "RAGAccountName",
@@ -5304,12 +5352,34 @@
           "Prompt",
           "Remove"
         ],
+        "enumStyle": "text",
         "hrEnumValues": {
           "Add": "Add Data",
           "Prompt": "Send Prompt",
           "Remove": "Remove Data"
         },
-        "enumStyle": "text"
+        "discriminatorValues": {
+          "Add": {
+            "labeled": true,
+            "reveal": [
+              "DataSource",
+              "InputText"
+            ]
+          },
+          "Prompt": {
+            "labeled": true,
+            "reveal": [
+              "PromptMessage",
+              "AIAccountName",
+              "Model",
+              "Stream",
+              "TemplateName",
+              "Field",
+              "Parameters"
+            ]
+          }
+        },
+        "note": "Labeled-reveal governing discriminator: keeps its own 'Action: <mapped>' token AND reveals per-value companions inline (FM's HR order interleaves the outside-RAGSpace Stream + Response Target into the RAGSpace companions). Remove Data reveals nothing -> falls through to the plain labeled-enum render 'Action: Remove Data'."
       },
       {
         "xmlElement": "DataSource",
@@ -5323,17 +5393,17 @@
         "hrEnumValues": {
           "FromText": "From Text"
         },
-        "note": "Add Data action only. omitWhenEmpty: present-driven so the Prompt action (no DataSource) emits no empty <DataSource>.",
+        "note": "Governed companion revealed only by the Add Data action. Renders 'RAG Data: From Text'. omitWhenEmpty: present-driven so a non-Add action emits no empty <DataSource>.",
         "omitWhenEmpty": true,
         "enumStyle": "text"
       },
       {
         "xmlElement": "InputText",
         "type": "namedCalc",
-        "hrLabel": "Input Text",
+        "hrLabel": null,
         "parentElement": "RAGSpace",
         "required": false,
-        "note": "Add Data action only. Labeled (not bare) so it does not positional-collide with the sibling Response Target field."
+        "note": "Governed companion revealed only by the Add Data action. Renders BARE (live FM shows the input calc with no label, e.g. Action: Add Data ; RAG Data: From Text ; \"text\"). No positional collision with Response Target because the two never coexist (Add reveals InputText, Send Prompt reveals the Field), and the pass-2 governed-companion gate keeps a suppressed sibling from stealing this bare token."
       },
       {
         "xmlElement": "PromptMessage",
@@ -5341,7 +5411,7 @@
         "hrLabel": "Prompt",
         "parentElement": "RAGSpace",
         "required": false,
-        "note": "Send Prompt action only. Labeled (not bare) so it does not positional-collide with the sibling Response Target field."
+        "note": "Governed companion revealed only by the Send Prompt action. Renders 'Prompt: <calc>' (labeled, per live FM)."
       },
       {
         "xmlElement": "AIAccountName",
@@ -5376,8 +5446,7 @@
         "note": "Send Prompt action only"
       }
     ],
-    "hrSignature": "[ RAG Account Name: <name> ; Space ID: <id> ; Action: <Add Data | Send Prompt | Remove Data> ; ... ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ RAG Account Name: <name> ; Space ID: <id> ; Action: <Add Data | Send Prompt | Remove Data> ; <action companions> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -5390,22 +5459,23 @@
     "selfClosing": false,
     "params": [
       {
-        "xmlElement": "Calculation",
-        "type": "calculation",
-        "hrLabel": null,
-        "required": false
-      },
-      {
         "xmlElement": "Script",
         "type": "script",
         "hrLabel": null,
         "required": false,
         "omitWhenEmpty": true,
-        "note": "Present-driven: the unspecified target (<Script id=\"0\" name=\"\"/>) is omitted to match FM, which drops the empty <Script> on paste."
+        "note": "Present-driven: the unspecified target (<Script id=\"0\" name=\"\"/>) is omitted to match FM, which drops the empty <Script> on paste. Listed first to match the advertised hrSignature order (script name is the leading positional token)."
+      },
+      {
+        "xmlElement": "Calculation",
+        "type": "calculation",
+        "hrLabel": "Parameter",
+        "required": false,
+        "omitWhenEmpty": true,
+        "note": "The script parameter. hrLabel \"Parameter\" makes the label pass claim `Parameter: value` on compile and the calc-label emit print `Parameter:` on decompile; omitWhenEmpty drops the <Calculation> when no parameter is given (mirrors Perform Script on Server id 164)."
       }
     ],
     "hrSignature": "[ \"ScriptName\" ; Parameter: value ]",
-    "monacoSnippet": "Perform Script [ \"${1:ScriptName}\" ; Parameter: ${2:value} ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-script.html"
@@ -5451,7 +5521,6 @@
       }
     ],
     "hrSignature": "[ <script> ; Specified: <From list | By name> ; Parameter: <param> ; Wait for completion: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-script-on-server.html"
@@ -5513,7 +5582,6 @@
       }
     ],
     "hrSignature": "[ Specified: <From list | By name> ; <script> ; Parameter: <param> ; State: <Continue | Halt | Exit | Resume | Pause> ; Callback script: Script=<callback script>, Parameter=<param> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/perform-script-on-server-callback.html"
@@ -5653,7 +5721,6 @@
       }
     ],
     "hrSignature": "[ Query by: <Natural language | Vector data | Image> ; Account Name: <name> ; Embedding Model: <model> ; Text: <text> ; Record set: <All records | Current found set> ; Target field: <field> ; Return count: <n> ; Cosine similarity condition: <condition> ; Cosine similarity value: <value> ; Save result: <field or variable> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -5667,40 +5734,40 @@
     "params": [
       {
         "xmlElement": "Option",
-        "type": "flagBoolean",
-        "hrLabel": "Parameters enabled",
+        "type": "boolean",
+        "hrLabel": null,
         "xmlAttr": "state",
+        "hrHidden": true,
         "required": false,
         "defaultValue": "False",
-        "note": "state=True shows Parameters field in HR"
+        "note": "Internal 'Parameters enabled' flag; FM renders NO HR token (hrHidden). FM re-canonicalizes Option->True on paste when a Parameters calc is present, so the hidden False default round-trips (Perform Find precedent)."
       },
       {
         "xmlElement": "Stream",
-        "type": "flagBoolean",
+        "type": "boolean",
         "hrLabel": "Stream",
         "xmlAttr": "state",
+        "flagStyle": true,
         "required": false,
-        "defaultValue": "False"
+        "defaultValue": "False",
+        "note": "Bare flag: FM shows 'Stream' only when state=True, nothing when False (flagStyle). Governed companion revealed by both OptionsSelectionType values so it renders after the discriminator group in HR order; always serialized in XML (revealed)."
       },
       {
         "xmlElement": "UniversalPathList",
         "type": "enum",
         "hrLabel": null,
         "xmlAttr": "type",
+        "hrHidden": true,
         "required": true,
-        "hrEnumValues": {
-          "Embedded": "From list",
-          "Reference": "By JSON data"
-        },
-        "note": "Mirrors OptionsSelectionType — not a separate HR param"
+        "defaultValue": "Embedded",
+        "note": "Mirrors OptionsSelectionType (Embedded for By List, Reference for By JSON data); FM derives it on paste. Internal, no HR token (hrHidden)."
       },
       {
         "xmlElement": "Field",
-        "type": "field",
+        "type": "fieldOrVariable",
         "hrLabel": "Response Target",
         "required": false,
-        "omitWhenEmpty": true,
-        "notes": "Sibling before <PerformSQLQuerybyNaturalLanguage>. Dual format: field ref or variable with <Text/>. omitWhenEmpty: present-driven so the unconfigured target emits no <Field>."
+        "note": "Outside the wrapper. Governed companion revealed by both values -> renders 'Response Target: <field|$var>' after the tail. No emitEmptyDefault: FM omits <Field> when unset (unlike Perform RAG Action), so an unconfigured target emits nothing. fieldOrVariable so a $variable target round-trips."
       },
       {
         "xmlElement": "Calculation",
@@ -5732,11 +5799,40 @@
         "hrLabel": "Options specified",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": true,
+        "enumStyle": "text",
+        "defaultValue": "By List",
+        "enumValues": [
+          "By List",
+          "By JSON data"
+        ],
         "hrEnumValues": {
-          "By List": "From list",
-          "By JSON data": "By JSON data"
+          "By List": "From list"
         },
-        "enumStyle": "text"
+        "discriminatorValues": {
+          "By List": {
+            "labeled": true,
+            "reveal": [
+              "Action",
+              "TablesSelectionType",
+              "TableAliases",
+              "Stream",
+              "TemplateName",
+              "Parameters",
+              "Field"
+            ]
+          },
+          "By JSON data": {
+            "labeled": true,
+            "reveal": [
+              "OptionsName",
+              "Stream",
+              "TemplateName",
+              "Parameters",
+              "Field"
+            ]
+          }
+        },
+        "note": "Labeled-reveal governing discriminator (reuses the Perform RAG Action facet): keeps its own 'Options specified: <mapped>' token AND reveals per-value companions inline. By List -> 'From list' + Action/Data Tables/Tables...; By JSON data -> raw (unmapped) + bare JSON options. The always-present tail (Stream/Prompt Template Name/Parameters/Response Target) is listed in BOTH values' reveal[] so it renders after the discriminator group in FM's HR order while catalog order keeps XML grouping."
       },
       {
         "xmlElement": "Action",
@@ -5744,15 +5840,15 @@
         "hrLabel": "Action",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "note": "Only when OptionsSelectionType is By List",
-        "xmlEnumValues": [
+        "enumStyle": "text",
+        "enumValues": [
           "Query",
           "Query for Data Only",
           "Get SQL",
           "Get First SQL Only",
           "Get DDL"
         ],
-        "enumStyle": "text"
+        "note": "Governed companion revealed by By List only. Plain labeled enum 'Action: <raw value>' (values shown verbatim)."
       },
       {
         "xmlElement": "TablesSelectionType",
@@ -5760,28 +5856,31 @@
         "hrLabel": "Data Tables",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "note": "Only when OptionsSelectionType is By List",
+        "enumStyle": "text",
+        "enumValues": [
+          "By List"
+        ],
         "hrEnumValues": {
           "By List": "From list"
         },
-        "enumStyle": "text"
+        "note": "Governed companion revealed by By List only. 'Data Tables: From list'."
       },
       {
         "xmlElement": "TableAliases",
-        "type": "tableList",
+        "type": "flagElement",
         "hrLabel": "Tables...",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "note": "Only when OptionsSelectionType is By List. Contains <Table id='' name=''/> children."
+        "note": "Governed companion revealed by By List only. Bare-presence flag: FM renders the literal 'Tables...' token for the table-alias picker; emits an empty <TableAliases/> (FM materializes the alias list). Populated aliases are not surfaced in HR (edge case)."
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "JSON options",
+        "hrLabel": null,
         "wrapperElement": "OptionsName",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "note": "Only when OptionsSelectionType is By JSON data. Shown as bare calc in HR."
+        "note": "Governed companion revealed by By JSON data only. Bare calc in HR (hrLabel null), e.g. Options specified: By JSON data ; \"json\"."
       },
       {
         "xmlElement": "Calculation",
@@ -5789,7 +5888,8 @@
         "hrLabel": "Prompt Template Name",
         "wrapperElement": "TemplateName",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
-        "required": false
+        "required": false,
+        "note": "Governed companion revealed by both values (present-driven optional). 'Prompt Template Name: <calc>'."
       },
       {
         "xmlElement": "Calculation",
@@ -5798,7 +5898,7 @@
         "wrapperElement": "Parameters",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "note": "Only shown when Option state=True"
+        "note": "Governed companion revealed by both values (present-driven optional). 'Parameters: <calc>'. Its presence drives Option->True (FM re-canonicalizes on paste)."
       },
       {
         "xmlElement": "WebScript",
@@ -5806,11 +5906,10 @@
         "hrLabel": "Web Viewer / Function Name",
         "parentElement": "PerformSQLQuerybyNaturalLanguage",
         "required": false,
-        "notes": "Contains ObjectName (Web Viewer calc), FunctionName (calc), and WebScriptParameters with <P> children."
+        "notes": "Contains ObjectName (Web Viewer calc), FunctionName (calc), and WebScriptParameters with <P> children. Unmodeled subtree (complex): produces no HR token and is preserved structurally only."
       }
     ],
-    "hrSignature": "[ Account Name: <calc> ; Model: <calc> ; Prompt: <calc> ; Options specified: <From list/By JSON data> ; Action: <action> ; Data Tables: From list ; Tables... ; <Stream> ; Prompt Template Name: <calc> ; Parameters: <calc> ; Response Target: <Table::Field/$var> ; Web Viewer: <calc> ; Function Name: <calc> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Account Name: <calc> ; Model: <calc> ; Prompt: <calc> ; Options specified: <From list | By JSON data> ; <By List: Action: <action> ; Data Tables: From list ; Tables...> <By JSON data: <json options>> ; <Stream> ; Prompt Template Name: <calc> ; Parameters: <calc> ; Response Target: <Table::Field | $var> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -5862,7 +5961,6 @@
       }
     ],
     "hrSignature": "[ Restore: <printer name> ; With dialog: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/print.html"
@@ -5911,7 +6009,6 @@
       }
     ],
     "hrSignature": "[ Restore ; With dialog: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/print-setup.html"
@@ -5948,7 +6045,6 @@
       }
     ],
     "hrSignature": "[ Account Name: <value> ; Password: <value> ; With dialog: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/re-login.html"
@@ -5964,7 +6060,8 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "File ID",
-        "required": true
+        "required": true,
+        "omitWhenEmpty": true
       },
       {
         "xmlElement": "Calculation",
@@ -5972,7 +6069,16 @@
         "hrLabel": "Amount (bytes)",
         "wrapperElement": "Count",
         "required": false,
-        "hrLabelNote": "Label is \"Amount\" (no unit) when Read as is UTF-16"
+        "hrLabelNote": "Label is \"Amount\" (no unit) when Read as is UTF-16",
+        "hrLabelWhen": [
+          {
+            "param": "DataSourceType",
+            "values": [
+              "1"
+            ],
+            "hrLabel": "Amount"
+          }
+        ]
       },
       {
         "xmlElement": "Field",
@@ -5985,17 +6091,21 @@
         "type": "enum",
         "hrLabel": "Read as",
         "xmlAttr": "value",
+        "required": false,
+        "defaultValue": "3",
+        "enumValues": [
+          "1",
+          "2",
+          "3"
+        ],
         "hrEnumValues": {
           "1": "UTF-16",
           "2": "UTF-8",
           "3": "Bytes"
-        },
-        "required": false,
-        "defaultValue": "3"
+        }
       }
     ],
     "hrSignature": "[ File ID: <value> ; Amount (bytes): <value> ; Target: <field/variable> ; Read as: <UTF-16/UTF-8/Bytes> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/read-from-data-file.html"
@@ -6024,7 +6134,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; <path> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/recover-file.html"
@@ -6052,7 +6161,6 @@
       }
     ],
     "hrSignature": "[ Object Name: <value> ; Repetition: <value> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/refresh-object.html"
@@ -6073,7 +6181,6 @@
       }
     ],
     "hrSignature": "[ Object Name: <value> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/refresh-portal.html"
@@ -6088,6 +6195,7 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Flush cached join results",
         "xmlAttr": "state",
         "required": false,
@@ -6096,6 +6204,7 @@
       {
         "xmlElement": "FlushSQLData",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Flush cached external data",
         "xmlAttr": "state",
         "required": false,
@@ -6103,7 +6212,6 @@
       }
     ],
     "hrSignature": "[ Flush cached join results ; Flush cached external data ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/refresh-window.html"
@@ -6132,7 +6240,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; <Table::Field> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/relookup-field-contents.html"
@@ -6158,7 +6265,6 @@
       }
     ],
     "hrSignature": "[ Source file: <path> ; New name: <value> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/rename-file.html"
@@ -6183,52 +6289,54 @@
         "xmlElement": "Restore",
         "type": "boolean",
         "hrLabel": "Restore",
+        "hrHidden": true,
         "xmlAttr": "state",
         "required": false,
-        "defaultValue": "True",
-        "notes": "FM serializes <Restore state=...> between NoInteract and With; faithful passthrough."
-      },
-      {
-        "xmlElement": "With",
-        "type": "enum",
-        "hrLabel": null,
-        "xmlAttr": "value",
-        "hrEnumValues": {
-          "CurrentContents": "Current contents",
-          "SerialNumbers": "Serial numbers",
-          "Calculation": null
-        },
-        "required": false,
-        "defaultValue": "Calculation"
-      },
-      {
-        "xmlElement": "Calculation",
-        "type": "calculation",
-        "hrLabel": null,
-        "required": false,
-        "note": "Present when With value is Calculation; shown directly as the replacement value in HR"
-      },
-      {
-        "xmlElement": "SerialNumbers",
-        "type": "attrGroup",
-        "hrLabel": "Serial numbers",
-        "required": false,
-        "fields": [
-          { "key": "PerformAutoEnter", "kind": "attr", "xmlAttr": "PerformAutoEnter", "defaultValue": "True" },
-          { "key": "UpdateEntryOptions", "kind": "attr", "xmlAttr": "UpdateEntryOptions", "defaultValue": "False" },
-          { "key": "UseEntryOptions", "kind": "attr", "xmlAttr": "UseEntryOptions", "defaultValue": "True" }
-        ],
-        "notes": "Always-present <SerialNumbers> auto-enter option attrs. PerformAutoEnter is the authorable 'Skip auto-enter options' toggle; the other two are stored config, faithful passthrough."
+        "defaultValue": "False",
+        "notes": "FM always serializes <Restore state=\"False\"> for this step and never renders it in HR (the dialog exposes no Restore control). Hidden: emits the default, never claims an HR token."
       },
       {
         "xmlElement": "Field",
         "type": "field",
         "hrLabel": null,
         "required": true
+      },
+      {
+        "xmlElement": "With",
+        "type": "enum",
+        "hrLabel": null,
+        "xmlAttr": "value",
+        "required": false,
+        "defaultValue": "Calculation",
+        "enumValues": ["CurrentContents", "SerialNumbers", "Calculation"],
+        "discriminatorValues": {
+          "CurrentContents": { "hrToken": "Current contents" },
+          "SerialNumbers": { "hrToken": "Serial numbers" },
+          "Calculation": { "reveal": ["Calculation"] }
+        }
+      },
+      {
+        "xmlElement": "Calculation",
+        "type": "calculation",
+        "hrLabel": null,
+        "required": false,
+        "note": "Revealed only when With=Calculation; rendered bare (no label) as the replacement value. Omitted from XML for the Current contents / Serial numbers branches."
+      },
+      {
+        "xmlElement": "SerialNumbers",
+        "type": "attrGroup",
+        "hrLabel": "Serial numbers",
+        "hrHidden": true,
+        "required": false,
+        "fields": [
+          { "key": "PerformAutoEnter", "kind": "attr", "xmlAttr": "PerformAutoEnter", "defaultValue": "False" },
+          { "key": "UpdateEntryOptions", "kind": "attr", "xmlAttr": "UpdateEntryOptions", "defaultValue": "False" },
+          { "key": "UseEntryOptions", "kind": "attr", "xmlAttr": "UseEntryOptions", "defaultValue": "True" }
+        ],
+        "notes": "Always-present <SerialNumbers> config attrs. FM never renders them in HR (the 'Serial numbers' HR token comes from the With enum value, not this group). Hidden: emits catalog defaults, never claims an HR token. The auto-enter sub-options are not encoded in FM's HR text, so they are not authorable from HR - the same fidelity FM's own serialization has."
       }
     ],
-    "hrSignature": "[ With dialog: <On/Off> ; Restore: <On/Off> ; <Current contents/Serial numbers/calculation> ; Serial numbers: PerformAutoEnter=<...> ; <Table::Field> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ With dialog: <On/Off> ; <Table::Field> ; <calculation | Current contents | Serial numbers> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/replace-field-contents.html"
@@ -6265,7 +6373,6 @@
       }
     ],
     "hrSignature": "[ Account Name: <value> ; Password: <value> ; Expire password ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/reset-account-password.html"
@@ -6292,7 +6399,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/revert-record-request.html"
@@ -6339,9 +6445,8 @@
       }
     ],
     "hrSignature": "[ Condition: <calc> ; Error Code: <calc> ; Error Message: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": {
-      "role": "middle",
+      "role": "inner",
       "partners": [
         "Open Transaction",
         "Commit Transaction"
@@ -6388,16 +6493,10 @@
       {
         "xmlElement": "SaveAsType",
         "type": "enum",
-        "hrLabel": "Copy type",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Copy",
-        "xmlEnumValues": [
-          "Copy",
-          "CompactedCopy",
-          "Clone",
-          "SelfContainedCopy"
-        ],
         "hrEnumValues": {
           "Copy": "copy of current file",
           "CompactedCopy": "compacted copy (smaller)",
@@ -6414,7 +6513,6 @@
       }
     ],
     "hrSignature": "[ <path> ; <copy type> ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-a-copy-as.html"
@@ -6447,7 +6545,6 @@
       }
     ],
     "hrSignature": "[ Window name: <calc> ; Replace UUIDs: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-a-copy-as-add-on-package.html"
@@ -6483,7 +6580,6 @@
       }
     ],
     "hrSignature": "[ Window name: <calc> ; Destination file: <path> ; <Include details for analysis tools> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-a-copy-as-xml.html"
@@ -6596,14 +6692,10 @@
       {
         "xmlElement": "SaveType",
         "type": "enum",
-        "hrLabel": "Records",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "BrowsedRecords",
-        "xmlEnumValues": [
-          "BrowsedRecords",
-          "CurrentRecord"
-        ],
         "hrEnumValues": {
           "BrowsedRecords": "Records being browsed",
           "CurrentRecord": "Current record"
@@ -6623,7 +6715,6 @@
       }
     ],
     "hrSignature": "[ <Restore> ; With dialog: <On/Off> ; <path> ; <Automatically open> ; <Create email> ; <SaveType> ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-records-as-excel.html"
@@ -6735,7 +6826,6 @@
       }
     ],
     "hrSignature": "[ Format for fine-tuning: <On/Off> ; Table: <name> ; System Prompt: <calc> ; User Prompt: <calc> ; Assistant Prompt: <calc> ; <path> ; <Automatically open> ; <Create email> ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-records-as-jsonl.html"
@@ -6871,7 +6961,6 @@
       }
     ],
     "hrSignature": "[ <Restore> ; <Append> ; With dialog: <On/Off> ; <path> ; Saved label: <calc> ; Records: source=<token>, PDFSaveType=<token>, Document=( … ), Security=( … ), View=( … ) ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-records-as-pdf.html"
@@ -6906,14 +6995,10 @@
       {
         "xmlElement": "SaveType",
         "type": "enum",
-        "hrLabel": "Records",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "BrowsedRecords",
-        "xmlEnumValues": [
-          "BrowsedRecords",
-          "CurrentRecord"
-        ],
         "hrEnumValues": {
           "BrowsedRecords": "Records being browsed",
           "CurrentRecord": "Current record"
@@ -6928,7 +7013,6 @@
       }
     ],
     "hrSignature": "[ <path> ; <Create email> ; <SaveType> ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/save-records-as-snapshot-link.html"
@@ -6943,17 +7027,10 @@
       {
         "xmlElement": "ScrollOperation",
         "type": "enum",
-        "hrLabel": "Direction",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": true,
         "defaultValue": "Home",
-        "xmlEnumValues": [
-          "Home",
-          "End",
-          "PageUp",
-          "PageDown",
-          "ToSelection"
-        ],
         "hrEnumValues": {
           "Home": "Home",
           "End": "End",
@@ -6964,7 +7041,6 @@
       }
     ],
     "hrSignature": "[ <Home/End/Page Up/Page Down/To Selection> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/scroll-window.html"
@@ -6977,7 +7053,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/select-all.html"
@@ -6990,12 +7065,11 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/select-dictionaries.html"
   },
-  {
+    {
     "name": "Select Window",
     "id": 123,
     "category": "windows",
@@ -7004,27 +7078,34 @@
     "params": [
       {
         "xmlElement": "LimitToWindowsOfCurrentFile",
-        "type": "flagBoolean",
+        "type": "boolean",
         "hrLabel": "Current file",
         "xmlAttr": "state",
+        "flagStyle": true,
         "required": false,
-        "defaultValue": "True",
-        "note": "state=True limits window list to current file only"
+        "defaultValue": "True"
       },
       {
         "xmlElement": "Window",
         "type": "enum",
-        "hrLabel": "Window",
+        "hrLabel": null,
         "xmlAttr": "value",
-        "required": true,
+        "required": false,
         "defaultValue": "ByName",
-        "xmlEnumValues": [
+        "enumValues": [
           "ByName",
           "Current"
         ],
-        "hrEnumValues": {
-          "ByName": "Name: <calc>",
-          "Current": "Current Window"
+        "discriminatorValues": {
+          "ByName": {
+            "reveal": [
+              "Name",
+              "LimitToWindowsOfCurrentFile"
+            ]
+          },
+          "Current": {
+            "hrToken": "Current Window"
+          }
         }
       },
       {
@@ -7032,12 +7113,10 @@
         "type": "namedCalc",
         "hrLabel": "Name",
         "wrapperElement": "Name",
-        "required": false,
-        "note": "Required when Window value is ByName. Omit when Window value is Current."
+        "required": false
       }
     ],
-    "hrSignature": "[ <Current Window> ; Name: <calc> ; <Current file> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Current Window | Name: <name> [ ; Current file ] ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/select-window.html"
@@ -7060,7 +7139,6 @@
       }
     ],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/send-dde-execute-windows.html"
@@ -7079,11 +7157,6 @@
         "xmlAttr": "value",
         "required": true,
         "defaultValue": "Text",
-        "xmlEnumValues": [
-          "Text",
-          "File",
-          "Calculation"
-        ],
         "note": "Text = manual text entry; File = open a file/application; Calculation = generated from calculation"
       },
       {
@@ -7119,7 +7192,6 @@
       }
     ],
     "hrSignature": "[ <content type> ; Calculation: <calc> ; Event: <attrs> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/send-event.html"
@@ -7354,38 +7426,24 @@
         "type": "enum",
         "hrLabel": null,
         "xmlAttr": "type",
-        "required": false,
-        "xmlEnumValues": [
-          "SMTPEncryptionNone",
-          "SMTPEncryptionTLS",
-          "SMTPEncryptionSSL"
-        ]
+        "required": false
       },
       {
         "xmlElement": "SMTPAuthenticationType",
         "type": "enum",
         "hrLabel": null,
         "xmlAttr": "type",
-        "required": false,
-        "xmlEnumValues": [
-          "SMTPAuthenticationNone",
-          "SMTPAuthenticationPlain"
-        ]
+        "required": false
       },
       {
         "xmlElement": "OAuthProvider",
         "type": "enum",
         "hrLabel": null,
         "xmlAttr": "type",
-        "required": false,
-        "xmlEnumValues": [
-          "OAuthProviderGoogle",
-          "OAuthProviderMicrosoft"
-        ]
+        "required": false
       }
     ],
     "hrSignature": "[ Send via E-mail Client/SMTP Server/OAuth 2.0 ; With dialog/No dialog: <On/Off> ; Attachment path: <path> ; To: useFoundSet=<True/False>, value=<calc> ; CC: … ; BCC: … ; Subject: <calc> ; Message: <calc> ; <SMTP/OAuth fields> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/send-mail.html",
@@ -7444,7 +7502,6 @@
       }
     ],
     "hrSignature": "[ <On/Off> ; Filename: <calc> ; Verbose: <On/Off> ; Truncate Messages: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": null
@@ -7460,7 +7517,8 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "File ID",
-        "required": true
+        "required": true,
+        "omitWhenEmpty": true
       },
       {
         "xmlElement": "Calculation",
@@ -7471,7 +7529,6 @@
       }
     ],
     "hrSignature": "[ File ID: <calc> ; New position: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-data-file-position.html"
@@ -7490,21 +7547,6 @@
         "xmlAttr": "value",
         "required": true,
         "defaultValue": "US English",
-        "xmlEnumValues": [
-          "US English",
-          "UK English",
-          "US English (Medical)",
-          "Deutsch (Alte Regeln)",
-          "Deutsch (Neue Regeln)",
-          "Schweizerdeutsch",
-          "Español",
-          "Français",
-          "Italiano",
-          "Nederlands",
-          "Português (Brasil)",
-          "Português (Portugal)",
-          "Svenska"
-        ],
         "note": "Special characters encoded as XML entities in XML output"
       },
       {
@@ -7516,7 +7558,6 @@
       }
     ],
     "hrSignature": "[ Spelling Language: <language> ; User Dictionary: <path> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-dictionary.html"
@@ -7538,7 +7579,6 @@
       }
     ],
     "hrSignature": "[ On|Off ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-error-capture.html"
@@ -7571,7 +7611,6 @@
       }
     ],
     "hrSignature": "[ <On/Off> ; Custom debug info: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-error-logging.html"
@@ -7587,17 +7626,18 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": null,
-        "required": true
+        "required": true,
+        "hrSlot": 1
       },
       {
         "xmlElement": "Field",
         "type": "field",
         "hrLabel": null,
-        "required": false
+        "required": false,
+        "hrSlot": 0
       }
     ],
     "hrSignature": "[ Table::Field ; value ]",
-    "monacoSnippet": "Set Field [ ${1:Table::Field} ; ${2:value} ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-field.html"
@@ -7612,20 +7652,17 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Target field name",
         "wrapperElement": "TargetName",
         "required": true
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Calculated result",
         "wrapperElement": "Result",
         "required": false
       }
     ],
     "hrSignature": "[ <Target field name> ; <Calculated result> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-field-by-name.html"
@@ -7647,7 +7684,6 @@
       }
     ],
     "hrSignature": "[ <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-layout-object-animation.html"
@@ -7662,7 +7698,7 @@
       {
         "xmlElement": "MultiUser",
         "type": "enum",
-        "hrLabel": "Network access",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "True",
@@ -7674,7 +7710,6 @@
       }
     ],
     "hrSignature": "[ <On/On (Hidden)/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-multi-user.html"
@@ -7700,7 +7735,6 @@
       }
     ],
     "hrSignature": "[ <Next value> ; <field> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-next-serial-value.html"
@@ -7722,7 +7756,6 @@
       }
     ],
     "hrSignature": "[ <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-revert-transaction-on-error.html"
@@ -7756,7 +7789,6 @@
       }
     ],
     "hrSignature": "[ <field> ; Start Position: <calc> ; End Position: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-selection.html"
@@ -7776,7 +7808,6 @@
       }
     ],
     "hrSignature": "[ <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-session-identifier.html"
@@ -7798,7 +7829,6 @@
       }
     ],
     "hrSignature": "[ <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-use-system-formats.html"
@@ -7831,8 +7861,7 @@
         "required": true
       }
     ],
-    "hrSignature": "[ $name ; value ]",
-    "monacoSnippet": "Set Variable [ \\$${1:varName} ; ${2:value} ]",
+    "hrSignature": "[ $name ; Value: value ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-variable.html"
@@ -7845,26 +7874,21 @@
     "selfClosing": false,
     "params": [
       {
+        "xmlElement": "Calculation",
+        "type": "namedCalc",
+        "hrLabel": "Object Name",
+        "wrapperElement": "ObjectName",
+        "required": true
+      },
+      {
         "xmlElement": "Action",
         "type": "enum",
         "hrLabel": "Action",
         "xmlAttr": "value",
         "required": true,
         "defaultValue": "GoToURL",
-        "hrEnumValues": {
-          "GoToURL": "Go to URL",
-          "Reset": "Reset",
-          "Reload": "Reload",
-          "GoForward": "Go Forward",
-          "GoBack": "Go Back"
-        }
-      },
-      {
-        "xmlElement": "Calculation",
-        "type": "namedCalc",
-        "hrLabel": "Object Name",
-        "wrapperElement": "ObjectName",
-        "required": true
+        "hrEnumValues": { "GoForward": "Go Forward", "GoBack": "Go Back" },
+        "discriminatorValues": { "GoToURL": { "reveal": ["URL"] } }
       },
       {
         "xmlElement": "Calculation",
@@ -7876,13 +7900,12 @@
         "note": "Only used when Action is GoToURL; omit for all other actions. FM serializes <URL custom=\"True\"> for a calculated URL."
       }
     ],
-    "hrSignature": "[ Action: <GoToURL/Reset/Reload/Go Forward/Go Back> ; Object Name: <calc> ; URL: <calc> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Object Name: <calc> ; URL: <calc> | Action: <Reset/Reload/Go Forward/Go Back> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-web-viewer.html"
   },
-  {
+    {
     "name": "Set Window Title",
     "id": 124,
     "category": "windows",
@@ -7890,15 +7913,35 @@
     "selfClosing": false,
     "params": [
       {
+        "xmlElement": "LimitToWindowsOfCurrentFile",
+        "type": "boolean",
+        "hrLabel": "Current file",
+        "xmlAttr": "state",
+        "flagStyle": true,
+        "required": false,
+        "defaultValue": "True"
+      },
+      {
         "xmlElement": "Window",
         "type": "enum",
-        "hrLabel": "Window",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "ByName",
-        "hrEnumValues": {
-          "Current": "Current Window",
-          "ByName": "Of Window"
+        "enumValues": [
+          "ByName",
+          "Current"
+        ],
+        "discriminatorValues": {
+          "ByName": {
+            "reveal": [
+              "Name",
+              "LimitToWindowsOfCurrentFile"
+            ]
+          },
+          "Current": {
+            "hrToken": "Current Window"
+          }
         }
       },
       {
@@ -7906,16 +7949,7 @@
         "type": "namedCalc",
         "hrLabel": "Of Window",
         "wrapperElement": "Name",
-        "required": false,
-        "note": "Only used when Window is ByName"
-      },
-      {
-        "xmlElement": "LimitToWindowsOfCurrentFile",
-        "type": "flagBoolean",
-        "hrLabel": "Current file",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "True"
+        "required": false
       },
       {
         "xmlElement": "Calculation",
@@ -7925,8 +7959,7 @@
         "required": true
       }
     ],
-    "hrSignature": "[ <Current Window/Of Window: name> ; Current file ; New Title: <calc> ]",
-    "monacoSnippet": null,
+    "hrSignature": "[ Current Window | Of Window: <name> [ ; Current file ] ; New Title: <title> ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-window-title.html"
@@ -7949,7 +7982,7 @@
       {
         "xmlElement": "Zoom",
         "type": "enum",
-        "hrLabel": "Zoom level",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "100",
@@ -7968,7 +8001,6 @@
       }
     ],
     "hrSignature": "[ Lock: <On/Off> ; <25%/50%/75%/100%/150%/200%/300%/400%/Zoom In/Zoom Out> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/set-zoom-level.html"
@@ -7981,7 +8013,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-all-records.html"
@@ -8065,8 +8096,7 @@
         "note": "repeatGroup: up to 3 <InputField UsePasswordCharacter><Field/ or $var><Label><Calculation></InputField>. field = Table::Field ref or $variable; FM always serializes a <Field>."
       }
     ],
-    "hrSignature": "[ \"Title\" ; \"Message\" ]",
-    "monacoSnippet": "Show Custom Dialog [ \"${1:Title}\" ; \"${2:Message}\" ]",
+    "hrSignature": "[ Title: \"title\" ; Message: \"message\" ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",
@@ -8102,7 +8132,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-omitted-only.html"
@@ -8125,7 +8154,7 @@
       {
         "xmlElement": "ShowHide",
         "type": "enum",
-        "hrLabel": "Action",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Hide",
@@ -8137,7 +8166,6 @@
       }
     ],
     "hrSignature": "[ Lock: <On/Off> ; <Show/Hide/Toggle> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-hide-menubar.html"
@@ -8152,7 +8180,7 @@
       {
         "xmlElement": "ShowHide",
         "type": "enum",
-        "hrLabel": "Action",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Show",
@@ -8164,7 +8192,6 @@
       }
     ],
     "hrSignature": "[ <Show/Hide/Toggle> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-hide-text-ruler.html"
@@ -8195,7 +8222,7 @@
       {
         "xmlElement": "ShowHide",
         "type": "enum",
-        "hrLabel": "Action",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Hide",
@@ -8207,7 +8234,6 @@
       }
     ],
     "hrSignature": "[ Include Edit Record Toolbar ; Lock ; <Show/Hide/Toggle> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-hide-toolbars.html"
@@ -8253,7 +8279,6 @@
       }
     ],
     "hrSignature": "[ Restore ; With dialog: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/sort-records.html"
@@ -8268,7 +8293,7 @@
       {
         "xmlElement": "SortRecordsByField",
         "type": "enum",
-        "hrLabel": "Sort order",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "SortAscending",
@@ -8281,12 +8306,11 @@
       {
         "xmlElement": "Field",
         "type": "field",
-        "hrLabel": "Field",
+        "hrLabel": null,
         "required": false
       }
     ],
     "hrSignature": "[ <Ascending/Descending/Associated value list> ; <field> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/sort-records-by-field.html"
@@ -8319,7 +8343,6 @@
       }
     ],
     "hrSignature": "[ <text to speak> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/speak-os-x.html"
@@ -8332,7 +8355,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/spelling-options.html"
@@ -8414,7 +8436,6 @@
       }
     ],
     "hrSignature": "Trigger Claris Connect Flow [ With dialog: {On|Off} ; Flow URL: {url} ; cURL options: {calc} ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "notes": {
       "behavioral": "Triggers a Claris Connect flow via HTTP. The <Flow> element holds the flow's endpoint URL. The <CURLOptions> element wraps a <Calculation> with cURL option strings (e.g. --request POST --header). The <Text> element captures the response target. NoInteract suppresses the associated dialog — must be True for server-side, WebDirect, and Data API contexts.",
@@ -8450,7 +8471,6 @@
       }
     ],
     "hrSignature": "[ With dialog: <On/Off> ; Table: <table> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/truncate-table.html"
@@ -8465,7 +8485,7 @@
       {
         "xmlElement": "UndoRedo",
         "type": "enum",
-        "hrLabel": "Action",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Undo",
@@ -8477,7 +8497,6 @@
       }
     ],
     "hrSignature": "[ <Undo/Redo/Toggle> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/undo-redo.html"
@@ -8490,7 +8509,6 @@
     "selfClosing": true,
     "params": [],
     "hrSignature": "",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/unsort-records.html"
@@ -8505,7 +8523,7 @@
       {
         "xmlElement": "View",
         "type": "enum",
-        "hrLabel": "View",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "Cycle",
@@ -8518,7 +8536,6 @@
       }
     ],
     "hrSignature": "[ <Cycle/View as Form/View as List/View as Table> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/view-as.html"
@@ -8534,7 +8551,8 @@
         "xmlElement": "Calculation",
         "type": "calculation",
         "hrLabel": "File ID",
-        "required": true
+        "required": true,
+        "omitWhenEmpty": true
       },
       {
         "xmlElement": "Field",
@@ -8550,6 +8568,10 @@
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "2",
+        "enumValues": [
+          "1",
+          "2"
+        ],
         "hrEnumValues": {
           "1": "UTF-16",
           "2": "UTF-8"
@@ -8557,15 +8579,15 @@
       },
       {
         "xmlElement": "AppendLineFeed",
-        "type": "flagBoolean",
+        "type": "boolean",
         "hrLabel": "Append line feed",
         "xmlAttr": "state",
+        "flagStyle": true,
         "required": false,
         "defaultValue": "False"
       }
     ],
     "hrSignature": "[ File ID: <calc> ; Data source: <field/variable> ; Write as: <UTF-16/UTF-8> ; Append line feed ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/write-to-data-file.html"
@@ -8578,7 +8600,6 @@
     "selfClosing": false,
     "params": [],
     "hrSignature": "Flush Web Viewer Cookies",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/flush-web-viewer-cookies.html"
@@ -8591,7 +8612,6 @@
     "selfClosing": false,
     "params": [],
     "hrSignature": "Cancel PDF",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/cancel-pdf.html"
@@ -8671,7 +8691,6 @@
       }
     ],
     "hrSignature": "[ Restore ; Output File: <calc> ; Document: Title=<calc>, Subject=<calc>, Author=<calc>, Keywords=<calc>, Pages=( AllPages=<True|False>, NumberFrom=<calc>, PageRange=( From=<calc>, To=<calc> ) ) ; Security: ScreenReader=<True|False>, Copying=<True|False>, Editing=<token>, Printing=<token>, OpenPassword=<calc>, EditPassword=<calc> ; View: Magnification=<token>, Layout=<token>, Show=<token> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/create-pdf.html"
@@ -8729,7 +8748,6 @@
       }
     ],
     "hrSignature": "[ From: <File|Target> ; <path>|Source: <container> ; Password: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/append-pdf.html"
@@ -8787,7 +8805,6 @@
       }
     ],
     "hrSignature": "[ From: <File|Target> ; <path>|Source: <container> ; Password: <calc> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/open-pdf.html"
@@ -8867,7 +8884,6 @@
       }
     ],
     "hrSignature": "[ Save to: <File|Target> ; <path>|Target: <container> ; Filename: <calc> ; Create folders: <On/Off> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/close-pdf.html"
@@ -8944,7 +8960,6 @@
       }
     ],
     "hrSignature": "[ <Restore> ; With dialog: <On/Off> ; <path> ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/print-pdf.html"
@@ -8991,7 +9006,6 @@
       }
     ],
     "hrSignature": "[ Account Name: calc ; Model: calc ; Input: calc ; Target: Table::Field| ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-image-caption.html"
@@ -9061,7 +9075,6 @@
       }
     ],
     "hrSignature": "[ Account Name: calc ; Model: calc ; Source Field: Table::Field ; Target Field: Table::Field ; Replace target contents ; Continue on error ; Parameters: calc ]",
-    "monacoSnippet": null,
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-image-captions-in-found-set.html"

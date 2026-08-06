@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="181" name="Get Folder Path" enable="True">
+      <Options>16388</Options>
+      <ParameterValues membercount="4">
+        <Parameter type="Boolean">
+          <Boolean type="Allow Folder Creation" id="256" value="False" />
+        </Parameter>
+        <Parameter type="Variable">
+          <value />
+          <Name value="$path" />
+          <repetition>
+            <Calculation datatype="1" position="2">
+              <Calculation>
+                <Text>1</Text>
+              </Calculation>
+            </Calculation>
+          </repetition>
+        </Parameter>
+        <Parameter type="Title">
+          <Calculation datatype="1" position="3">
+            <Calculation>
+              <Text>"Select the agentic-fm folder"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Location">
+          <Calculation datatype="1" position="4">
+            <Calculation>
+              <Text>Get ( DesktopPath )</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

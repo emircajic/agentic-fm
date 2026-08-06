@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="123" name="Select Window" enable="True">
+      <Options>16386</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="WindowReference">
+          <WindowReference>
+            <Select kind="1" type="Calculated">
+              <Name current="False">
+                <Calculation datatype="1" position="0">
+                  <Calculation>
+                    <Text>$param</Text>
+                  </Calculation>
+                </Calculation>
+              </Name>
+            </Select>
+          </WindowReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

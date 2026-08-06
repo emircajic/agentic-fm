@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="39" name="Sort Records" enable="True">
+      <Options>33587328</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="Restore">
+          <Restore value="True" />
+        </Parameter>
+        <Parameter type="SortSpecification">
+          <SortSpecification value="True" blanksLast="False" maintain="True">
+            <SortList membercount="2">
+              <Sort type="Ascending">
+                <PrimaryField>
+                  <FieldReference id="11" name="Status">
+                    <TableOccurrenceReference id="1065091" name="Clients Primary" />
+                  </FieldReference>
+                </PrimaryField>
+              </Sort>
+              <Sort type="Ascending">
+                <PrimaryField>
+                  <FieldReference id="6" name="Name">
+                    <TableOccurrenceReference id="1065091" name="Clients Primary" />
+                  </FieldReference>
+                </PrimaryField>
+              </Sort>
+            </SortList>
+          </SortSpecification>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

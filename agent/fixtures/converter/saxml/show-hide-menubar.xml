@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="166" name="Show/Hide Menubar" enable="True">
+      <Options>524290</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="List">
+          <List name="Hide" value="2" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Lock" id="524288" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

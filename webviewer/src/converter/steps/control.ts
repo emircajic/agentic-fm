@@ -1,5 +1,4 @@
 import type { ParsedLine } from '../parser';
-import type { IdResolver } from '../id-resolver';
 import { registerHrToXml, registerXmlToHr, stepOpen, stepSelfClose, cdata, escXml } from '../step-registry';
 
 // --- # (comment) ---
@@ -183,7 +182,8 @@ registerXmlToHr({
   xmlStepNames: ['Exit Script'],
   toHR(el: Element): string {
     const calc = el.querySelector('Calculation')?.textContent ?? '';
-    if (calc) return `Exit Script [ Result: ${calc} ]`;
+    // FM's SW label is "Text Result:" — must byte-match snippet_to_hr.py.
+    if (calc) return `Exit Script [ Text Result: ${calc} ]`;
     return 'Exit Script';
   },
 });
@@ -244,116 +244,19 @@ registerHrToXml({
 registerXmlToHr({
   xmlStepNames: ['Set Variable'],
   toHR(el: Element): string {
-    const name = el.querySelector('Name')?.textContent ?? '$var';
+    const name = el.querySelector('Name')?.textContent ?? '';
     const value = el.querySelector('Value > Calculation')?.textContent ?? '';
     const rep = el.querySelector('Repetition > Calculation')?.textContent;
     // Only show repetition suffix for non-default values (> 1 or expressions)
     const repSuffix = rep && rep.trim() !== '1' ? `[${rep.trim()}]` : '';
-    return `Set Variable [ ${name}${repSuffix} ; ${value} ]`;
+    // Keep the explicit "Value:" label — must byte-match snippet_to_hr.py.
+    return `Set Variable [ ${name}${repSuffix} ; Value: ${value} ]`;
   },
 });
 
-// --- Allow User Abort ---
-registerHrToXml({
-  stepNames: ['Allow User Abort'],
-  toXml(line: ParsedLine): string {
-    const param = (line.params[0] ?? 'Off').trim();
-    const state = param.toLowerCase() === 'on' ? 'True' : 'False';
-    return [
-      stepOpen('Allow User Abort', !line.disabled),
-      `    <Set state="${state}"/>`,
-      '  </Step>',
-    ].join('\n');
-  },
-});
-
-registerXmlToHr({
-  xmlStepNames: ['Allow User Abort'],
-  toHR(el: Element): string {
-    const state = el.querySelector('Set')?.getAttribute('state') ?? 'False';
-    return `Allow User Abort [ ${state === 'True' ? 'On' : 'Off'} ]`;
-  },
-});
-
-// --- Set Error Capture ---
-registerHrToXml({
-  stepNames: ['Set Error Capture'],
-  toXml(line: ParsedLine): string {
-    const param = (line.params[0] ?? 'On').trim();
-    const state = param.toLowerCase() === 'on' ? 'True' : 'False';
-    return [
-      stepOpen('Set Error Capture', !line.disabled),
-      `    <Set state="${state}"/>`,
-      '  </Step>',
-    ].join('\n');
-  },
-});
-
-registerXmlToHr({
-  xmlStepNames: ['Set Error Capture'],
-  toHR(el: Element): string {
-    const state = el.querySelector('Set')?.getAttribute('state') ?? 'True';
-    return `Set Error Capture [ ${state === 'True' ? 'On' : 'Off'} ]`;
-  },
-});
-
-// --- Perform Script ---
-registerHrToXml({
-  stepNames: ['Perform Script'],
-  toXml(line: ParsedLine, resolver: IdResolver): string {
-    let scriptName = '';
-    let parameter = '';
-
-    // Known FM display tokens that are not the script name (e.g. "From list", "Specified: From list")
-    const listTokens = /^(from list|specified:\s*from list)$/i;
-
-    for (const p of line.params) {
-      const paramMatch = p.match(/^Parameter:\s*(.*)$/i);
-      if (paramMatch) {
-        parameter = paramMatch[1].trim();
-      } else if (!scriptName && !listTokens.test(p.trim())) {
-        scriptName = p.replace(/^"|"$/g, '').trim();
-      }
-    }
-
-    const resolved = resolver.resolveScript(scriptName);
-    const lines = [
-      stepOpen('Perform Script', !line.disabled),
-    ];
-    if (parameter) {
-      lines.push(`    <Calculation>${cdata(parameter)}</Calculation>`);
-    }
-    lines.push(
-      `    <Script id="${resolved.id}" name="${resolved.name}"/>`,
-      '  </Step>',
-    );
-    return lines.join('\n');
-  },
-});
-
-registerXmlToHr({
-  xmlStepNames: ['Perform Script'],
-  toHR(el: Element): string {
-    const script = el.querySelector('Script');
-    const name = script?.getAttribute('name') ?? '';
-    const calc = el.querySelector('Calculation')?.textContent ?? '';
-    const specified = name ? 'Specified: From list' : 'Specified: By calculation';
-    const parts = [`"${name}"`, specified, `Parameter: ${calc}`];
-    return `Perform Script [ ${parts.join(' ; ')} ]`;
-  },
-});
-
-// --- Halt Script ---
-registerHrToXml({
-  stepNames: ['Halt Script'],
-  toXml(line: ParsedLine): string {
-    return stepSelfClose('Halt Script', !line.disabled);
-  },
-});
-
-registerXmlToHr({
-  xmlStepNames: ['Halt Script'],
-  toHR(): string {
-    return 'Halt Script';
-  },
-});
+// Allow User Abort, Set Error Capture, Perform Script, and Halt Script are now
+// rendered in BOTH directions by the catalog grammar engine (catalog-emit.ts /
+// catalog-grammar.ts) — their former hand-coders were folded into the engine in
+// P6.3. Only the control-flow set above stays hand-coded (the sanctioned
+// exception): # (comment), If, Else If, Else, End If, Loop, Exit Loop If,
+// End Loop, Exit Script, Set Variable.

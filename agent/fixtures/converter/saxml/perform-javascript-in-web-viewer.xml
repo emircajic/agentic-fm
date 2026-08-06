@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="175" name="Perform JavaScript in Web Viewer" enable="True">
+      <Options>16384</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Name">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>$object</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="FunctionRef">
+          <Calculation datatype="1" position="1">
+            <Calculation>
+              <Text>$param</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Parameter">
+          <Calculation datatype="1" position="10">
+            <Calculation>
+              <Text>$functionParam</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

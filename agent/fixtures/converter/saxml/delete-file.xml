@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="197" name="Delete File" enable="True">
+      <Options>32</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$target</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

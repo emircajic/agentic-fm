@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="68" name="If" enable="True">
+      <Options>16384</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Collapsed" id="33554432" value="False" />
+        </Parameter>
+        <Parameter type="Calculation">
+          <Calculation datatype="7" position="0">
+            <Calculation>
+              <Text>IsEmpty ( $$AGENTIC.FM ) or JSONGetElementType ( $$AGENTIC.FM ; "" ) ≠ JSONObject</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

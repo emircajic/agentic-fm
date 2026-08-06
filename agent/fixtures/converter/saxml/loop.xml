@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="71" name="Loop" enable="True">
+      <Options>256</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Collapsed" id="33554432" value="False" />
+        </Parameter>
+        <Parameter type="List">
+          <List name="Always" value="1" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

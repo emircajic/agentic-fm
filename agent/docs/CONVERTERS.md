@@ -67,9 +67,9 @@ python3 agent/scripts/fm_xml_to_snippet.py \
   "agent/sandbox/OutputName.xml"
 ```
 
-- 48 hand-coded translators for high-priority steps (control flow, Set Variable, Perform Script, etc.)
-- Catalog-driven generic fallback handles all remaining steps automatically
-- 100% coverage across all step types found in the codebase (128 unique types across 2,325 scripts)
+- **Catalog-driven.** Every non-control step is decoded from the SaXML `<ParameterValues>` into the shared step instance by `saxml_read.py`, then emitted to fmxmlsnippet by `catalog_emit.py` — both working purely from the catalog `params[]` grammar. No per-step emit logic remains.
+- The only hand-coded steps are the control-flow set: `# (comment)`, If/Else If/Else/End If, Loop/Exit Loop If/End Loop, Exit Script, Set Variable.
+- 100% coverage across every step type in the codebase (0 uncatalogued, 0 undecodable over the full script corpus)
 - Maps nested SaXML `<ParameterValues>` to flat fmxmlsnippet child elements
 - See `agent/scripts/XML_TRANSFORMATION.md` for the structural mapping reference
 
@@ -90,8 +90,7 @@ python3 agent/scripts/snippet_to_hr.py agent/sandbox/MyScript.xml --raw
 python3 agent/scripts/snippet_to_hr.py agent/sandbox/MyScript.xml --raw -o output.txt
 ```
 
-- Hand-coded renderers for 21 structurally unique steps (control flow, Set Variable, Perform Script, Set Field, etc.)
-- Catalog-driven fallback for all other steps via `agent/catalogs/step-catalog-en.json`
+- **Catalog-driven.** All non-control steps render through `catalog_grammar.render_step_hr`, working from the catalog `params[]` grammar; only the control-flow set is hand-coded.
 - Handles indentation, disabled step prefixing, multi-line calculations
 - Importable as a module: `from agent.scripts.snippet_to_hr import snippet_to_hr`
 
@@ -106,6 +105,7 @@ python3 .claude/skills/script-preview/scripts/saxmlpreview.py \
   "agent/xml_parsed/scripts/{solution}/{path}.xml"
 ```
 
+- **Catalog-driven.** Non-control steps are decoded by `saxml_read.read_saxml_step` and rendered by `catalog_grammar.render_step_hr` — the same grammar the fmxmlsnippet → HR path uses; only control-flow is hand-coded.
 - Reads from the SaXML `<ParameterValues>` structure (different from fmxmlsnippet)
 - Numbered output (tab-separated) for terminal display
 - Not suitable for fmxmlsnippet input — use `snippet_to_hr.py` instead
@@ -116,6 +116,8 @@ python3 .claude/skills/script-preview/scripts/saxmlpreview.py \
 
 All located in `webviewer/src/converter/`.
 
+The TypeScript converters are line-for-line ports of the Python grammar engine, so both languages produce identical output from the same catalog. Both directions derive every non-control step from the catalog `params[]` grammar; only the control-flow set is hand-coded (in `steps/control.ts`).
+
 ### `xml-to-hr.ts`
 
 **fmxmlsnippet → HR** (browser-side)
@@ -123,7 +125,7 @@ All located in `webviewer/src/converter/`.
 The webviewer's built-in converter for displaying script content in the editor. Runs in the browser via DOMParser.
 
 - Entry point: `xmlToHr(xml: string): string`
-- Delegates to step-specific converters registered in `step-registry.ts`
+- Non-control steps render through the catalog engine in `catalog-grammar.ts` (the TS twin of `catalog_grammar.py`); control-flow via `steps/control.ts`
 - Same indentation/disable logic as the Python converters
 
 ### `hr-to-xml.ts`
@@ -133,30 +135,26 @@ The webviewer's built-in converter for displaying script content in the editor. 
 The webviewer's primary feature — converts human-readable script text into paste-ready fmxmlsnippet XML.
 
 - Entry point: `hrToXml(text: string, resolver: IdResolver): ConversionResult`
-- Parses HR via `parser.ts`, dispatches to step converters or catalog-driven fallback
+- Parses HR via `parser.ts`, then emits via the catalog engine in `catalog-emit.ts` (the TS twin of `catalog_emit.py`); control-flow via `steps/control.ts`
 - Resolves field/layout/script IDs via `id-resolver.ts` (queries CONTEXT.json)
+
+### `catalog-grammar.ts` / `catalog-emit.ts` / `catalog-types.ts`
+
+The catalog grammar engine. `catalog-grammar.ts` reads a `<Step>` node and renders HR; `catalog-emit.ts` parses HR and emits fmxmlsnippet; `catalog-types.ts` defines the shared step-instance types. Together they handle every param type the catalog can express — boolean, enum, calculation, namedCalc, text, field, layout, script, flagElement, plus the advanced facets (discriminators, `hrSlot`, `hrHidden`, `attrGroup`, `bitmaskGroup`, `findRequests`, and the rest).
 
 ### `catalog-converter.ts`
 
-Generic converter for steps without hand-coded handlers. Maps HR parameters to XML elements using catalog `params[]` definitions. Handles types: boolean, enum, calculation, namedCalc, text, field, layout, script, flagElement.
+Orchestration that routes each step to the control-flow renderer (`steps/control.ts`) or the catalog engine, in both directions, and exposes the shared XML helpers (`escXml()`, `cdata()`, `stepOpen()`, `stepSelfClose()`).
 
 ### `step-registry.ts`
 
 Registration system for both conversion directions:
 - `registerHrToXml(converter)` / `registerXmlToHr(converter)`
 - `getHrToXmlConverter(name)` / `getXmlToHrConverter(name)`
-- XML helpers: `escXml()`, `cdata()`, `stepOpen()`, `stepSelfClose()`
 
-### `steps/` — Per-Step Converters
+### `steps/control.ts` — the only per-step module
 
-| File | Steps handled |
-|------|--------------|
-| `control.ts` | `# (comment)`, If, Else If, Else, End If, Loop, Exit Loop If, End Loop, Exit Script, Set Variable, Allow User Abort, Set Error Capture, Perform Script, Halt Script |
-| `fields.ts` | Set Field |
-| `navigation.ts` | Go to Layout, Go to Object |
-| `records.ts` | Commit Records/Requests, New Record/Request |
-| `windows.ts` | Freeze Window, New Window, Close Window |
-| `miscellaneous.ts` | Show Custom Dialog |
+Holds exactly the sanctioned hand-coded exception — the control-flow steps — for both directions: `# (comment)`, If, Else If, Else, End If, Loop, Exit Loop If, End Loop, Exit Script, Set Variable. Every other step is engine-driven.
 
 ### `parser.ts`
 
@@ -216,16 +214,37 @@ Other supported types: `preview` (read-only editor), `result` (read-only), `diag
 
 ---
 
+## Conformance
+
+Because every converter derives its output from the one catalog grammar, a single catalog or converter edit reshapes all of them at once.
+An offline, dependency-free gate freezes the verified output as golden fixtures so any such drift is caught in review.
+
+- **Runner:** `agent/scripts/test_converter_conformance.py` — standard library plus pytest, no network, no external tools.
+- **Fixtures:** `agent/fixtures/converter/`
+  - `xml-to-hr.json` — `{corpus file → HR}` from `snippet_to_hr.py` over `agent/snippet_examples/steps`.
+  - `saxml/*.xml` — SaXML input samples, one per step type.
+  - `saxml-to-snippet.json` — `{sample → fmxmlsnippet}` from `fm_xml_to_snippet.py` over those samples.
+- **Checks:** fmxmlsnippet → HR matches the golden; SaXML → fmxmlsnippet matches the golden and is well-formed; and the Python fmxmlsnippet → HR output matches the web viewer's committed `webviewer/test/fixtures/xml-to-hr.json`, keeping the Python and TypeScript readers in lockstep.
+
+```bash
+uvx pytest agent/scripts/test_converter_conformance.py            # the gate
+python3 agent/scripts/test_converter_conformance.py --bless       # regenerate goldens after a legitimate catalog change
+```
+
+The TypeScript HR → fmxmlsnippet direction has no Python counterpart and is gated by its own vitest suite under `webviewer/test/`.
+
+---
+
 ## Step Catalog
 
-`agent/catalogs/step-catalog-en.json` is the shared reference used by all converters. Key fields:
+`agent/catalogs/step-catalog-en.json` is the single source of truth for step structure — every converter derives its output from it, and none re-declares per-step HR/XML knowledge (the control-flow set is the sole hand-coded exception). Key fields:
 
 | Field | Used by | Purpose |
 |-------|---------|---------|
 | `name` | All converters | Step identification |
-| `id` | `saxmlpreview.py`, `fm_xml_to_snippet.py` | SaXML step dispatch |
-| `hrSignature` | `saxmlpreview.py`, `snippet_to_hr.py` | HR parameter format |
-| `params[]` | All converters | Parameter type → XML/HR mapping |
+| `id` | `saxmlpreview.py`, `fm_xml_to_snippet.py` | SaXML step dispatch, emitted step-type id |
+| `params[]` | All converters | The executable grammar — every non-control step's HR and XML derive from it |
+| `hrSlot` / `discriminatorValues` / `attrGroup` / `bitmaskGroup` / `hrHidden` / `findRequests` | Grammar engine | Advanced facets the engine interprets (see SCHEMA_GUIDANCE.md) |
 | `selfClosing` | XML generators | `<Step ... />` vs `<Step>...</Step>` |
 | `blockPair` | Indentation logic | If/Loop open/middle/close roles |
 

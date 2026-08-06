@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="36" name="Export Records" enable="True">
+      <Options>1644200608</Options>
+      <ParameterValues membercount="4">
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="True" />
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList fileType="TABS" AutoOpen="True" CreateMail="True" membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Export">
+          <Export>
+            <Options name="Unicode (UTF-8)" value="4" Formatting="False" />
+            <Order type="Group">
+              <Group value="1">
+                <FieldReference id="0" name="" />
+              </Group>
+            </Order>
+            <Order type="Field">
+              <Field value="1">
+                <FieldReference id="0" name="" />
+              </Field>
+              <Field value="2">
+                <FieldReference id="0" name="" />
+              </Field>
+            </Order>
+          </Export>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

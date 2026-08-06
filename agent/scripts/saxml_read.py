@@ -1,0 +1,1411 @@
+#!/usr/bin/env python3
+"""saxml_read.py — read a FileMaker "Save as XML" (SaXML) <Step> into the shared
+per-param ``values[]`` token array the catalog emit engine consumes (P6.4).
+
+This is the SaXML *front-end* for the catalog-driven converters: SaXML's nested
+``<ParameterValues><Parameter type="X">`` structure is decoded, per catalog param, into
+the same token form ``catalog_emit.match_param_values`` produces, so the proven emit
+grammar (``catalog_emit.convert_step_with_catalog``) serves both HR→XML and SaXML→XML.
+
+    SaXML <Step>  ──[read_saxml_step]──▶  (disabled, values[], resolver)
+                                              │
+                                    [convert_step_with_catalog]  →  fmxmlsnippet <Step>
+
+Unlike the fmxmlsnippet↔HR directions, the SaXML direction has **no C++/API reference
+converter** (the C++ handles only fmxmlsnippet↔HR), so this reader is verified by
+coverage + regression against the prior converter + live round-trips, not byte-identity
+against a reference. The structural decoding of SaXML mirrors the OSS Rust exploder
+(``external_tools/fm-xml-export-exploder``), the closest SaXML-side reference.
+
+Object references (field/script/layout/table) carry real IDs in SaXML; the reader seeds
+a resolver from them so those IDs are **preserved** on emit (no regression vs the prior
+converter), while the emit grammar stays a faithful, id-agnostic port.
+
+Stdlib only; no venv. Control-flow steps are handled by the converter's hand-coders (the
+sanctioned exception), not here.
+"""
+
+from __future__ import annotations
+
+import xml.etree.ElementTree as ET
+
+from catalog_grammar import CatalogEntry, StepParam, is_governing_discriminator
+
+# Composite facets whose SaXML shape needs a dedicated decoder (filled in incrementally;
+# a param of one of these types with no decoder yet is reported, never silently wrong).
+_COMPOSITE_TYPES = frozenset(
+    {"attrGroup", "bitmaskGroup", "findRequests", "repeatGroup", "fieldList", "parametersList"}
+)
+
+
+class UnsupportedSaXML(Exception):
+    """Raised when a step's SaXML shape isn't decodable yet — fail loud (constraint #3)."""
+
+
+# ---------------------------------------------------------------------------
+# Seeded resolver — carries SaXML's own object IDs through emit (id preservation)
+# ---------------------------------------------------------------------------
+class SeededResolver:
+    """An emit resolver seeded from a SaXML step's own field/script/layout/table refs.
+
+    Keys fields by ``Table::Field`` (and bare field name as a fallback), scripts and
+    layouts by name. Unknown names fall back to id 0 with the name passed through,
+    matching the empty-context behaviour of the reference fixtures.
+    """
+
+    def __init__(self) -> None:
+        self._fields: dict[str, tuple[str, int, str]] = {}
+        self._scripts: dict[str, int] = {}
+        self._layouts: dict[str, int] = {}
+
+    def add_field(self, table: str, fid: int, fname: str) -> None:
+        ref = fname if not table else table + "::" + fname
+        self._fields.setdefault(ref, (table, fid, fname))
+        self._fields.setdefault(fname, (table, fid, fname))
+
+    def add_script(self, name: str, sid: int) -> None:
+        self._scripts.setdefault(name, sid)
+
+    def add_layout(self, name: str, lid: int) -> None:
+        self._layouts.setdefault(name, lid)
+
+    def resolve_field(self, table_field: str) -> tuple[str, int, str]:
+        hit = self._fields.get(table_field)
+        if hit is not None:
+            return hit
+        sep = table_field.find("::")
+        if sep < 0:
+            return "", 0, table_field
+        return table_field[:sep].strip(), 0, table_field[sep + 2 :].strip()
+
+    def resolve_script(self, name: str) -> tuple[int, str]:
+        return self._scripts.get(name, 0), name
+
+    def resolve_layout(self, name: str) -> tuple[int, str]:
+        return self._layouts.get(name, 0), name
+
+
+def _seed_resolver(step_el: ET.Element) -> SeededResolver:
+    """Collect every field/script/layout reference in the step into a resolver."""
+    r = SeededResolver()
+    for fr in step_el.iter("FieldReference"):
+        tor = fr.find("TableOccurrenceReference")
+        table = tor.get("name", "") if tor is not None else ""
+        try:
+            fid = int(fr.get("id", "0"))
+        except ValueError:
+            fid = 0
+        r.add_field(table, fid, fr.get("name", ""))
+    for sr in step_el.iter("ScriptReference"):
+        try:
+            sid = int(sr.get("id", "0"))
+        except ValueError:
+            sid = 0
+        r.add_script(sr.get("name", ""), sid)
+    for lr in step_el.iter("LayoutReference"):
+        try:
+            lid = int(lr.get("id", "0"))
+        except ValueError:
+            lid = 0
+        r.add_layout(lr.get("name", ""), lid)
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Calc extraction — the nested SaXML calculation shape
+# ---------------------------------------------------------------------------
+# Subtrees a value calc never lives under: an object reference carries its OWN
+# ``<repetition><Calculation>`` (the repetition index), which is NOT the param's
+# value calc — descending into these is the deep-search greediness bug.
+_CALC_SKIP = frozenset(
+    {"FieldReference", "Variable", "Target", "repetition", "TableOccurrenceReference",
+     "ScriptReference", "LayoutReference", "DataSourceReference"}
+)
+
+
+def _find_value_calc(el: ET.Element, depth: int = 0) -> ET.Element | None:
+    """First ``<Calculation>`` reachable from ``el`` through value-wrapper elements
+    (``<URL>``, ``<value>``, ``<Options>``, …) WITHOUT crossing an object-reference
+    or ``<repetition>`` subtree. Returns the outer ``<Calculation>`` node or None."""
+    for ch in el:
+        if ch.tag == "Calculation":
+            return ch
+        if ch.tag in _CALC_SKIP:
+            continue
+        if depth < 4:
+            r = _find_value_calc(ch, depth + 1)
+            if r is not None:
+                return r
+    return None
+
+
+def _calc_of(outer: ET.Element | None) -> str:
+    """Text of a ``<Calculation>`` node (the nested ``<Calculation><Text>`` form)."""
+    if outer is None:
+        return ""
+    inner = outer.find("Calculation")
+    if inner is not None:
+        t = inner.find("Text")
+        if t is not None:
+            return t.text or ""
+    t = outer.find("Text")
+    return (t.text or "") if t is not None else ""
+
+
+def _calc_text(container: ET.Element | None) -> str:
+    """Extract a param's value calc. The ``<Calculation>`` may sit under a semantic
+    wrapper (``<URL>`` for Open URL, ``<value>``/``<Options>``, …), but NOT inside an
+    object reference's own ``<repetition>``. Returns '' when absent."""
+    if container is None:
+        return ""
+    return _calc_of(_find_value_calc(container))
+
+
+# ---------------------------------------------------------------------------
+# SaXML <Parameter> helpers
+# ---------------------------------------------------------------------------
+def _params(step_el: ET.Element) -> list[ET.Element]:
+    return step_el.findall("ParameterValues/Parameter")
+
+
+def _field_ref_token(fr: ET.Element) -> str:
+    """A ``<FieldReference>`` → ``Table::Field`` (or bare field name)."""
+    tor = fr.find("TableOccurrenceReference")
+    table = tor.get("name", "") if tor is not None else ""
+    name = fr.get("name", "")
+    if not name:
+        return ""
+    return name if not table else table + "::" + name
+
+
+def _layout_token_from_lrc(lrc: ET.Element) -> str:
+    """A ``<LayoutReferenceContainer value="N">`` → the emit's layout HR token.
+
+    The ``value`` number is the destination discriminator (mirrors the exploder's
+    layout_reference.rs): 5 = a named ``<LayoutReference>`` (SelectedLayout); 3 =
+    LayoutNameByCalc; 4 = LayoutNumberByCalc; 1 = a ``<Label>`` (original/current
+    layout). The emit's ``_resolve_layout_token`` reverses these."""
+    lr = lrc.find("LayoutReference")
+    if lr is not None:
+        return '"' + lr.get("name", "") + '"'
+    val = lrc.get("value", "")
+    if val == "3":
+        return "by name: " + _calc_text(lrc)
+    if val == "4":
+        return "by number: " + _calc_text(lrc)
+    label = lrc.find("Label")
+    if label is not None:
+        return (label.text or "").strip()
+    return _calc_text(lrc)
+
+
+def _bool_on_off(sp: ET.Element) -> str | None:
+    """A ``<Parameter><Boolean type=… value=…/>`` → 'On'/'Off' (None if absent)."""
+    b = sp.find("Boolean")
+    if b is None:
+        return None
+    return "On" if b.get("value", "False") == "True" else "Off"
+
+
+def _bool_type(sp: ET.Element) -> str:
+    b = sp.find("Boolean")
+    return b.get("type", "") if b is not None else ""
+
+
+# ---------------------------------------------------------------------------
+# Per-param value extraction (simple param types)
+# ---------------------------------------------------------------------------
+def _extract_simple(
+    entry: CatalogEntry, param: StepParam, sparams: list[ET.Element], consumed: list[bool]
+) -> str:
+    """Extract one catalog param's values[] token from the SaXML params.
+
+    Matches by type-correspondence, consuming SaXML params as it goes. Returns '' when
+    the param has no source (the emitter then applies its default). Raises
+    ``UnsupportedSaXML`` for a composite facet with no decoder yet.
+    """
+    ptype = param.type
+
+    if ptype in _COMPOSITE_TYPES:
+        raise UnsupportedSaXML(f"{entry.name}: no decoder for {ptype} param {param.xml_element!r}")
+
+    if ptype in ("calculation", "calc", "namedCalc"):
+        # Consume the next Calculation-bearing SaXML param (Calculation / Title /
+        # Message / URL / a named calc param), searching through any wrapper.
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            if _find_value_calc(sp) is not None:
+                consumed[i] = True
+                return _calc_text(sp)
+        return ""
+
+    if ptype in ("text", "name"):
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            t = sp.find("Text")
+            if t is not None:
+                consumed[i] = True
+                return t.get("value", "") or (t.text or "")
+            # File-path steps carry the path as <UniversalPathList><ObjectList>
+            # <Location>… rather than a <Text> node.
+            loc = sp.find(".//Location")
+            if loc is not None:
+                consumed[i] = True
+                return loc.text or ""
+        return ""
+
+    if ptype == "field":
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            fr = sp.find("FieldReference")
+            if fr is not None:
+                consumed[i] = True
+                return _field_ref_token(fr)
+            if sp.get("type") == "Target":
+                v = sp.find("Variable")
+                if v is not None:
+                    consumed[i] = True
+                    return v.get("value", "")
+                fr = sp.find("FieldReference")
+                if fr is not None:
+                    consumed[i] = True
+                    return _field_ref_token(fr)
+        return ""
+
+    if ptype == "fieldOrVariable":
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            if sp.get("type") == "Target":
+                v = sp.find("Variable")
+                if v is not None:
+                    consumed[i] = True
+                    return v.get("value", "")
+                fr = sp.find("FieldReference")
+                if fr is not None:
+                    consumed[i] = True
+                    return _field_ref_token(fr)
+            fr = sp.find("FieldReference")
+            if fr is not None:
+                consumed[i] = True
+                return _field_ref_token(fr)
+        return ""
+
+    if ptype == "script":
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            sr = sp.find(".//ScriptReference")
+            if sr is not None:
+                consumed[i] = True
+                return '"' + sr.get("name", "") + '"'
+        return ""
+
+    if ptype == "layout":
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            lrc = sp.find("LayoutReferenceContainer")
+            if lrc is not None:
+                consumed[i] = True
+                return _layout_token_from_lrc(lrc)
+            lay = sp.find("Layout")
+            if lay is not None:
+                consumed[i] = True
+                return '"' + lay.get("name", "") + '"'
+        return ""
+
+    if ptype == "boolean":
+        # Match by the SaXML <Boolean type="…"> attribute against the catalog hrLabel.
+        if param.hr_label:
+            for i, sp in enumerate(sparams):
+                if consumed[i]:
+                    continue
+                if _bool_type(sp) == param.hr_label:
+                    consumed[i] = True
+                    return _bool_on_off(sp) or ""
+        # Fallback: next unconsumed Boolean param, positionally.
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            if sp.find("Boolean") is not None:
+                consumed[i] = True
+                return _bool_on_off(sp) or ""
+        return ""
+
+    if ptype == "enum":
+        for i, sp in enumerate(sparams):
+            if consumed[i]:
+                continue
+            lst = sp.find("List")
+            if lst is not None:
+                consumed[i] = True
+                # governing-discriminator enums want the raw XML value; simple enums
+                # forward-map to the HR label so the emitter reverses it exactly.
+                raw = lst.get("name", "") or lst.get("value", "")
+                if is_governing_discriminator(param):
+                    return raw
+                return param.hr_enum_values.get(raw, raw)
+            anim = sp.find("Animation")
+            if anim is not None and param.xml_element == "Animation":
+                consumed[i] = True
+                raw = anim.get("name", "")
+                # FM stores <Animation name="None"> in SaXML but omits the value in
+                # its fmxmlsnippet (empty <Animation value=""/>); mirror that.
+                if raw == "None":
+                    return ""
+                return param.hr_enum_values.get(raw, raw)
+        return ""
+
+    # Unrecognized-but-simple type: no token (emitter applies default).
+    return ""
+
+
+# ===========================================================================
+# Dedicated decoders — composite/semi-composite SaXML shapes the generic
+# per-param extractor can't map (WindowReference, bitmask WindowReference,
+# FindRequestSet, dialog buttons, sort specs, attrGroup bundles, …). Each
+# decoder reads the step's SaXML into the per-catalog-param ``values[]`` token
+# array the emit engine consumes — so the OUTPUT stays catalog-canonical (the
+# emit grammar, verified 203/203) while only the READING is step-specific. This
+# is the plan's sanctioned exception for bundled steps (control-flow stays in
+# the converter's hand-coders, not here).
+# ===========================================================================
+_DECODERS: dict[str, object] = {}
+
+
+def _decoder(*names: str):
+    def reg(fn):
+        for n in names:
+            _DECODERS[n] = fn
+        return fn
+    return reg
+
+
+class _Vals:
+    """A values[] builder that sets tokens by catalog-param identity."""
+
+    def __init__(self, entry: CatalogEntry) -> None:
+        self.entry = entry
+        self.v = [""] * len(entry.params)
+
+    def set(self, token: str, xml: str | None = None, wrap: str | None = None,
+            hr: str | None = None, index: int | None = None) -> None:
+        if index is not None:
+            self.v[index] = token
+            return
+        for i, p in enumerate(self.entry.params):
+            if wrap is not None and (p.wrapper_element or "") != wrap:
+                continue
+            if xml is not None and p.xml_element != xml:
+                continue
+            if hr is not None and p.hr_label != hr:
+                continue
+            self.v[i] = token
+            return
+
+    def param(self, xml: str | None = None, wrap: str | None = None,
+              hr: str | None = None) -> StepParam | None:
+        for p in self.entry.params:
+            if wrap is not None and (p.wrapper_element or "") != wrap:
+                continue
+            if xml is not None and p.xml_element != xml:
+                continue
+            if hr is not None and p.hr_label != hr:
+                continue
+            return p
+        return None
+
+    def list(self) -> list[str]:
+        return self.v
+
+
+def _ptype(step_el: ET.Element, t: str) -> ET.Element | None:
+    for sp in step_el.findall("ParameterValues/Parameter"):
+        if sp.get("type") == t:
+            return sp
+    return None
+
+
+def _ptypes(step_el: ET.Element, t: str) -> list[ET.Element]:
+    return [sp for sp in step_el.findall("ParameterValues/Parameter") if sp.get("type") == t]
+
+
+def _bool_tok(sp: ET.Element | None) -> str:
+    """A ``<Parameter><Boolean value=…/>`` → 'On'/'Off' ('' when absent)."""
+    if sp is None:
+        return ""
+    b = sp.find("Boolean")
+    if b is None:
+        return ""
+    return "On" if b.get("value", "False") == "True" else "Off"
+
+
+def _enum_tok(param: StepParam | None, raw_xml: str) -> str:
+    """XML enum value → the emit token (raw for governing discriminators, else the
+    forward-mapped HR label), mirroring the generic extractor."""
+    if param is None or raw_xml == "":
+        return raw_xml
+    if is_governing_discriminator(param):
+        return raw_xml
+    return param.hr_enum_values.get(raw_xml, raw_xml)
+
+
+# ── WindowReference family (Close / Select / Move-Resize Window) ──────────────
+def _decode_window_reference(v: _Vals, wr: ET.Element | None) -> None:
+    """Fill LimitToWindowsOfCurrentFile / Window / Name from a <WindowReference>."""
+    if wr is None:
+        return
+    sel = wr.find("Select")
+    if sel is None:
+        return
+    if (sel.get("type", "Calculated") or "").lower() == "current":
+        v.set(_enum_tok(v.param(xml="Window"), "Current"), xml="Window")
+        return
+    v.set(_enum_tok(v.param(xml="Window"), "ByName"), xml="Window")
+    name_el = sel.find("Name")
+    if name_el is not None:
+        limit = name_el.get("current", "True")
+        v.set("On" if limit == "True" else "Off", xml="LimitToWindowsOfCurrentFile")
+        v.set(_calc_text(name_el), wrap="Name")
+
+
+@_decoder("Close Window", "Select Window")
+def _dec_window(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    v.set("On", xml="LimitToWindowsOfCurrentFile")  # FM default when no <Name>
+    p = _ptype(step_el, "WindowReference")
+    _decode_window_reference(v, p.find("WindowReference") if p is not None else None)
+    return v.list()
+
+
+@_decoder("Move/Resize Window")
+def _dec_move_resize(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    v.set("On", xml="LimitToWindowsOfCurrentFile")
+    p = _ptype(step_el, "WindowReference")
+    wr = p.find("WindowReference") if p is not None else None
+    _decode_window_reference(v, wr)
+    if wr is not None:
+        bounds = wr.find("Bounds")
+        if bounds is not None:
+            for tag, wrap in (("height", "Height"), ("width", "Width"),
+                              ("top", "DistanceFromTop"), ("left", "DistanceFromLeft")):
+                el = bounds.find(tag)
+                if el is not None:
+                    v.set(_calc_text(el), wrap=wrap)
+    return v.list()
+
+
+# ── Perform AppleScript (Options-discriminated: Text literal vs Calculation) ──
+@_decoder("Perform AppleScript")
+def _dec_applescript(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    opt = _ptype(step_el, "Options")
+    o = opt.find("Options") if opt is not None else None
+    if o is not None:
+        ctype = o.get("type", "")  # "Text" (literal) or "Calculation"
+        v.set(_enum_tok(v.param(xml="ContentType"), ctype), xml="ContentType")
+        calc = _calc_of(o.find("Calculation"))
+        # FM stores BOTH modes' script in <Calculation> (Text mode = the literal).
+        v.set(calc if calc else (o.text or ""), xml="Calculation")
+    return v.list()
+
+
+# ── Perform Script (script spec via <List>; parameter via <Parameter>) ────────
+@_decoder("Perform Script")
+def _dec_perform_script(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    lst = _ptype(step_el, "List")
+    if lst is not None:
+        inner = lst.find("List")
+        sr = inner.find("ScriptReference") if inner is not None else None
+        if sr is not None:
+            v.set('"' + sr.get("name", "") + '"', xml="Script")
+    par = _ptype(step_el, "Parameter")
+    if par is not None:
+        v.set(_calc_text(par), xml="Calculation")
+    return v.list()
+
+
+# ── Get Folder/File Path (result Variable + Repetition/Dialog/Location calcs) ──
+@_decoder("Get Folder Path", "Get File Path")
+def _dec_get_path(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    v.set(_bool_tok(_ptype(step_el, "Boolean")), xml="AllowFolderCreation")
+    var = _ptype(step_el, "Variable")
+    if var is not None:
+        rep = var.find("repetition")
+        if rep is not None:
+            v.set(_calc_text(rep), wrap="Repetition")
+        nm = var.find("Name")
+        if nm is not None:
+            v.set(nm.get("value", ""), xml="Name")
+    title = _ptype(step_el, "Title")
+    if title is not None:
+        v.set(_calc_text(title), wrap="DialogTitle")
+    loc = _ptype(step_el, "Location")
+    if loc is not None:
+        v.set(_calc_text(loc), wrap="DefaultLocation")
+    return v.list()
+
+
+# ── Perform JavaScript in Web Viewer (parametersList of argument calcs) ───────
+@_decoder("Perform JavaScript in Web Viewer")
+def _dec_perform_js(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    nm = _ptype(step_el, "Name")
+    if nm is not None:
+        v.set(_calc_text(nm), wrap="ObjectName")
+    fn = _ptype(step_el, "FunctionRef")
+    if fn is not None:
+        v.set(_calc_text(fn), wrap="FunctionName")
+    # Every <Parameter type="Parameter"> after the function is a JS argument calc;
+    # the emit's parametersList splits the token on top-level commas back into <P>s.
+    args = [_calc_text(p) for p in _ptypes(step_el, "Parameter")]
+    v.set(", ".join(a for a in args if a), xml="Parameters")
+    return v.list()
+
+
+# ── Sort Records (fieldList of Table::Field=Direction entries) ────────────────
+@_decoder("Sort Records")
+def _dec_sort(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    b = _ptype(step_el, "Boolean")
+    if b is not None:
+        wd = b.find("Boolean")
+        with_dialog = wd is not None and wd.get("value") == "True"
+        # NoInteract has invertedHr; the token is the "With dialog" HR flag itself
+        # and the emit inverts it to the NoInteract state.
+        v.set("On" if with_dialog else "Off", xml="NoInteract")
+    r = _ptype(step_el, "Restore")
+    rr = r.find("Restore") if r is not None else None
+    v.set("On" if (rr is not None and rr.get("value") == "True") else "Off", xml="Restore")
+    ss = _ptype(step_el, "SortSpecification")
+    spec = ss.find("SortSpecification") if ss is not None else None
+    entries = []
+    if spec is not None:
+        for s in spec.findall("SortList/Sort"):
+            fr = s.find(".//FieldReference")
+            if fr is not None:
+                entries.append(_field_ref_token(fr) + "=" + s.get("type", "Ascending"))
+    v.set(", ".join(entries), xml="SortList")
+    return v.list()
+
+
+# ── New Window (bitmaskGroup style + chrome, Name/Layout/bounds calcs) ────────
+# SaXML <Options> element tag → the bitmaskFlags hrLabel the emit packs.
+_NW_OPT_HR = {
+    "Close": "Close", "Minimize": "Minimize", "Maximize": "Maximize",
+    "Resize": "Resize", "MenuBar": "Menu Bar", "Toolbar": "Toolbars",
+    "DimParentWindow": "Dim parent window",
+}
+
+
+@_decoder("New Window")
+def _dec_new_window(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    p = _ptype(step_el, "WindowReference")
+    wr = p.find("WindowReference") if p is not None else None
+    if wr is None:
+        return v.list()
+    style = wr.find("Style")
+    style_tok = style.get("name", "") if style is not None else ""
+    opts = wr.find("Options")
+    if opts is not None:
+        controls = [_NW_OPT_HR[ch.tag] for ch in opts
+                    if ch.tag in _NW_OPT_HR and (ch.text or "").strip() == "True"]
+        v.set(style_tok + "\x1e" + ", ".join(controls), xml="NewWndStyles")
+    else:
+        v.set(style_tok, xml="NewWndStyles")
+    nm = wr.find("Name")
+    if nm is not None and _find_value_calc(nm) is not None:
+        v.set(_calc_text(nm), wrap="Name")
+    lrc = wr.find("LayoutReferenceContainer")
+    lr = lrc.find("LayoutReference") if lrc is not None else None
+    if lr is not None:
+        v.set('"' + lr.get("name", "") + '"', xml="Layout")
+    # A by-calc New Window layout is dropped in FM's own fmxmlsnippet (the catalog's
+    # non-discriminated Layout can't carry it) — leave empty to match.
+    bounds = wr.find("Bounds")
+    if bounds is not None:
+        for tag, wrap in (("height", "Height"), ("width", "Width"),
+                          ("top", "DistanceFromTop"), ("left", "DistanceFromLeft")):
+            el = bounds.find(tag)
+            if el is not None and _find_value_calc(el) is not None:
+                v.set(_calc_text(el), wrap=wrap)
+    return v.list()
+
+
+# ── Show Custom Dialog (Title/Message namedCalcs + Buttons/InputFields repeat) ─
+def _button_label_token(bp: ET.Element) -> str | None:
+    """A ``<Parameter type="ButtonN" value="OK">`` → the repeatGroup ``label`` value.
+
+    A literal caption lives in the ``value`` attribute (its calc form is a quoted
+    string, e.g. ``"OK"``); a computed caption is a ``<Calculation>`` child (used
+    raw). Absent → no ``label`` key (the button renders with no label token)."""
+    calc = _calc_text(bp)
+    if calc:
+        return calc
+    cap = bp.get("value")
+    if cap is not None and cap != "":
+        return '"' + cap.replace('"', '""') + '"'
+    return None
+
+
+def _input_field_token(fp: ET.Element) -> str:
+    """A ``<Parameter type="FieldN">`` → the InputFields repeatGroup entry body
+    ``password=…, field=…, label=…`` (only the present keys)."""
+    parts = ["password=" + (_bool_type_value(fp, "Password") or "False")]
+    tgt = None
+    for sp in fp.findall("Parameter"):
+        if sp.get("type") == "Target":
+            tgt = sp
+            break
+    if tgt is not None:
+        var = tgt.find("Variable")
+        if var is not None:
+            fld = var.get("value", "")
+        else:
+            fr = tgt.find("FieldReference")
+            fld = _field_ref_token(fr) if fr is not None else ""
+        if fld:
+            parts.append("field=" + fld)
+    lbl = None
+    for sp in fp.findall("Parameter"):
+        if sp.get("type") == "Label":
+            lbl = _calc_text(sp)
+            break
+    if lbl:
+        parts.append("label=" + lbl)
+    return ", ".join(parts)
+
+
+def _bool_type_value(parent: ET.Element, btype: str) -> str | None:
+    """The ``value`` of a ``<Boolean type="btype">`` directly under ``parent``."""
+    for b in parent.findall("Boolean"):
+        if b.get("type") == btype:
+            return b.get("value", "False")
+    return None
+
+
+@_decoder("Show Custom Dialog")
+def _dec_show_dialog(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    # namedCalcs by SaXML <Parameter type=…> → catalog wrapperElement.
+    has_named = False
+    for stype, wrap in (("Title", "Title"), ("Message", "Message"),
+                        ("height", "Height"), ("width", "Width"),
+                        ("top", "DistanceFromTop"), ("left", "DistanceFromLeft")):
+        p = _ptype(step_el, stype)
+        if p is not None:
+            v.set(_calc_text(p), wrap=wrap)
+            has_named = True
+    # Buttons: FM serializes Button1..Button3 whenever the dialog is configured, but
+    # omits the whole <Buttons> block for an entirely blank dialog (no title/message/
+    # inputs, all buttons bare) — that step serializes to nothing.
+    buttons = []
+    for bp in step_el.findall("ParameterValues/Parameter"):
+        if not (bp.get("type") or "").startswith("Button"):
+            continue
+        parts = ["commit=" + (_bool_type_value(bp, "Commit") or "False")]
+        lbl = _button_label_token(bp)
+        if lbl is not None:
+            parts.append("label=" + lbl)
+        buttons.append(", ".join(parts))
+    has_input = any((p.get("type") or "").startswith("Field")
+                    for p in step_el.findall("ParameterValues/Parameter"))
+    if buttons and (has_named or has_input):
+        v.set(" | ".join(buttons), xml="Buttons")
+    # Input fields: FM pads the fmxmlsnippet to 3 <InputField> whenever any exists.
+    inputs = [_input_field_token(fp) for fp in step_el.findall("ParameterValues/Parameter")
+              if (fp.get("type") or "").startswith("Field")]
+    if inputs:
+        while len(inputs) < 3:
+            inputs.append("password=False")
+        v.set(" | ".join(inputs), xml="InputFields")
+    return v.list()
+
+
+# ── Find family (Perform Find / Constrain / Extend / Enter Find Mode) ──────────
+# Verified for the empty-query case (no inline <FindRequestSet>) — the only shape
+# in the corpus (the whole solution carries 0 inline find requests). A step WITH a
+# <FindRequestSet> fails loud: its decode can't be live-verified yet (constraint #3;
+# see plans/… P6.4 worklist — collect a script with real find criteria first).
+def _find_family(entry: CatalogEntry, step_el: ET.Element, restore_default_on: bool) -> list[str]:
+    if step_el.find(".//FindRequestSet") is not None:
+        raise UnsupportedSaXML(
+            f"{entry.name}: inline <FindRequestSet> decode unverified (no live sample)")
+    v = _Vals(entry)
+    # Explicit toggles carried as <Parameter type="Boolean"><Boolean type="hrLabel">.
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is None:
+            continue
+        for param in entry.params:
+            if param.type == "boolean" and param.hr_label == b.get("type"):
+                v.set("On" if b.get("value") == "True" else "Off", xml=param.xml_element)
+                break
+    # Restore: empty-query Perform Find restores the saved find (default On); the
+    # setup steps (Enter Find Mode / Constrain / Extend) do not (Off), overriding the
+    # catalog's True default which only applies when requests are restored.
+    v.set("On" if restore_default_on else "Off", xml="Restore")
+    return v.list()
+
+
+@_decoder("Perform Find")
+def _dec_perform_find(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    return _find_family(entry, step_el, restore_default_on=True)
+
+
+@_decoder("Constrain Found Set", "Extend Found Set", "Enter Find Mode")
+def _dec_find_setup(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    return _find_family(entry, step_el, restore_default_on=False)
+
+
+# ── Go to Related Record (attrGroup default-fill + TO/Layout refs) ────────────
+@_decoder("Go to Related Record")
+def _dec_gtrr(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    rel = _ptype(step_el, "Related")
+    if rel is None:
+        return v.list()
+    tor = rel.find("TableOccurrenceReference")
+    if tor is not None:
+        v.set(tor.get("name", ""), xml="Table")
+    lrc = rel.find("LayoutReferenceContainer")
+    if lrc is not None:
+        v.set(_layout_token_from_lrc(lrc), xml="Layout")  # LayoutDestination derived on emit
+    # <WindowReference> present ⇒ result opens a new window.
+    if rel.find("WindowReference") is not None:
+        v.set("On", xml="ShowInNewWindow")
+    opts = rel.find("Options")
+    if opts is not None and opts.get("matchFoundSet") == "True":
+        v.set("On", xml="MatchAllRecords")
+    # NB: <Options ShowRelated> does NOT map to the catalog's Option ("Show only
+    # related records") — confirmed False in every sample while ShowRelated was True.
+    # Its true source is unresolved (no live sample with Option on); left at default.
+    #
+    # NewWndStyles is always serialized by FM with field defaults even without a new
+    # window; synthesize a non-empty defaults token so the emitter fills them (an
+    # empty attrGroup token would be omitted). New-window styles are unverified.
+    nw = v.param(xml="NewWndStyles")
+    if nw is not None:
+        defaults = ", ".join(
+            _raw_field(f, "xmlAttr") + "=" + _raw_field(f, "defaultValue")
+            for f in (nw.raw.get("fields") or []) if _raw_field(f, "defaultValue")
+        )
+        v.set(defaults, xml="NewWndStyles")
+    return v.list()
+
+
+def _raw_field(f: object, k: str) -> str:
+    return f.get(k, "") if isinstance(f, dict) and isinstance(f.get(k), str) else ""
+
+
+# ===========================================================================
+# Composite-param builders — for steps whose SIMPLE params extract generically
+# but which carry ONE (or few) composite facet params (attrGroup / fieldList /
+# findRequests) with a bespoke SaXML shape. Keyed by (step name, xmlElement); each
+# returns the values[] token for that ONE param, reading the step directly. The
+# generic extractor handles the rest of the step, so these stay small.
+# ===========================================================================
+_COMPOSITE_BUILDERS: dict[tuple[str, str], object] = {}
+
+
+def _cbuild(step: str, *xml_elements: str):
+    def reg(fn):
+        for xe in xml_elements:
+            _COMPOSITE_BUILDERS[(step, xe)] = fn
+        return fn
+    return reg
+
+
+# ── group-token construction helpers (inverse of catalog_emit's group parse) ──
+def _grp(*pairs: tuple[str, str | None]) -> str:
+    """Join present ``key=value`` pairs with ', '. A None value drops the key."""
+    return ", ".join(f"{k}={v}" for k, v in pairs if v is not None)
+
+
+def _field_defaults_token(param: StepParam) -> dict[str, str]:
+    """{fieldKey: defaultValue} for an attrGroup param's flat attr fields."""
+    out: dict[str, str] = {}
+    for f in param.raw.get("fields") or []:
+        if isinstance(f, dict) and isinstance(f.get("xmlAttr"), str):
+            out[f["xmlAttr"]] = f.get("defaultValue", "") or ""
+    return out
+
+
+# ── Print (PrintSettings) — <Print> attrs → the flat attr group ───────────────
+_PRINT_TYPE = {
+    "Records being browsed": "BrowsedRecords",
+    "Current record": "CurrentRecord",
+    "Blank record": "BlankRecord",
+}
+
+
+@_cbuild("Print", "PrintSettings")
+def _cb_print_settings(entry: CatalogEntry, param: StepParam, step_el: ET.Element) -> str:
+    p = _ptype(step_el, "Print")
+    pr = p.find("Print") if p is not None else None
+    if pr is None:
+        return ""
+    name = pr.get("name", "Records being browsed")
+    pages = pr.find("Pages")
+    copies = pr.find("Copies")
+    return _grp(
+        ("PrintType", _PRINT_TYPE.get(name, name.replace(" ", ""))),
+        ("NumCopies", copies.get("value", "1") if copies is not None else None),
+        ("AllPages", (pages.get("All") if pages is not None else None)),
+        ("PrintToFile", pr.get("toFile")),
+    )
+
+
+# ── Print Setup (PageFormat) — an OS print-record blob; FM re-serializes the ──
+# fmxmlsnippet PageFormat with printer defaults (the SaXML PageSetup uses a
+# different measurement system and is not mechanically convertible). Emit the
+# catalog defaults, overriding orientation from the SaXML when non-Portrait.
+@_cbuild("Print Setup", "PageFormat")
+def _cb_page_format(entry: CatalogEntry, param: StepParam, step_el: ET.Element) -> str:
+    defaults = _field_defaults_token(param)
+    p = _ptype(step_el, "PageSetup")
+    ps = p.find("PageSetup") if p is not None else None
+    if ps is not None:
+        orient = ps.find("Orientation")
+        if orient is not None and orient.get("name"):
+            defaults["PageOrientation"] = orient.get("name", "Portrait")
+    return _grp(*[(k, v) for k, v in defaults.items()])
+
+
+# ── Insert from Device (DeviceOptions) — nested <Options type><Parameter> ─────
+@_cbuild("Insert from Device", "DeviceOptions")
+def _cb_device_options(entry: CatalogEntry, param: StepParam, step_el: ET.Element) -> str:
+    lst = _ptype(step_el, "List")
+    inner = lst.find("List") if lst is not None else None
+    opts = inner.find("Options") if inner is not None else None
+    if opts is None:
+        return ""
+    groups = []
+    # Each <Parameter type="X"><List name="Y"/> → group X=(choice=Y).
+    for sp in opts.findall("Parameter"):
+        gname = sp.get("type", "")
+        gl = sp.find("List")
+        if gl is not None and gname:
+            groups.append(f"{gname}=(choice={gl.get('name', '')})")
+    return ", ".join(groups)
+
+
+# ── Insert File (DialogOptions) — <Options type=…> siblings → the group ───────
+_STORAGE_TYPE = {"Insert": "InsertOnly", "Reference": "Reference", "Automatic": "UserChoice"}
+_COMPRESS_TYPE = {"Compress when possible": "WhenPossible", "Never compress": "Never",
+                  "Automatic": "UserChoice"}
+
+
+@_cbuild("Insert File", "DialogOptions")
+def _cb_dialog_options(entry: CatalogEntry, param: StepParam, step_el: ET.Element) -> str:
+    p = _ptype(step_el, "Options")
+    if p is None:
+        return _grp(("asFile", "True"), ("enable", "True"))
+    title = ""
+    storage = compress = None
+    has_filters = False
+    for o in p.findall("Options"):
+        ot = o.get("type", "")
+        if ot == "Title":
+            title = _calc_text(o.find("Title")) or _calc_text(o)
+        elif ot == "Storage":
+            st = o.find("Storage")
+            if st is not None:
+                storage = _STORAGE_TYPE.get(st.get("name", ""), st.get("name", "").replace(" ", ""))
+        elif ot == "Compress":
+            cp = o.find("Compress")
+            if cp is not None:
+                compress = _COMPRESS_TYPE.get(cp.get("name", ""), cp.get("name", "").replace(" ", ""))
+        elif ot == "Filters":
+            has_filters = True
+    parts = [("asFile", "True"), ("enable", "True")]
+    if title:
+        parts.append(("Title", title))
+    if storage is not None:
+        parts.append(("Storage", f"(type={storage})"))
+    if compress is not None:
+        parts.append(("Compress", f"(type={compress})"))
+    tok = _grp(*parts)
+    if has_filters:
+        tok += ", FilterList=()"
+    return tok
+
+
+# ── Perform Script on Server with Callback (dedicated: mixed blob) ────────────
+@_decoder("Perform Script on Server with Callback")
+def _dec_psos(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    # Callback script state enum.
+    st = _ptype(step_el, "CallbackScriptState")
+    sl = st.find("List") if st is not None else None
+    if sl is not None:
+        p = v.param(xml="CallbackScriptState")
+        v.set(_enum_tok(p, sl.get("name", "")), xml="CallbackScriptState")
+    # PSoS parameter calc (<Parameter type="Parameter"><Parameter><Calculation>).
+    par = _ptype(step_el, "Parameter")
+    if par is not None:
+        v.set(_calc_text(par), xml="Calculation")
+    # The server script reference (Specified: From list) — empty ref emits <Script/>.
+    sref = None
+    for lst in _ptypes(step_el, "List"):
+        r = lst.find(".//ScriptReference")
+        if r is not None:
+            sref = r
+            break
+    if sref is not None and sref.get("name"):
+        v.set('"' + sref.get("name", "") + '"', xml="Script")
+    # Callback script attrGroup: Parameter (calc) + optional Script name.
+    cp = _ptype(step_el, "CallbackScriptParameter")
+    cb_parts = []
+    if cp is not None:
+        calc = _calc_text(cp)
+        if calc:
+            cb_parts.append(("Parameter", calc))
+    v.set(_grp(*cb_parts), xml="CallbackScript")
+    return v.list()
+
+
+# ── Export Records (Profile by format + ExportOptions + two fieldLists) ───────
+# Export/Save profile blobs are format constants (the SaXML fileType selects them).
+_FORMAT_PROFILE = {
+    "TABS": 'FieldDelimiter="\t", IsPredefined=-1, FieldNameRow=-1, DataType=TABS',
+    "MERG": 'FieldDelimiter=",", IsPredefined=-1, FieldNameRow=-1, DataType=MERG',
+    "CACO": 'DataType=CACO, IsPredefined=-1, FieldNameRow=-1',
+    "DBF ": "DataType=DBF, IsPredefined=-1",
+    "SLK ": "DataType=SLK, IsPredefined=-1",
+    "HTML": "DataType=HTML, IsPredefined=-1",
+    "XML ": "DataType=XML, IsPredefined=-1",
+    "XLXE": 'DataType=XLXE, FieldDelimiter="\t", FieldNameRow=-1, IsPredefined=-1',
+}
+_CHARSET = {"Unicode (UTF-8)": "UTF-8", "UTF-8": "UTF-8", "Unicode (UTF-16)": "UTF-16",
+            "Windows (ANSI)": "Windows", "Macintosh": "Macintosh", "DOS": "DOS"}
+
+
+def _profile_for(ftype: str) -> str:
+    return _FORMAT_PROFILE.get(ftype, f"DataType={ftype.strip()}")
+
+
+@_decoder("Export Records")
+def _dec_export(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is not None:
+            on = "On" if b.get("value") == "True" else "Off"
+            if b.get("type") == "With dialog":
+                v.set(on, xml="NoInteract")
+            elif b.get("type") == "Create folders":
+                v.set(on, xml="CreateDirectories")
+    upl = _ptype(step_el, "UniversalPathList")
+    ue = upl.find("UniversalPathList") if upl is not None else None
+    if ue is not None:
+        v.set("On" if ue.get("AutoOpen") == "True" else "Off", xml="AutoOpen")
+        v.set("On" if ue.get("CreateMail") == "True" else "Off", xml="CreateEmail")
+        loc = ue.find(".//Location")
+        if loc is not None:
+            v.set(loc.text or "", xml="UniversalPathList")
+        v.set(_profile_for(ue.get("fileType", "")), xml="Profile")
+    exp = _ptype(step_el, "Export")
+    ex = exp.find("Export") if exp is not None else None
+    if ex is not None:
+        o = ex.find("Options")
+        if o is not None:
+            cs = _CHARSET.get(o.get("name", ""), o.get("name", ""))
+            fmt = "True" if o.get("Formatting") == "True" else "False"
+            v.set(f"FormatUsingCurrentLayout={fmt}, CharacterSet={cs}", xml="ExportOptions")
+        entries, groups = [], []
+        for order in ex.findall("Order"):
+            if order.get("type") == "Field":
+                for fl in order.findall("Field"):
+                    fr = fl.find("FieldReference")
+                    entries.append(_field_ref_token(fr) if fr is not None else "")
+            elif order.get("type") == "Group":
+                for g in order.findall("Group"):
+                    fr = g.find("FieldReference")
+                    groups.append((_field_ref_token(fr) if fr is not None else "") + "=True")
+        v.set(", ".join(entries), xml="ExportEntries")
+        v.set(", ".join(groups), xml="SummaryFields")
+    v.set("On", xml="Restore")  # Export always restores its stored order
+    return v.list()
+
+
+# ── Save Records as Excel (Profile const + WorkSheet/Title/Subject/Author) ────
+@_decoder("Save Records as Excel")
+def _dec_excel(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is not None:
+            on = "On" if b.get("value") == "True" else "Off"
+            if b.get("type") == "With dialog":
+                v.set(on, xml="NoInteract")
+            elif b.get("type") == "Create folders":
+                v.set(on, xml="CreateDirectories")
+    rp = _ptype(step_el, "Restore")
+    rr = rp.find("Restore") if rp is not None else None
+    v.set("On" if (rr is not None and rr.get("value") == "True") else "Off", xml="Restore")
+    prof = v.param(xml="Profile")
+    if prof is not None:
+        v.set(", ".join(f"{k}={val}" for k, val in _field_defaults_token(prof).items()), xml="Profile")
+    upl = _ptype(step_el, "UniversalPathList")
+    ue = upl.find("UniversalPathList") if upl is not None else None
+    if ue is not None:
+        v.set("On" if ue.get("AutoOpen") == "True" else "Off", xml="AutoOpen")
+        v.set("On" if ue.get("CreateMail") == "True" else "Off", xml="CreateEmail")
+        loc = ue.find(".//Location")
+        if loc is not None:
+            v.set(loc.text or "", xml="UniversalPathList")
+    opt = _ptype(step_el, "Options")
+    o = opt.find("Options") if opt is not None else None
+    if o is not None:
+        save = o.find("Save")
+        if save is not None:
+            v.set(save.get("type", ""), xml="SaveType")
+            # UseFieldNames is INVERTED between SaXML and fmxmlsnippet (SaXML
+            # useFieldNames="False" ⇔ fmxmlsnippet UseFieldNames state="True").
+            v.set("Off" if save.get("useFieldNames") == "True" else "On", xml="UseFieldNames")
+        for sp in o.findall("Parameter"):
+            wrap = {"Worksheet": "WorkSheet", "Title": "Title",
+                    "Subject": "Subject", "Author": "Author"}.get(sp.get("type", ""))
+            if wrap:
+                v.set(_calc_text(sp), wrap=wrap)
+    return v.list()
+
+
+# ── Import Records (ImportOptions + TargetFields map fieldList) ────────────────
+@_decoder("Import Records")
+def _dec_import(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is not None:
+            on = "On" if b.get("value") == "True" else "Off"
+            if b.get("type") == "With dialog":
+                v.set(on, xml="NoInteract")
+            elif b.get("type") == "Verify SSL Certificates":
+                v.set(on, xml="VerifySSLCertificates")
+    # The import source path lives in <DataSourceReference> (real imports) or a bare
+    # <UniversalPathList> (degenerate). DataSourceReference also names the source type.
+    dsr = _ptype(step_el, "DataSourceReference")
+    src = dsr if dsr is not None else _ptype(step_el, "UniversalPathList")
+    if src is not None:
+        loc = src.find(".//Location")
+        if loc is not None:
+            v.set(loc.text or "", xml="UniversalPathList")
+        v.set("File", xml="DataSourceType")
+    imp = _ptype(step_el, "ImportField")
+    im = imp.find("ImportField") if imp is not None else None
+    if im is not None:
+        o = im.find("Options")
+        cs = im.find("CharacterSet")
+        act = im.find("action")
+        opts = []
+        if cs is not None:
+            opts.append(f"CharacterSet={cs.get('name', '')}")
+        if o is not None:
+            opts.append(f"PreserveContainer={o.get('copyContainersAsIs', 'False')}")
+            opts.append(f"MatchFieldNames={o.get('matchFieldNames', 'False')}")
+            opts.append(f"AutoEnter={o.get('doAutoEntry', 'True')}")
+            opts.append(f"SplitRepetitions={o.get('splitRepetitions', 'False')}")
+        if act is not None:
+            opts.append(f"method={act.get('name', 'Add')}")
+        v.set(", ".join(opts), xml="ImportOptions")
+        fld = im.find("Field")
+        ents = []
+        if fld is not None:
+            for m in fld.findall("Map"):
+                fr = m.find("FieldReference")
+                ref = _field_ref_token(fr) if fr is not None else ""
+                ents.append(f"{ref}={'Import' if m.get('kind') == '0' else 'DoNotImport'}")
+        v.set(", ".join(ents), xml="TargetFields")
+    return v.list()
+
+
+# ── Send Mail (one <Parameter type="Email"> blob → many params) ───────────────
+# SaXML <SMTP>/<OAuthAuthentication> child element → catalog wrapperElement.
+_SMTP_MAP = {"Name": "SMTPNameDescription", "Email": "SMTPEmailAddress",
+             "ReplyTo": "SMTPReplyAddress", "Server": "SMTPServer", "Port": "SMTPPort",
+             "UserName": "SMTPUserName", "Password": "SMTPPassword"}
+_OAUTH_MAP = {"Name": "OAuthNameDescription", "Email": "OAuthEmailAddress",
+              "ReplyTo": "OAuthReplyAddress", "UserID": "OAuthUserID",
+              "ServiceAccount": "OAuthAccountEmail", "PrivateKey": "OAuthPrivateKey"}
+_SMTP_ENC = {"TLS": "SMTPEncryptionTLS", "SSL": "SMTPEncryptionSSL", "None": "SMTPEncryptionNone"}
+_SMTP_AUTH = {"Plain Password": "SMTPAuthenticationPlain", "None": "SMTPAuthenticationNone"}
+
+
+@_decoder("Send Mail")
+def _dec_send_mail(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    em = _ptype(step_el, "Email")
+    if em is None:
+        return v.list()
+    # FM ALWAYS serializes the encryption/auth/provider enums (defaults even for the
+    # inactive auth mode); the active <SMTP> block overrides encryption/auth below.
+    v.set("SMTPEncryptionTLS", xml="SMTPEncryptionType")
+    v.set("SMTPAuthenticationPlain", xml="SMTPAuthenticationType")
+    v.set("OAuthProviderGoogle", xml="OAuthProvider")
+    nd = em.find("Boolean")  # <Boolean type="No dialog">
+    if nd is not None:
+        v.set("Off" if nd.get("value") == "True" else "On", xml="NoInteract")
+    upl = em.find("UniversalPathList")
+    if upl is not None:
+        loc = upl.find(".//Location")
+        if loc is not None:
+            v.set(loc.text or "", xml="UniversalPathList")
+    send = em.find("Send")
+    if send is not None:
+        for tag, xe in (("To", "To"), ("CC", "Cc"), ("BCC", "Bcc")):
+            t = send.find(tag)
+            if t is None:
+                continue
+            ca = t.find("CollectAddresses")
+            usefs = ca.get("value", "False") if ca is not None else "False"
+            calc = _calc_text(t)
+            # FM omits an empty recipient element (no value + not found-set mode).
+            if calc or usefs == "True":
+                v.set(f"useFoundSet={usefs}, value={calc}", xml=xe)
+        for tag, wrap in (("Subject", "Subject"), ("Message", "Message")):
+            t = send.find(tag)
+            if t is not None:
+                v.set(_calc_text(t), wrap=wrap)
+        v.set("On" if send.get("SMTP") == "True" else "Off", xml="SendViaSMTP")
+        v.set("On" if send.get("OAuthAuthentication") == "True" else "Off",
+              xml="SendViaOAuthAuthentication")
+        mult = send.find("Multiple")
+        v.set("On" if (mult is not None and mult.get("value") == "True") else "Off",
+              xml="MultipleEmails")
+    sm = em.find("SMTP")
+    if sm is not None:
+        for tag, wrap in _SMTP_MAP.items():
+            el = sm.find(tag)
+            if el is not None and _find_value_calc(el) is not None:
+                v.set(_calc_text(el), wrap=wrap)
+        enc = sm.find("Encryption")
+        if enc is not None and enc.get("name"):
+            v.set(_SMTP_ENC.get(enc.get("name", ""), "SMTPEncryption" + enc.get("name", "")),
+                  xml="SMTPEncryptionType")
+        au = sm.find("Authentication")
+        if au is not None and au.get("name"):
+            v.set(_SMTP_AUTH.get(au.get("name", ""),
+                                 "SMTPAuthentication" + au.get("name", "").replace(" ", "")),
+                  xml="SMTPAuthenticationType")
+    oa = em.find("OAuthAuthentication")
+    if oa is not None:
+        for tag, wrap in _OAUTH_MAP.items():
+            el = oa.find(tag)
+            if el is not None and _find_value_calc(el) is not None:
+                v.set(_calc_text(el), wrap=wrap)
+        prov = oa.find("OAuthProvider")
+        if prov is not None and prov.get("name"):
+            v.set("OAuthProvider" + prov.get("name", ""), xml="OAuthProvider")
+    return v.list()
+
+
+# ── Save Records as PDF (deep PDFOptions: Document/Security/View subgroups) ────
+_PDF_EDIT = {"Any except extracting pages": "AnyExceptExtractingPages", "None": "None",
+             "Any except extracting or printing pages": "AnyExceptExtractingOrPrinting",
+             "Only document assembly": "OnlyDocumentAssembly"}
+_PDF_PRINT = {"High Resolution": "HighResolution", "Low Resolution": "LowResolution", "None": "None"}
+_PDF_LAYOUT = {"Single Page": "SinglePage", "Continuous": "Continuous",
+               "Continuous - Facing": "ContinuousFacing", "Default": "Default"}
+_PDF_SHOW = {"Pages Panel and Page": "PagesPanelAndPage", "Page Only": "PageOnly",
+             "Bookmarks Panel and Page": "BookmarksPanelAndPage", "Default": "Default"}
+_PDF_MAG = {"100%": "100", "Default": "Default", "Fit Page": "FitPage", "Fit Width": "FitWidth"}
+
+
+@_decoder("Save Records as PDF")
+def _dec_pdf(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    v = _Vals(entry)
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is not None:
+            on = "On" if b.get("value") == "True" else "Off"
+            t = b.get("type")
+            if t == "With dialog":
+                v.set(on, xml="NoInteract")
+            elif t == "Append to existing PDF":
+                v.set(on, xml="Option")
+            elif t == "Create folders":
+                v.set(on, xml="CreateDirectories")
+    rp = _ptype(step_el, "Restore")
+    rr = rp.find("Restore") if rp is not None else None
+    v.set("On" if (rr is not None and rr.get("value") == "True") else "Off", xml="Restore")
+    upl = _ptype(step_el, "UniversalPathList")
+    if upl is not None:
+        loc = upl.find(".//Location")
+        if loc is not None:
+            v.set(loc.text or "", xml="UniversalPathList")
+    opt = _ptype(step_el, "Options")
+    o = opt.find("Options") if opt is not None else None
+    if o is None:
+        return v.list()
+    source = _PDF_SOURCE.get(o.get("type", ""), o.get("type", "").replace(" ", ""))
+    save_type = "File"
+    sr = _ptype(step_el, "SaveResult")
+    srl = sr.find("List") if sr is not None else None
+    if srl is not None:
+        save_type = srl.get("name", "File")
+    # The saved-label calc mirrors the PDF Title (FM emits it as a bare Calculation).
+    doc = o.find("Document")
+    doc_parts = []
+    if doc is not None:
+        for tag in ("Title", "Subject", "Author", "Keywords"):
+            sp = None
+            for x in doc.findall("Parameter"):
+                if x.get("type") == tag:
+                    sp = x
+                    break
+            calc = _calc_text(sp) if sp is not None else ""
+            if tag == "Title" and calc:
+                v.set(calc, xml="Calculation")  # the bare saved-label calc
+            if calc:
+                doc_parts.append(f"{tag}={calc}")
+        pages = o.find("Pages")  # <Pages> is a sibling of <Document> under <Options>
+        if pages is not None:
+            inc = pages.find("Include")
+            allp = inc.get("All", "True") if inc is not None else "True"
+            frm = None
+            for x in pages.findall("Parameter"):
+                if x.get("type") == "from":
+                    frm = x
+                    break
+            pg = [f"AllPages={allp}"]
+            nf = _calc_text(frm) if frm is not None else ""
+            if nf:
+                pg.append(f"NumberFrom={nf}")
+            doc_parts.append("Pages=(" + ", ".join(pg) + ")")
+    sec = o.find("Security")
+    sec_tok = ""
+    if sec is not None:
+        def _sv(tag, attr):
+            e = sec.find(tag)
+            return e.get(attr, "") if e is not None else ""
+        sec_tok = "Security=(" + _grp(
+            ("ScreenReader", _sv("AllowScreenReader", "value") or None),
+            ("Copying", _sv("EnableCopying", "value") or None),
+            ("Editing", _PDF_EDIT.get(_sv("Edit", "name"), _sv("Edit", "name")) or None),
+            ("Printing", _PDF_PRINT.get(_sv("Print", "name"), _sv("Print", "name")) or None),
+        ) + ")"
+    view = o.find("View")
+    view_tok = ""
+    if view is not None:
+        def _vn(tag):
+            e = view.find(tag)
+            return e.get("name", "") if e is not None else ""
+        view_tok = "View=(" + _grp(
+            ("Magnification", _PDF_MAG.get(_vn("Magnification"), _vn("Magnification")) or None),
+            ("Layout", _PDF_LAYOUT.get(_vn("Layout"), _vn("Layout")) or None),
+            ("Show", _PDF_SHOW.get(_vn("show"), _vn("show")) or None),
+        ) + ")"
+    parts = [f"source={source}", f"PDFSaveType={save_type}"]
+    if doc_parts:
+        parts.append("Document=(" + ", ".join(doc_parts) + ")")
+    if sec_tok:
+        parts.append(sec_tok)
+    if view_tok:
+        parts.append(view_tok)
+    v.set(", ".join(parts), xml="PDFOptions")
+    return v.list()
+
+
+_PDF_SOURCE = {"Records being browsed": "RecordsBeingBrowsed", "Current record": "CurrentRecord"}
+
+
+# ── Find family (findRequests) — <FindRequestSet> → the packed HR token ────────
+def _decode_find_requests(step_el: ET.Element) -> str:
+    """SaXML ``<FindRequestSet>`` → the findRequests HR token the emit reverses:
+    rows joined ' | ', omit rows prefixed 'Omit ', criteria joined ' & ', each
+    ``Table::Field: <criteria>`` (the criteria text is the ``<find criteria="">``
+    attribute). Returns '' when there is no request set."""
+    fp = _ptype(step_el, "FindRequest")
+    fset = fp.find("FindRequestSet") if fp is not None else None
+    if fset is None:
+        return ""
+    rows = []
+    for req in fset.findall("FindRequest"):
+        crits = []
+        for fnd in req.findall("find"):
+            fr = fnd.find("FieldReference")
+            field = _field_ref_token(fr) if fr is not None else ""
+            text = fnd.get("criteria", "")
+            crits.append(f"{field}: {text}" if field else text)
+        row = " & ".join(crits)
+        if req.get("action") == "omit":
+            row = "Omit " + row if row else "Omit"
+        rows.append(row)
+    return " | ".join(rows)
+
+
+def _find_family(entry: CatalogEntry, step_el: ET.Element, restore_default_on: bool) -> list[str]:
+    v = _Vals(entry)
+    for p in step_el.findall("ParameterValues/Parameter"):
+        b = p.find("Boolean")
+        if b is None:
+            continue
+        for param in entry.params:
+            if param.type == "boolean" and param.hr_label == b.get("type"):
+                v.set("On" if b.get("value") == "True" else "Off", xml=param.xml_element)
+                break
+    query = _decode_find_requests(step_el)
+    v.set(query, xml="Query")
+    # Restore: an inline request set is 'restored'; else Perform Find restores the
+    # saved find (default On) while the setup steps do not (Off).
+    if query:
+        v.set("On", xml="Restore")
+    else:
+        v.set("On" if restore_default_on else "Off", xml="Restore")
+    return v.list()
+
+
+@_decoder("Perform Find")
+def _dec_perform_find(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    return _find_family(entry, step_el, restore_default_on=True)
+
+
+@_decoder("Constrain Found Set", "Extend Found Set", "Enter Find Mode")
+def _dec_find_setup(entry: CatalogEntry, step_el: ET.Element) -> list[str]:
+    return _find_family(entry, step_el, restore_default_on=False)
+
+
+# ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
+def read_saxml_step(
+    entry: CatalogEntry, step_el: ET.Element
+) -> tuple[bool, list[str], SeededResolver]:
+    """Read a SaXML ``<Step>`` into ``(disabled, values[], resolver)`` for emit.
+
+    A step with a dedicated decoder (fully composite/blob shape) is routed to it;
+    otherwise the generic per-param extractor runs, with composite facet params
+    handled by a registered ``_COMPOSITE_BUILDERS`` builder. Raises
+    ``UnsupportedSaXML`` only when a composite facet still has no builder — callers
+    count these rather than emitting silently-wrong XML.
+    """
+    disabled = step_el.get("enable", "True") == "False"
+    resolver = _seed_resolver(step_el)
+    dec = _DECODERS.get(entry.name)
+    if dec is not None:
+        return disabled, dec(entry, step_el), resolver
+    sparams = _params(step_el)
+    consumed = [False] * len(sparams)
+    values = [""] * len(entry.params)
+    for pi, param in enumerate(entry.params):
+        if param.hr_hidden or param.type == "complex":
+            continue
+        if param.type in _COMPOSITE_TYPES:
+            builder = _COMPOSITE_BUILDERS.get((entry.name, param.xml_element))
+            if builder is None:
+                raise UnsupportedSaXML(
+                    f"{entry.name}: no decoder for {param.type} param {param.xml_element!r}")
+            values[pi] = builder(entry, param, step_el)
+        else:
+            values[pi] = _extract_simple(entry, param, sparams, consumed)
+    return disabled, values, resolver

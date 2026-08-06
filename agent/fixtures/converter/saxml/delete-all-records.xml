@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="10" name="Delete All Records" enable="True">
+      <Options>128</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

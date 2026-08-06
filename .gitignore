@@ -4,9 +4,11 @@ agent/xml_parsed/
 agent/context/
 agent/CONTEXT.json
 # agent/sandbox/ — intentionally tracked; contains deliverable scripts
+agent/tests/
 .private/
 .venv/
 .cursor/in-development/
+.claude/worktrees/
 external_tools/
 plans/
 .claude/worktrees/
@@ -30,6 +32,8 @@ Prompt.md
 agent/config/removals.json
 agent/config/automation.json
 agent/scripts/companion_server_ext.py
+agent/config/companion.json
+agent/config/modules.json
 agent/config/.autosave.json
 agent/config/.layout-prefs.json
 agent/config/.custom-instructions.md
@@ -45,6 +49,7 @@ tags
 .claude/rules
 .cursor/rules/
 sync-internal.sh
+.claude/scheduled_tasks.lock
 
 # macOS
 .DS_Store

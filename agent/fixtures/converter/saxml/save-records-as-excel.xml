@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="143" name="Save Records as Excel" enable="True">
+      <Options>33571488</Options>
+      <ParameterValues membercount="5">
+        <Parameter type="Restore">
+          <Restore value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList fileType="XLXE" membercount="1">
+            <Excel name="Records being browsed" value="1">
+              <Boolean type="Use field names as column names" value="False" />
+              <Parameter type="Worksheet">
+                <Calculation datatype="1" position="0">
+                  <Calculation>
+                    <Text>"Sheet1"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Parameter type="Title">
+                <Calculation datatype="1" position="1">
+                  <Calculation>
+                    <Text>"my title"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Parameter type="Subject" />
+              <Parameter type="Author" />
+            </Excel>
+            <ObjectList>
+              <Location>$excelPath</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Options">
+          <Options>
+            <Save type="Records being browsed" value="1" useFieldNames="False" />
+            <Parameter type="Worksheet">
+              <Calculation datatype="1" position="0">
+                <Calculation>
+                  <Text>"Sheet1"</Text>
+                </Calculation>
+              </Calculation>
+            </Parameter>
+            <Parameter type="Title">
+              <Calculation datatype="1" position="1">
+                <Calculation>
+                  <Text>"my title"</Text>
+                </Calculation>
+              </Calculation>
+            </Parameter>
+          </Options>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="31" name="Adjust Window" enable="True">
+      <Options>2</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="List">
+          <List name="Resize to Fit" value="1" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

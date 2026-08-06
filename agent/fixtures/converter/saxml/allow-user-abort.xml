@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="85" name="Allow User Abort" enable="True">
+      <Options>65536</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Boolean">
+          <Boolean id="131072" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>
