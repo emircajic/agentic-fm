@@ -462,12 +462,50 @@ def _renders_bare_in_hr(param: StepParam) -> bool:
 # ---------------------------------------------------------------------------
 # Layout token (self-describing) → LayoutDestination value + <Layout> child XML
 # ---------------------------------------------------------------------------
+def _strip_resolved_layout_decoration(tok: str) -> tuple[bool, str]:
+    """Strip FileMaker's display decoration from a resolved-layout token.
+
+    FM wraps a resolved layout NAME in curly quotes and appends the table
+    occurrence: ``“Dashboard” (Admin)``. It renders calculation source text with
+    whatever straight quotes the calc itself contains, so a curly-quoted token is
+    FM's unambiguous marker for "this is a layout reference". Returns
+    ``(was_curly, stripped)``.
+    """
+    if not tok.startswith("“"):
+        return False, tok
+    close = tok.rfind("”")
+    if close < 1:
+        return False, tok
+    return True, tok[1:close]
+
+
+def _looks_like_layout_calculation(tok: str) -> bool:
+    """Whether a bare layout token is calculation source text, not a name.
+
+    FileMaker never renders a layout name bare — resolved is curly-quoted,
+    unresolved is ``<unknown>`` — so every bare token it emits here is a
+    calculation. An agent may reasonably write a bare layout name though, and
+    reading that as a calculation would emit a step that evaluates the name. So
+    only tokens that cannot be a name are taken as calculations.
+    """
+    if not tok:
+        return False
+    if _is_variable(tok):
+        return True
+    if tok.isdigit():
+        return True
+    return "(" in tok or "&" in tok
+
+
 def _resolve_layout_token(hr_value: str, resolver: IdResolver) -> tuple[str, str]:
     tok = _trim(hr_value)
     if _ci_equals(tok, "original layout") or _ci_equals(tok, "<original layout>"):
         return "OriginalLayout", ""
     if _ci_equals(tok, "current layout") or _ci_equals(tok, "<current layout>"):
         return "CurrentLayout", ""
+    # FM's rendering of a SelectedLayout whose <Layout> is the empty default.
+    if _ci_equals(tok, "<unknown>"):
+        return "SelectedLayout", '    <Layout id="0" name=""/>'
 
     def by_calc(kw: str, dest: str) -> tuple[str, str] | None:
         if _starts_with_ci(tok, kw):
@@ -497,6 +535,17 @@ def _resolve_layout_token(hr_value: str, resolver: IdResolver) -> tuple[str, str
             "LayoutNameByCalc",
             "    <Layout>\n      <Calculation>"
             + cdata(calc)
+            + "</Calculation>\n    </Layout>",
+        )
+    # Curly quotes mark a layout REFERENCE; strip them (and the trailing table
+    # occurrence) before resolving. Checked before the bare-calculation test so a
+    # name carrying calculation-looking punctuation is never mistaken for a calc.
+    was_resolved_form, tok = _strip_resolved_layout_decoration(tok)
+    if not was_resolved_form and _looks_like_layout_calculation(tok):
+        return (
+            "LayoutNameByCalc",
+            "    <Layout>\n      <Calculation>"
+            + cdata(tok)
             + "</Calculation>\n    </Layout>",
         )
     rid, rname = resolver.resolve_layout(_unquote(tok))

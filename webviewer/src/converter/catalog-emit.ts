@@ -364,6 +364,32 @@ function rendersBareInHr(param: GrammarParam): boolean {
 // ---------------------------------------------------------------------------
 // Layout token (self-describing) → LayoutDestination value + <Layout> child XML
 // ---------------------------------------------------------------------------
+// Strip FileMaker's display decoration from a resolved-layout token: the curly
+// quotes it wraps a layout NAME in, and the trailing " (TableOccurrence)". FM
+// renders calculation source text with whatever straight quotes the calc itself
+// contains, so a curly-quoted token is its unambiguous "this is a layout
+// reference" marker. Measured FM 26.0.1: SelectedLayout prints “Dashboard”
+// (Admin); a LayoutNameByCalc of "Dashboard" prints "Dashboard".
+function stripResolvedLayoutDecoration(tok: string): { wasResolvedForm: boolean; tok: string } {
+  if (!tok.startsWith('“')) return { wasResolvedForm: false, tok };
+  const close = tok.lastIndexOf('”');
+  if (close < 1) return { wasResolvedForm: false, tok };
+  return { wasResolvedForm: true, tok: tok.slice(1, close) };
+}
+
+// Whether a bare layout token is calculation source text rather than a name.
+// FileMaker never renders a layout name bare — resolved is curly-quoted,
+// unresolved is <unknown> — so every bare token it emits here is a calculation.
+// An agent may reasonably write a bare layout name though, and reading that as a
+// calculation would emit a step that evaluates the name as an expression, so only
+// tokens that cannot be a name are taken as calculations.
+function looksLikeLayoutCalculation(tok: string): boolean {
+  if (!tok) return false;
+  if (isVariable(tok)) return true;
+  if (/^[0-9]+$/.test(tok)) return true;
+  return tok.includes('(') || tok.includes('&');
+}
+
 function resolveLayoutToken(
   hrValue: string,
   resolver: IdResolver,
@@ -374,6 +400,10 @@ function resolveLayoutToken(
   }
   if (ciEquals(tok, 'current layout') || ciEquals(tok, '<current layout>')) {
     return { dest: 'CurrentLayout', piece: '' };
+  }
+  // FM's rendering of a SelectedLayout whose <Layout> is the empty default.
+  if (ciEquals(tok, '<unknown>')) {
+    return { dest: 'SelectedLayout', piece: '    <Layout id="0" name=""/>' };
   }
   const byCalc = (kw: string, dest: string): { dest: string; piece: string } | null => {
     if (startsWithCi(tok, kw)) {
@@ -401,7 +431,17 @@ function resolveLayoutToken(
       };
     }
   }
-  const resolved = resolver.resolveLayout(unquote(tok));
+  // Curly quotes mark a layout REFERENCE; strip them (and the trailing table
+  // occurrence) before resolving. Checked before the bare-calculation test so a
+  // name carrying calculation-looking punctuation is never mistaken for a calc.
+  const stripped = stripResolvedLayoutDecoration(tok);
+  if (!stripped.wasResolvedForm && looksLikeLayoutCalculation(stripped.tok)) {
+    return {
+      dest: 'LayoutNameByCalc',
+      piece: `    <Layout>\n      <Calculation>${cdata(stripped.tok)}</Calculation>\n    </Layout>`,
+    };
+  }
+  const resolved = resolver.resolveLayout(unquote(stripped.tok));
   const piece =
     resolved.id === 0 && resolved.name
       ? `    <Layout name="${escXml(resolved.name)}"/>`

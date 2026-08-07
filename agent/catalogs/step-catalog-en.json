@@ -2581,7 +2581,7 @@
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "Renders no HR token of its own; FM shows the training table and Completion Field only when True. FM does NOT re-canonicalize it from content — handed False with a real <Table> it kept False and wiped the table to id 0 — so the converter derives the state from whether the gated table carries an HR token. The Completion Field cannot be gated as well until this step's two colliding <Field> params get distinct keys (see CONVERTER_STEP_COVERAGE.md)."
+        "notes": "Renders no HR token of its own; FM shows the training table and Completion Field only when True. FM does NOT re-canonicalize it from content — handed False with a real <Table> it kept False and wiped the table to id 0 — so the converter derives the state from whether the gated table carries an HR token. The Completion Field cannot be gated as well until this step's two colliding <Field> params get distinct keys."
       }
     ],
     "hrSignature": "Fine-Tune Model [ Account Name: {calc} ; Base Model: {calc} ; Training Data: {Table|File} ; {table|path} ; Completion Field: {field} ; Response Target: {field|$variable} ; Parameters: {calc} ]",
@@ -3016,7 +3016,7 @@
       {
         "xmlElement": "LayoutDestination",
         "type": "enum",
-        "hrLabel": "Using layout",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "enumValues": [
@@ -3025,14 +3025,15 @@
           "LayoutNameByCalc",
           "LayoutNumberByCalc"
         ],
-        "notes": "See animation-enums.md for full LayoutDestination mapping."
+        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately. See animation-enums.md for full LayoutDestination mapping."
       },
       {
         "xmlElement": "Layout",
-        "type": "complex",
-        "hrLabel": null,
+        "type": "layout",
+        "hrLabel": "Using layout",
         "required": false,
-        "notes": "Layout ref (id/name) for SelectedLayout. Calculation child for LayoutNameByCalc/LayoutNumberByCalc. Absent for CurrentLayout."
+        "discriminator": "LayoutDestination",
+        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for CurrentLayout, <Layout id name/> for SelectedLayout, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token behind the \"Using layout\" label."
       },
       {
         "xmlElement": "Animation",
@@ -3314,10 +3315,10 @@
       {
         "xmlElement": "LayoutDestination",
         "type": "enum",
-        "hrLabel": "Using layout",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
-        "defaultValue": "SelectedLayout",
+        "defaultValue": "CurrentLayout",
         "enumValues": [
           "SelectedLayout",
           "CurrentLayout",
@@ -3325,7 +3326,7 @@
           "LayoutNumberByCalc",
           "UseExternalTableLayouts"
         ],
-        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately."
+        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately. Default is CurrentLayout, measured: a bare <Step id=\"74\"/> comes back <LayoutDestination value=\"CurrentLayout\"/>. OriginalLayout is NOT legal here (FM 26.0.1 coerces it to SelectedLayout). UseExternalTableLayouts is declared by FM's own docs but is refused from a pasted snippet even with Option state=\"True\", so it is readable but not authorable."
       },
       {
         "xmlElement": "NewWndStyles",
@@ -3351,10 +3352,10 @@
       {
         "xmlElement": "Layout",
         "type": "layout",
-        "hrLabel": null,
+        "hrLabel": "Using layout",
         "required": false,
         "discriminator": "LayoutDestination",
-        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for Original/Current, <Layout id name/> for Selected, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token."
+        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for Current, <Layout id name/> for Selected, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token behind the \"Using layout\" label — the label belongs HERE, not on the discriminator, or the parse reads label-plus-payload as a literal layout name."
       }
     ],
     "hrSignature": "[ Show only related records ; Match found set ; From table: \"table\" ; External ; Using layout: layout ; New window ; Window style: ... ]",

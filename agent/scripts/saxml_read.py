@@ -202,8 +202,12 @@ def _layout_token_from_lrc(lrc: ET.Element) -> str:
         return '"' + lr.get("name", "") + '"'
     val = lrc.get("value", "")
     if val == "3":
-        return "by name: " + _calc_text(lrc)
+        # Bare calculation, matching what FileMaker itself renders and what the
+        # grammar now emits; the emit reads a bare calc back as LayoutNameByCalc.
+        return _calc_text(lrc)
     if val == "4":
+        # Keeps the keyword: FileMaker renders number-by-calculation identically
+        # to name-by-calculation, so a bare calc could not round-trip as this one.
         return "by number: " + _calc_text(lrc)
     label = lrc.find("Label")
     if label is not None:

@@ -937,15 +937,23 @@ def compute_param_hr(entry: CatalogEntry, step: ET.Element, param: StepParam) ->
             if _ci_equals(dest, "OriginalLayout"):
                 val = "original layout"
             elif _ci_equals(dest, "CurrentLayout"):
-                val = "current layout"
+                # FileMaker's own spelling, angle-bracketed (measured 26.0.1).
+                val = "<Current Layout>"
             elif _ci_equals(dest, "LayoutNameByCalc"):
-                val = "by name: " + _child_text(layout_node, "Calculation")
+                # FileMaker prints the calculation bare, with no keyword.
+                val = _child_text(layout_node, "Calculation")
             elif _ci_equals(dest, "LayoutNumberByCalc"):
+                # Deliberately NOT FileMaker's spelling: FM renders this exactly
+                # like LayoutNameByCalc, so mirroring it would collapse the two.
                 val = "by number: " + _child_text(layout_node, "Calculation")
             else:
                 name = layout_node.get("name", "") if layout_node is not None else ""
-                if name:
-                    val = '"' + name + '"'
+                val = ('"' + name + '"') if name else "<unknown>"
+            # The label belongs to THIS param ("Using layout: <token>"); the
+            # sibling discriminator carries none, or the parse reads label plus
+            # payload as a literal layout name.
+            if val and label:
+                val = label + ": " + val
         elif layout_node is not None or param.required:
             name = layout_node.get("name", "") if layout_node is not None else ""
             tok = ""

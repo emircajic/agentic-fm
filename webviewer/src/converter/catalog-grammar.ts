@@ -703,13 +703,21 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
     if (param.discriminator) {
       const dest = childAttr(base, param.discriminator, 'value');
       if (ciEquals(dest, 'OriginalLayout')) val = 'original layout';
-      else if (ciEquals(dest, 'CurrentLayout')) val = 'current layout';
-      else if (ciEquals(dest, 'LayoutNameByCalc')) val = 'by name: ' + childText(layoutNode, 'Calculation');
+      // FileMaker's own spelling, angle-bracketed (measured 26.0.1).
+      else if (ciEquals(dest, 'CurrentLayout')) val = '<Current Layout>';
+      // FileMaker prints the calculation bare, with no keyword.
+      else if (ciEquals(dest, 'LayoutNameByCalc')) val = childText(layoutNode, 'Calculation');
+      // Deliberately NOT FileMaker's spelling: FM renders this exactly like
+      // LayoutNameByCalc, so mirroring it would collapse the two destinations.
       else if (ciEquals(dest, 'LayoutNumberByCalc')) val = 'by number: ' + childText(layoutNode, 'Calculation');
       else {
         const name = layoutNode !== null ? layoutNode.getAttribute('name') ?? '' : '';
-        if (name) val = '"' + name + '"';
+        val = name ? '"' + name + '"' : '<unknown>';
       }
+      // The label belongs to THIS param ("Using layout: <token>"); the sibling
+      // discriminator carries none, or the parse reads label plus payload as a
+      // literal layout name.
+      if (val && label) val = label + ': ' + val;
     } else if (layoutNode !== null || param.required) {
       const name = layoutNode !== null ? layoutNode.getAttribute('name') ?? '' : '';
       let tok = '';

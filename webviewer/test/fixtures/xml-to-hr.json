@@ -584,11 +584,11 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"17\" name=\"Go to Field\">\n    <SelectAll state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Layout.xml": {
-    "hr": "Go to Layout",
+    "hr": "Go to Layout [ <unknown> ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"6\" name=\"Go to Layout\">\n    <LayoutDestination value=\"SelectedLayout\"/>\n    <Layout id=\"0\" name=\"\"/>\n    <Animation value=\"\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to List of Records.xml": {
-    "hr": "Go to List of Records [ List of record IDs: \"calc\" ; Using layout: CurrentLayout ; New window: Off ]",
+    "hr": "Go to List of Records [ List of record IDs: \"calc\" ; Using layout: <Current Layout> ; New window: Off ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"228\" name=\"Go to List of Records\">\n    <ShowInNewWindow state=\"False\"/>\n    <LayoutDestination value=\"CurrentLayout\"/>\n    <RowList>\n      <Calculation><![CDATA[\"calc\"]]></Calculation>\n    </RowList>\n    <NewWndStyles Style=\"Document\" Close=\"Yes\" Minimize=\"Yes\" Maximize=\"Yes\" Resize=\"Yes\" Styles=\"3606018\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Next Field.xml": {
@@ -612,7 +612,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"16\" name=\"Go to Record/Request/Page\">\n    <NoInteract state=\"True\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Calculation><![CDATA[\"\"]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
   },
   "navigation/Go to Related Record.xml": {
-    "hr": "Go to Related Record [ Show only related records ; Window style: Style=Document, Close=Yes, Minimize=Yes, Maximize=Yes, Resize=Yes, Styles=3606018 ]",
+    "hr": "Go to Related Record [ Show only related records ; Window style: Style=Document, Close=Yes, Minimize=Yes, Maximize=Yes, Resize=Yes, Styles=3606018 ; Using layout: <unknown> ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"74\" name=\"Go to Related Record\">\n    <Option state=\"False\"/>\n    <MatchAllRecords state=\"False\"/>\n    <ShowInNewWindow state=\"False\"/>\n    <Restore state=\"True\"/>\n    <LayoutDestination value=\"SelectedLayout\"/>\n    <NewWndStyles Style=\"Document\" Close=\"Yes\" Minimize=\"Yes\" Maximize=\"Yes\" Resize=\"Yes\" Styles=\"3606018\"/>\n    <Table id=\"0\" name=\"\"/>\n    <Layout id=\"0\" name=\"\"/>\n    <Animation value=\"None\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "open menu item/Open Edit Saved Finds.xml": {
