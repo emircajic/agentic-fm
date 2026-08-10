@@ -21,7 +21,15 @@ const PINNED_STATUSES = ['U toku', 'Obračunat', 'Fakturisan'];
 
 // Fixed "today" so the seeded June data is always visible regardless of the wall clock.
 const DEFAULT_ANCHOR = '2026-06-06';
-const DEFAULT_LIMIT  = 6;   // small in dev so pagination is easy to exercise
+
+// Per-column lazy loading: each status column shows INITIAL_SIZE cards, and each
+// "load more" (triggered by scrolling that column to the bottom) reveals PAGE_STEP
+// more — independent of every other column.
+const INITIAL_SIZE = 20;
+const PAGE_STEP    = 10;
+
+// Canonical pipeline order (mirrors STATUS_LIST in main.js / the SQL columns).
+const STATUS_LIST = ['U toku', 'Otvoren', 'Zakazan', 'Završen', 'Obračunat', 'Fakturisan', 'Naplaćen', 'Otkazan'];
 
 // ── date helpers ────────────────────────────────────────────────────────────
 const pad = n => String(n).padStart(2, '0');
@@ -67,11 +75,15 @@ function shiftAnchor(periodMode, anchorISO, dir) {
 export class MockFileMaker {
   constructor() {
     this.scriptLog = [];
-    // $$KANBAN_SCOPE equivalent
-    this.scope = { periodMode: 'day', anchorDate: DEFAULT_ANCHOR, statuses: [], query: '', offset: 0, limit: DEFAULT_LIMIT };
+    // $$KANBAN_SCOPE equivalent — `loaded` maps status → how many cards that
+    // column currently reveals (absent = INITIAL_SIZE). No global offset/limit.
+    this.scope = {
+      periodMode: 'day', anchorDate: DEFAULT_ANCHOR, statuses: [], query: '',
+      initialSize: INITIAL_SIZE, pageStep: PAGE_STEP, loaded: {},
+    };
   }
 
-  getScope() { return { ...this.scope, statuses: [...this.scope.statuses] }; }
+  getScope() { return { ...this.scope, statuses: [...this.scope.statuses], loaded: { ...this.scope.loaded } }; }
 
   PerformScript(scriptName, parameter) {
     console.log(`[Mock FM] ${scriptName}`, parameter);
@@ -89,29 +101,33 @@ export class MockFileMaker {
     // WV__OpenServiceOrder: just logged
   }
 
-  // Mirror of WV__KanbanControl: mutate $$KANBAN_SCOPE
+  // Mirror of WV__KanbanControl: mutate $$KANBAN_SCOPE.
+  // Any scope change that reshapes the result set resets every column back to
+  // its initial page; `loadMore` grows a single column by one PAGE_STEP.
   _control({ action, value }) {
     const s = this.scope;
     switch (action) {
-      case 'setPeriod':   s.periodMode = value; s.offset = 0; break;
+      case 'setPeriod':   s.periodMode = value; s.loaded = {}; break;
       case 'navigate':
         if (value === 'today') s.anchorDate = DEFAULT_ANCHOR;
         else                   s.anchorDate = shiftAnchor(s.periodMode, s.anchorDate, value === 'next' ? 1 : -1);
-        s.offset = 0;
+        s.loaded = {};
         break;
       case 'toggleStatus': {
         const i = s.statuses.indexOf(value);
         if (i >= 0) s.statuses.splice(i, 1); else s.statuses.push(value);
-        s.offset = 0;
+        s.loaded = {};
         break;
       }
-      case 'clearStatus': s.statuses = []; s.offset = 0; break;
-      case 'setQuery':    s.query = (value || '').trim(); s.offset = 0; break;
-      case 'page':        s.offset = Math.max(0, s.offset + (value === 'next' ? s.limit : -s.limit)); break;
+      case 'clearStatus': s.statuses = []; s.loaded = {}; break;
+      case 'setQuery':    s.query = (value || '').trim(); s.loaded = {}; break;
+      case 'loadMore':    if (value) s.loaded[value] = (s.loaded[value] || s.initialSize) + s.pageStep; break;
     }
   }
 
-  // Mirror of WV__PushServiceOrdersKanban: filter + paginate + push
+  // Mirror of WV__PushServiceOrdersKanban: filter, then paginate PER COLUMN.
+  // The real script does this as a GROUP BY count + one FETCH-FIRST SELECT per
+  // status; here we filter once and slice each status group to its loaded count.
   push() {
     const s = this.scope;
     const { from, to } = windowFor(s.periodMode, s.anchorDate);
@@ -132,11 +148,21 @@ export class MockFileMaker {
       ? (a.timeStart || '').localeCompare(b.timeStart || '')
       : a.date.localeCompare(b.date));
 
-    const total = rows.length;
-    if (s.offset >= total) s.offset = Math.max(0, Math.floor(Math.max(0, total - 1) / s.limit) * s.limit);
-    if (s.offset < 0) s.offset = 0;
+    // Group by status, then take the first `loaded` of each column.
+    const groups = {};
+    for (const o of rows) (groups[o.status] = groups[o.status] || []).push(o);
 
-    const page = rows.slice(s.offset, s.offset + s.limit);
+    const orders  = [];
+    const columns = {};
+    for (const status of STATUS_LIST) {
+      const g = groups[status];
+      if (!g || !g.length) continue;                 // absent columns == 0 (JS defaults)
+      const available = g.length;
+      const loaded    = Math.min(s.loaded[status] || s.initialSize, available);
+      columns[status] = { loaded, available };
+      for (let i = 0; i < loaded; i++) orders.push(g[i]);
+    }
+
     const meta = {
       periodMode: s.periodMode,
       anchorDate: s.anchorDate,
@@ -144,11 +170,12 @@ export class MockFileMaker {
       label: labelFor(s.periodMode, s.anchorDate, from, to),
       statuses: [...s.statuses],
       query: s.query,
-      page: { offset: s.offset, limit: s.limit, total, hasMore: s.offset + s.limit < total },
+      pageStep: s.pageStep,
+      columns,                                        // v3: per-column { loaded, available }
     };
 
     if (window.receiveFromFileMaker) {
-      window.receiveFromFileMaker(JSON.parse(JSON.stringify({ orders: page, meta })));
+      window.receiveFromFileMaker(JSON.parse(JSON.stringify({ orders, meta })));
     }
   }
 

@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>PURPOSE: Single source of truth for navigation -- forward, back, reverse-back, card peeks.</Text>
   </Step>
@@ -8,7 +7,7 @@
     <Text>========================================</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
-    <Text>CONTEXT:  $$LAYOUT.CONTEXT = JSON object keyed by BASE layout name -> context blob {recids,layoutid}. Canonical per-layout state.</Text>
+    <Text>CONTEXT:  $$LAYOUT.CONTEXT = JSON object keyed by BASE layout name -&gt; context blob {recids,layoutid}. Canonical per-layout state.</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
     <Text>STACKS:   $$LAYOUT.STACK / $$LAYOUT.STACK.FORWARD = ¶-lists of base layout names (top = first line). Ordering only.</Text>
@@ -17,108 +16,164 @@
     <Text>PARAM:    "destination" | "destination|payload". Special: "back" / "forward".</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
-    <Text>          .list  -> List variant (e.g. "clients.list").   .card -> open in a card window (peek; context untouched).</Text>
+    <Text>          .list  -&gt; List variant (e.g. "clients.list").   .card -&gt; open in a card window (peek; context untouched).</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
-    <Text>          payload present = specific target -> Init handles it, saved context is disregarded for that arrival.</Text>
+    <Text>          payload present = specific target -&gt; Init handles it, saved context is disregarded for that arrival.</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
-    <Text>          payload absent on regular nav -> restore that layout's saved context (return to last found set).</Text>
+    <Text>          payload absent on regular nav -&gt; restore that layout's saved context (return to last found set).</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)">
     <Text>========================================</Text>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>If invoked from a Card window, close it first (returns focus to the main window before we read context).</Text>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[Get ( WindowStyle ) = 3]]></Calculation>
   </Step>
-    <Step enable="True" id="121" name="Close Window">
-      <LimitToWindowsOfCurrentFile state="True"/>
-      <Window value="Current"/>
-    </Step>
+  <Step enable="True" id="121" name="Close Window">
+    <LimitToWindowsOfCurrentFile state="True"/>
+    <Window value="Current"/>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>---- STEP 1: parse parameter ----</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$fullParameter</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Position ( $fullParameter ; "|" ; 1 ; 1 )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[Position ( $fullParameter ; "|" ; 1 ; 1 )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$pipePosition</Name>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[$pipePosition > 0]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Trim ( Left ( $fullParameter ; $pipePosition - 1 ) )]]></Calculation></Value>
-      <Name>$destination</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Trim ( Right ( $fullParameter ; Length ( $fullParameter ) - $pipePosition ) )]]></Calculation></Value>
-      <Name>$payload</Name>
-    </Step>
-  <Step enable="True" id="69" name="Else"/>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Trim ( $fullParameter )]]></Calculation></Value>
-      <Name>$destination</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[""]]></Calculation></Value>
-      <Name>$payload</Name>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Trim ( Left ( $fullParameter ; $pipePosition - 1 ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$destination</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Trim ( Right ( $fullParameter ; Length ( $fullParameter ) - $pipePosition ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$payload</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Trim ( $fullParameter )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$destination</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$payload</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>Detect and strip the ".card" window modifier.</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Right ( $destination ; 5 ) = ".card"]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[Right ( $destination ; 5 ) = ".card"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$isCard</Name>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[$isCard]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Left ( $destination ; Length ( $destination ) - 5 )]]></Calculation></Value>
-      <Name>$destination</Name>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Left ( $destination ; Length ( $destination ) - 5 )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$destination</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)">
-    <Text>Payload present = specific intent (disregard saved context). Starts with { or [ -> JSON config for Init; anything else -> a bare record id -> Go to Record. (Prefix test, not JSONIsValid -- a numeric/all-digit id is valid JSON but is still a record key.)</Text>
+    <Text>Payload present = specific intent (disregard saved context). A BARE id -&gt; router finds the record; a JSON payload -&gt; config for Init.</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[not IsEmpty ( $payload )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[not IsEmpty ( $payload )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$hasPayload</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[If ( $hasPayload and not ( Left ( $payload ; 1 ) = "{" or Left ( $payload ; 1 ) = "[" ) ; $payload ; "" )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[If ( $hasPayload and not JSONIsValid ( $payload ) ; $payload ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$recordKey</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[_GetBaseLayoutName ( Get ( LayoutName ) )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[_GetBaseLayoutName ( Get ( LayoutName ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$prevBase</Name>
   </Step>
-
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>---- STEP 2: hygiene (freeze, browse mode, commit) ----</Text>
   </Step>
   <Step enable="True" id="79" name="Freeze Window"/>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[Get ( WindowMode ) > 0]]></Calculation>
   </Step>
-    <Step enable="True" id="55" name="Enter Browse Mode">
-      <Pause state="False"/>
-    </Step>
+  <Step enable="True" id="55" name="Enter Browse Mode">
+    <Pause state="False"/>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="75" name="Commit Records/Requests">
     <NoInteract state="True"/>
@@ -126,20 +181,28 @@
     <ESSForceCommit state="False"/>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[Get ( LastError ) ≠ 0]]></Calculation>
   </Step>
-    <Step enable="True" id="87" name="Show Custom Dialog">
-      <Title><Calculation><![CDATA["Greška"]]></Calculation></Title>
-      <Message><Calculation><![CDATA["Nije moguće sačuvati izmjene prije navigacije. Greška: " & Get ( LastError )]]></Calculation></Message>
-      <Buttons>
-        <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
-      </Buttons>
-    </Step>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[""]]></Calculation>
-    </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Greška"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Nije moguće sačuvati izmjene prije navigacije. Greška: " & Get ( LastError )]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>========================================================================</Text>
@@ -151,133 +214,206 @@
     <Text>========================================================================</Text>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[$destination = "back" or $destination = "forward"]]></Calculation>
   </Step>
-
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[$destination = "back"]]></Calculation></Value>
-      <Name>$isBack</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[If ( $isBack ; $$LAYOUT.STACK ; $$LAYOUT.STACK.FORWARD )]]></Calculation></Value>
-      <Name>$srcStack</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[If ( $isBack ; $$LAYOUT.STACK.FORWARD ; $$LAYOUT.STACK )]]></Calculation></Value>
-      <Name>$dstStack</Name>
-    </Step>
-
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[IsEmpty ( $srcStack )]]></Calculation>
-    </Step>
-      <Step enable="True" id="89" name="# (comment)">
-        <Text>Nothing to step to -- silent exit.</Text>
-      </Step>
-      <Step enable="True" id="103" name="Exit Script">
-        <Calculation><![CDATA[""]]></Calculation>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[GetValue ( $srcStack ; 1 )]]></Calculation></Value>
-      <Name>$targetBase</Name>
-    </Step>
-
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Capture the layout we're leaving into the keyed store.</Text>
-    </Step>
-    <Step enable="True" id="1" name="Perform Script">
-      <Calculation><![CDATA[""]]></Calculation>
-      <Script id="0" name="Get Context"/>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
-      <Name>$currentCtx</Name>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[not IsEmpty ( $currentCtx ) and JSONIsValid ( $currentCtx )]]></Calculation>
-    </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[JSONSetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) or not JSONIsValid ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $prevBase ; $currentCtx ; JSONObject )]]></Calculation></Value>
-        <Name>$$LAYOUT.CONTEXT</Name>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Pop source (remove first line); push current base onto destination.</Text>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[Let ( [ ~r = Position ( $srcStack ; ¶ ; 1 ; 1 ) ] ; If ( ~r = 0 ; "" ; Replace ( $srcStack ; 1 ; ~r ; "" ) ) )]]></Calculation></Value>
-      <Name>$srcStack</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[List ( $prevBase ; $dstStack )]]></Calculation></Value>
-      <Name>$dstStack</Name>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[$isBack]]></Calculation>
-    </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[$srcStack]]></Calculation></Value>
-        <Name>$$LAYOUT.STACK</Name>
-      </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[$dstStack]]></Calculation></Value>
-        <Name>$$LAYOUT.STACK.FORWARD</Name>
-      </Step>
-    <Step enable="True" id="69" name="Else"/>
-      <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[$srcStack]]></Calculation></Value>
-        <Name>$$LAYOUT.STACK.FORWARD</Name>
-      </Step>
-      <Step enable="True" id="141" name="Set Variable">
-        <Value><Calculation><![CDATA[$dstStack]]></Calculation></Value>
-        <Name>$$LAYOUT.STACK</Name>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Restore the target layout from the keyed store; fall back to a plain navigate if no context stored.</Text>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[JSONGetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $targetBase )]]></Calculation></Value>
-      <Name>$savedCtx</Name>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[not IsEmpty ( $savedCtx ) and $savedCtx ≠ "?" and JSONIsValid ( $savedCtx )]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[$savedCtx]]></Calculation>
-        <Script id="0" name="Restore Context"/>
-      </Step>
-    <Step enable="True" id="69" name="Else"/>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[$targetBase]]></Calculation>
-        <Script id="451" name="HandleResponsiveLayout_"/>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Reset the same-entity marker -- back/forward target's entity isn't known here, so force the next nav to re-evaluate.</Text>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[""]]></Calculation></Value>
-      <Name>$$NAV.ENTITY</Name>
-    </Step>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[""]]></Calculation>
-    </Step>
-
-  <Step enable="True" id="70" name="End If"/>
-
-  <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)">
-    <Text>---- STEP 3: routing table (destination -> {layout, init, mode}) ----</Text>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$destination = "back"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$isBack</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Case (
+    <Value>
+      <Calculation><![CDATA[If ( $isBack ; $$LAYOUT.STACK ; $$LAYOUT.STACK.FORWARD )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$srcStack</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( $isBack ; $$LAYOUT.STACK.FORWARD ; $$LAYOUT.STACK )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$dstStack</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[IsEmpty ( $srcStack )]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Nothing to step to -- silent exit.</Text>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetValue ( $srcStack ; 1 )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$targetBase</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Capture the layout we're leaving into the keyed store.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Script id="930" name="Get Context"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$currentCtx</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $currentCtx ) and JSONIsValid ( $currentCtx )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) or not JSONIsValid ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $prevBase ; $currentCtx ; JSONObject )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.CONTEXT</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Pop source (remove first line); push current base onto destination.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( [ ~r = Position ( $srcStack ; ¶ ; 1 ; 1 ) ] ; If ( ~r = 0 ; "" ; Replace ( $srcStack ; 1 ; ~r ; "" ) ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$srcStack</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $prevBase ; $dstStack )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$dstStack</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$isBack]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$srcStack]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.STACK</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$dstStack]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.STACK.FORWARD</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$srcStack]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.STACK.FORWARD</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$dstStack]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.STACK</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Restore the target layout from the keyed store; fall back to a plain navigate if no context stored.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $targetBase )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$savedCtx</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $savedCtx ) and $savedCtx ≠ "?" and JSONIsValid ( $savedCtx )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$savedCtx]]></Calculation>
+    <Script id="931" name="Restore Context"/>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$targetBase]]></Calculation>
+    <Script id="451" name="HandleResponsiveLayout_"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Reset the same-entity marker -- back/forward target's entity isn't known here, so force the next nav to re-evaluate.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$NAV.ENTITY</Name>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>---- STEP 3: routing table (destination -&gt; {layout, init, mode}) ----</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Case (
 	$destination = "dashboard"      ; JSONSetElement ( "{}" ; [ "layout" ; "Početna" ; JSONString ] ; [ "init" ; "Početna" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "calendar"       ; JSONSetElement ( "{}" ; [ "layout" ; "Calendar" ; JSONString ] ; [ "init" ; "Calendar" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "incomingorders" ; JSONSetElement ( "{}" ; [ "layout" ; "IncomingOrders" ; JSONString ] ; [ "init" ; "IncomingOrders" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
+	$destination = "suppliers"      ; JSONSetElement ( "{}" ; [ "layout" ; "SUPP__SUPPLIERS" ; JSONString ] ; [ "init" ; "" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "invoices"       ; JSONSetElement ( "{}" ; [ "layout" ; "Invoices" ; JSONString ] ; [ "init" ; "Invoices" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "kanban"         ; JSONSetElement ( "{}" ; [ "layout" ; "ServiceOrdersKanban" ; JSONString ] ; [ "init" ; "Kanban" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "staff"          ; JSONSetElement ( "{}" ; [ "layout" ; "Staff Member Details" ; JSONString ] ; [ "init" ; "Staff" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
@@ -294,48 +430,86 @@
 	$destination = "vehicles"       ; JSONSetElement ( "{}" ; [ "layout" ; "VehicleDetails" ; JSONString ] ; [ "init" ; "Vehicle" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 	$destination = "vehicles.list"  ; JSONSetElement ( "{}" ; [ "layout" ; "VehicleList" ; JSONString ] ; [ "init" ; "Vehicle" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
 
+	$destination = "calculations"       ; JSONSetElement ( "{}" ; [ "layout" ; "CalculationDetails" ; JSONString ] ; [ "init" ; "" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
+	$destination = "calculations.list"  ; JSONSetElement ( "{}" ; [ "layout" ; "CalculatonDetails" ; JSONString ] ; [ "init" ; "" ; JSONString ] ; [ "mode" ; "direct" ; JSONString ] ) ;
+
 	$destination = "settings"       ; JSONSetElement ( "{}" ; [ "layout" ; "Card Setup" ; JSONString ] ; [ "init" ; "" ; JSONString ] ; [ "mode" ; "card" ; JSONString ] ) ;
 	""
-)]]></Calculation></Value>
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$route</Name>
   </Step>
-
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[IsEmpty ( $route )]]></Calculation>
   </Step>
-    <Step enable="True" id="87" name="Show Custom Dialog">
-      <Title><Calculation><![CDATA["Nepoznata destinacija"]]></Calculation></Title>
-      <Message><Calculation><![CDATA[$destination & " nije prepoznat od strane navigacione skripte kao validna destinacija."]]></Calculation></Message>
-      <Buttons>
-        <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
-      </Buttons>
-    </Step>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[""]]></Calculation>
-    </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Nepoznata destinacija"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[$destination & " nije prepoznat od strane navigacione skripte kao validna destinacija."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[JSONGetElement ( $route ; "layout" )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $route ; "layout" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$targetLayout</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[JSONGetElement ( $route ; "init" )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $route ; "init" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$initScriptBase</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[If ( $isCard ; "card" ; JSONGetElement ( $route ; "mode" ) )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[If ( $isCard ; "card" ; JSONGetElement ( $route ; "mode" ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$mode</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA["Init_" & $initScriptBase]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA["Init_" & $initScriptBase]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$initScriptName</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[If ( IsEmpty ( $payload ) ; JSONNull ; $payload )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[If ( IsEmpty ( $payload ) ; JSONNull ; $payload )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$initParam</Name>
   </Step>
-
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>========================================================================</Text>
@@ -347,50 +521,61 @@
     <Text>========================================================================</Text>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[$mode = "card"]]></Calculation>
   </Step>
-    <Step enable="True" id="122" name="New Window">
-      <NewWndStyles Style="Card" Close="Yes" Minimize="No" Maximize="No" Resize="No" Toolbars="No" MenuBar="No" Styles="0"/>
-    </Step>
-    <Step enable="True" id="1" name="Perform Script">
-      <Calculation><![CDATA[$targetLayout]]></Calculation>
-      <Script id="451" name="HandleResponsiveLayout_"/>
-    </Step>
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Optional Init (missing = silent), then centralized record browse if a bare id was passed.</Text>
-    </Step>
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[not IsEmpty ( $initScriptBase )]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculated><Calculation><![CDATA[$initScriptName]]></Calculation></Calculated>
-        <Calculation><![CDATA[$initParam]]></Calculation>
-      </Step>
-      <Step enable="True" id="68" name="If">
-        <Calculation><![CDATA[Get ( LastError ) ≠ 0 and Get ( LastError ) ≠ 104]]></Calculation>
-      </Step>
-        <Step enable="True" id="87" name="Show Custom Dialog">
-          <Title><Calculation><![CDATA["Init Script Error"]]></Calculation></Title>
-          <Message><Calculation><![CDATA["Greška " & Get ( LastError ) & " u skripti " & $initScriptName & "."]]></Calculation></Message>
-          <Buttons>
-            <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
-          </Buttons>
-        </Step>
-      <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[not IsEmpty ( $recordKey )]]></Calculation>
-    </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[$recordKey]]></Calculation>
-        <Script id="0" name="Go to Record"/>
-      </Step>
-    <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="103" name="Exit Script">
-      <Calculation><![CDATA[""]]></Calculation>
-    </Step>
+  <Step enable="True" id="122" name="New Window"/>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$targetLayout]]></Calculation>
+    <Script id="451" name="HandleResponsiveLayout_"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Optional Init (missing = silent), then centralized record browse if a bare id was passed.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $initScriptBase )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA[$initScriptName]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[$initParam]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( LastError ) ≠ 0 and Get ( LastError ) ≠ 104]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Init Script Error"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Greška " & Get ( LastError ) & " u skripti " & $initScriptName & "."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $recordKey )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$recordKey]]></Calculation>
+    <Script id="934" name="Go to Record"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>========================================================================</Text>
@@ -403,135 +588,186 @@
   </Step>
   <Step enable="True" id="1" name="Perform Script">
     <Calculation><![CDATA[""]]></Calculation>
-    <Script id="0" name="Get Context"/>
+    <Script id="930" name="Get Context"/>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$currentCtx</Name>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[not IsEmpty ( $currentCtx ) and JSONIsValid ( $currentCtx )]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[JSONSetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) or not JSONIsValid ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $prevBase ; $currentCtx ; JSONObject )]]></Calculation></Value>
-      <Name>$$LAYOUT.CONTEXT</Name>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) or not JSONIsValid ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $prevBase ; $currentCtx ; JSONObject )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.CONTEXT</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>Push leaving layout onto the back stack (dedupe vs current top).</Text>
   </Step>
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[not IsEmpty ( $prevBase ) and GetValue ( $$LAYOUT.STACK ; 1 ) ≠ $prevBase]]></Calculation>
   </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[List ( $prevBase ; $$LAYOUT.STACK )]]></Calculation></Value>
-      <Name>$$LAYOUT.STACK</Name>
-    </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $prevBase ; $$LAYOUT.STACK )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$LAYOUT.STACK</Name>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>Fresh user navigation invalidates forward history.</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[""]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$$LAYOUT.STACK.FORWARD</Name>
   </Step>
-
   <Step enable="True" id="89" name="# (comment)">
     <Text>SAME-ENTITY view switch? List and Details of one entity share a found set natively (same TO). $$NAV.ENTITY = the Init base of the layout we're currently on.</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[not IsEmpty ( $initScriptBase ) and $initScriptBase = $$NAV.ENTITY]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[not IsEmpty ( $initScriptBase ) and $initScriptBase = $$NAV.ENTITY]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$sameEntity</Name>
   </Step>
-
   <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
     <Calculation><![CDATA[$sameEntity and not $hasPayload]]></Calculation>
   </Step>
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>View switch within the same entity -- the shared found set is already correct. Just change layout; do NOT restore or Init (either would clobber the shared set). Sort/filter from the entity's first Init persists natively.</Text>
-    </Step>
-    <Step enable="True" id="1" name="Perform Script">
-      <Calculation><![CDATA[$targetLayout]]></Calculation>
-      <Script id="451" name="HandleResponsiveLayout_"/>
-    </Step>
-
-  <Step enable="True" id="69" name="Else"/>
-
-    <Step enable="True" id="89" name="# (comment)">
-      <Text>Cross-entity or specific target -- restore saved context, or navigate fresh + Init + record.</Text>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[JSONGetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $targetLayout )]]></Calculation></Value>
-      <Name>$savedCtx</Name>
-    </Step>
-    <Step enable="True" id="141" name="Set Variable">
-      <Value><Calculation><![CDATA[not $hasPayload and not IsEmpty ( $savedCtx ) and $savedCtx ≠ "?" and JSONIsValid ( $savedCtx )]]></Calculation></Value>
-      <Name>$doRestore</Name>
-    </Step>
-
-    <Step enable="True" id="68" name="If">
-      <Calculation><![CDATA[$doRestore]]></Calculation>
-    </Step>
-      <Step enable="True" id="89" name="# (comment)">
-        <Text>Return to last state -- Restore Context navigates + rebuilds found set.</Text>
-      </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[$savedCtx]]></Calculation>
-        <Script id="0" name="Restore Context"/>
-      </Step>
-    <Step enable="True" id="69" name="Else"/>
-      <Step enable="True" id="89" name="# (comment)">
-        <Text>Fresh / specific-target -- navigate device-correct.</Text>
-      </Step>
-      <Step enable="True" id="1" name="Perform Script">
-        <Calculation><![CDATA[$targetLayout]]></Calculation>
-        <Script id="451" name="HandleResponsiveLayout_"/>
-      </Step>
-      <Step enable="True" id="89" name="# (comment)">
-        <Text>Optional Init -- run if it exists; a missing Init_&lt;entity&gt; (error 104) is silent. Receives the payload (JSON config) for layouts that want it.</Text>
-      </Step>
-      <Step enable="True" id="68" name="If">
-        <Calculation><![CDATA[not IsEmpty ( $initScriptBase )]]></Calculation>
-      </Step>
-        <Step enable="True" id="1" name="Perform Script">
-          <Calculated><Calculation><![CDATA[$initScriptName]]></Calculation></Calculated>
-          <Calculation><![CDATA[$initParam]]></Calculation>
-        </Step>
-        <Step enable="True" id="68" name="If">
-          <Calculation><![CDATA[Get ( LastError ) ≠ 0 and Get ( LastError ) ≠ 104]]></Calculation>
-        </Step>
-          <Step enable="True" id="87" name="Show Custom Dialog">
-            <Title><Calculation><![CDATA["Init Script Error"]]></Calculation></Title>
-            <Message><Calculation><![CDATA["Greška " & Get ( LastError ) & " u skripti " & $initScriptName & "."]]></Calculation></Message>
-            <Buttons>
-              <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
-            </Buttons>
-          </Step>
-        <Step enable="True" id="70" name="End If"/>
-      <Step enable="True" id="70" name="End If"/>
-      <Step enable="True" id="89" name="# (comment)">
-        <Text>Centralized record browse -- if a bare id was passed, position onto it within the found set (Go to Record preserves the set; Show All only if absent).</Text>
-      </Step>
-      <Step enable="True" id="68" name="If">
-        <Calculation><![CDATA[not IsEmpty ( $recordKey )]]></Calculation>
-      </Step>
-        <Step enable="True" id="1" name="Perform Script">
-          <Calculation><![CDATA[$recordKey]]></Calculation>
-          <Script id="0" name="Go to Record"/>
-        </Step>
-      <Step enable="True" id="70" name="End If"/>
-    <Step enable="True" id="70" name="End If"/>
-
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>View switch within the same entity -- the shared found set is already correct. Just change layout; do NOT restore or Init (either would clobber the shared set). Sort/filter from the entity's first Init persists natively.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$targetLayout]]></Calculation>
+    <Script id="451" name="HandleResponsiveLayout_"/>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Cross-entity or specific target -- restore saved context, or navigate fresh + Init + record.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( If ( IsEmpty ( $$LAYOUT.CONTEXT ) ; "{}" ; $$LAYOUT.CONTEXT ) ; $targetLayout )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$savedCtx</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[not $hasPayload and not IsEmpty ( $savedCtx ) and $savedCtx ≠ "?" and JSONIsValid ( $savedCtx )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$doRestore</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[$doRestore]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Return to last state -- Restore Context navigates + rebuilds found set.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$savedCtx]]></Calculation>
+    <Script id="931" name="Restore Context"/>
+  </Step>
+  <Step enable="True" id="69" name="Else">
+    <Restore state="False"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Fresh / specific-target -- navigate device-correct.</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$targetLayout]]></Calculation>
+    <Script id="451" name="HandleResponsiveLayout_"/>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Optional Init -- run if it exists; a missing Init_&lt;entity&gt; (error 104) is silent. Receives the payload (JSON config) for layouts that want it.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $initScriptBase )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculated>
+      <Calculation><![CDATA[$initScriptName]]></Calculation>
+    </Calculated>
+    <Calculation><![CDATA[$initParam]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[Get ( LastError ) ≠ 0 and Get ( LastError ) ≠ 104]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Init Script Error"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Greška " & Get ( LastError ) & " u skripti " & $initScriptName & "."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
   <Step enable="True" id="70" name="End If"/>
-
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Centralized record browse -- if a bare id was passed, find it now (overrides Init's default found set).</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Restore state="False"/>
+    <Calculation><![CDATA[not IsEmpty ( $recordKey )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[$recordKey]]></Calculation>
+    <Script id="934" name="Go to Record"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)">
     <Text>Remember the entity we landed on, so the next nav can detect a same-entity view switch.</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
-    <Value><Calculation><![CDATA[$initScriptBase]]></Calculation></Value>
+    <Value>
+      <Calculation><![CDATA[$initScriptBase]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
     <Name>$$NAV.ENTITY</Name>
   </Step>
-
 </fmxmlsnippet>

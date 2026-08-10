@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)">
+<Text>PURPOSE: Prefill Primke::BrojFaktureDobavljaca with a supplier-specific template when it is empty. Pure SQL — no layout context needed.</Text>
+</Step>
+<Step enable="False" id="61" name="Insert Text">
+<SelectAll state="False"/>
+<Text>PARAMS: primkaID (text, required)&#xD;&#xD;RETURNS: data.filled (bool), data.template (text), data.supplier (text)&#xD;&#xD;BEHAVIOR: preserved from ORD__FillReceiptTemplate (840) — fills ONLY when the field is empty (warning ALREADY_SET otherwise); no template match is success with filled=false.&#xD;&#xD;⚠️ Templates hardcode the year (…/2026, PP26, BASSK1226…) exactly as the original did — candidate for Settings-driven templates at the next yearly rollover.</Text>
+<Field>$README</Field>
+</Step>
+<Step enable="False" id="141" name="Set Variable">
+<Name>$example_call</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ; [ "primkaID" ; Primke::PrimaryKey ; JSONString ] )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="85" name="Allow User Abort">
+<Set state="False"/>
+</Step>
+<Step enable="True" id="86" name="Set Error Capture">
+<Set state="True"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "primkaID" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_RECEIPT_TEMPLATE_START" ; "Template fill for primka " & $primkaID ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Validate</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "primkaID is required" ; "primkaID" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: LoadPrimkaAndSupplier</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selPr</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT p.\"BrojFaktureDobavljaca\", d.\"NazivDobavljaca\" FROM \"Primke\" p LEFT JOIN \"Dobavljaci\" d ON p.\"ForeignKeyDobavljacID\" = d.\"PrimaryKey\" WHERE p.\"PrimaryKey\" = ?" ;
+	"useSQLResult=prim" ;
+	$primkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selPr ) or epSQLResultRowCount ( "prim" ) = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "prim" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND_PRIMKA" ; "Primka not found: " & $primkaID ; "primkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$brojFakture</Name>
+<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "prim" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$supplier</Name>
+<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 ; "prim" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "prim" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: ResolveTemplate</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $brojFakture )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddWarning ( "ALREADY_SET" ; "BrojFaktureDobavljaca already has a value — not overwritten" ; "primkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "filled" ; False ; JSONBoolean ] ;
+	[ "template" ; "" ; JSONString ] ;
+	[ "supplier" ; $supplier ; JSONString ]
+) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$template</Name>
+<Value><Calculation><![CDATA[Case (
+	$supplier = "Motorex" ;	"/2026" ;
+
+	$supplier = "Unitrade" ;	"I07-160-/2026" ;
+
+	$supplier = "CIAK" ;	"PP26-MP-00" ;
+
+	PatternCount ( $supplier ; "Inter Cars" ) > 0 ;	"BASSK1226000" ;
+
+	""
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Update</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $template )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "filled" ; False ; JSONBoolean ] ;
+	[ "template" ; "" ; JSONString ] ;
+	[ "supplier" ; $supplier ; JSONString ]
+) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_RECEIPT_TEMPLATE_DONE" ; "No template for supplier " & $supplier ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$upd</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"Primke\" SET \"BrojFaktureDobavljaca\" = ? WHERE \"PrimaryKey\" = ?" ;
+	"" ;
+	$template ;
+	$primkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $upd )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAILED" ; "Failed to write template on primka " & $primkaID & " (" & $upd & ")" ; "primkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "filled" ; True ; JSONBoolean ] ;
+	[ "template" ; $template ; JSONString ] ;
+	[ "supplier" ; $supplier ; JSONString ]
+) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_RECEIPT_TEMPLATE_DONE" ; "Filled template " & $template & " for supplier " & $supplier & " on primka " & $primkaID ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+</fmxmlsnippet>

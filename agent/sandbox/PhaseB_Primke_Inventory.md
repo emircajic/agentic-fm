@@ -171,12 +171,27 @@ Picker layout 201 verbs ride the same dispatcher (`partPickerInit`,
 | `Vrati Dio` | 607 | returns | SP ×4 | zero static callers — **VERIFY** (returns popover?), else REMOVE |
 | `Vrati dio skripta` | 608 | returns | SP ×1 | same |
 
-### 🌐 VERIFY dynamic dispatch before touching (WV / picker / router call by name)
-`SO__AttachPrimke` (809 — PICKER callback ✓ keep), `UFD__AttachFromPrimka` (791 —
-PICKER callback ✓ keep), `WV__GoToPrimka` (824), `WV__QueryStavkePrimke` (822),
-`WV__UpdateStavkaPrimkeNabavna` (850), `Init_IncomingOrders` (627),
-`CopyToServiceOrderLines` (624), `Vrati Dio` (607), `Vrati dio skripta` (608).
-Grep WV HTML payloads + `PICKER__Callback`/router calc-dispatch before Stage 5.
+### 🌐 VERIFY dynamic dispatch — ✅ census run 2026-07-19 (G4 closed)
+Verdicts:
+- **Live, keep:** `SO__AttachPrimke` (809 — `callbackScript` in `SO__PrimkaPicker`
+  808 payload), `WV__QueryStavkePrimke` (822 — layout 259 WV + stavke-query
+  HTML), `WV__GoToPrimka` (824 — stavke-query link handler),
+  `WV__UpdateStavkaPrimkeNabavna` (850 — sales-dashboard `main.js`),
+  `Init_IncomingOrders` (627 — router `Navigation_` 450 builds `"Init_" & base`).
+- **Dead, condemned → REMOVE:** `CopyToServiceOrderLines` (624), `Vrati Dio`
+  (607), `Vrati dio skripta` (608) — zero static + zero dynamic callers
+  (layouts, menus, callbackScript registrations, WV JS all clean; the
+  `id="607/608/624"` hits on layout 106 are layout-object IDs, not scripts).
+- **⚠️ Correction:** `UFD__AttachFromPrimka` (791) is NOT a picker callback —
+  zero callers anywhere in the export; the UFD picker chain (240 button → 796 →
+  792 → 793) passes no `callbackScript` at all (latent bug, UFD scope, spawned
+  as separate task). Real attach workhorse: `UFD__AttachPrimke` (678) via
+  `WV__CreateUFDFromSelection` (826).
+- SO picker WV HTML (embedded in `SO__OpenSOPicker` 815) calls `SO__LoadSOPage`,
+  `SO__TransferStavka` (line path, direct), `SO__PickerConfirm` (header path →
+  dispatches `Globals::ServiceOrderSelector.callbackScript` = `CopyToOrder`),
+  `SO__ClosePicker`. `CopyLineToOrder` (625) PREPARE-only confirmed; its
+  callback self-registration is vestigial.
 
 ### 🗑️ REMOVE — superseded / dead (fold to `Retired/IncomingOrders/`, 1-month clock)
 | Script | ID | Why |
@@ -187,7 +202,9 @@ Grep WV HTML payloads + `PICKER__Callback`/router calc-dispatch before Stage 5.
 | `SO__AttachPrimke Copy` | 925 | stale duplicate of 809; zero callers |
 | `S__IncomingOrders_KnjižiUlaz` | 658 | part of the retiring KR workflow, not actively used (per developer 2026-07-15) — **remove its button binding on layout 193 at Stage 4 rebind** |
 | `DB__WipeKretanjeRobePrimke` | 785 | one-shot dev wipe util |
-| + `CopyToServiceOrderLines` (624) / `Vrati Dio` (607) / `Vrati dio skripta` (608) | | pending the dynamic-dispatch check above |
+| `CopyToServiceOrderLines` | 624 | ✅ census 2026-07-19: zero static + dynamic callers |
+| `Vrati Dio` | 607 | ✅ census 2026-07-19: zero static + dynamic callers |
+| `Vrati dio skripta` | 608 | ✅ census 2026-07-19: zero static + dynamic callers |
 
 ---
 
