@@ -1,5 +1,6 @@
 import type { ParsedLine } from './parser';
 import type { IdResolver } from './id-resolver';
+import { resolveStepId } from './catalog-grammar';
 
 /**
  * Step converter interface.
@@ -59,12 +60,12 @@ export function cdata(s: string): string {
   return `<![CDATA[${s}]]>`;
 }
 
-/** XML helper: create a Step opening tag */
+/** XML helper: create a Step opening tag (with FM's universal step-type id). */
 export function stepOpen(name: string, enabled = true): string {
-  return `  <Step enable="${enabled ? 'True' : 'False'}" id="0" name="${escXml(name)}">`;
+  return `  <Step enable="${enabled ? 'True' : 'False'}" id="${resolveStepId(name)}" name="${escXml(name)}">`;
 }
 
-/** XML helper: create a self-closing Step tag */
+/** XML helper: create a self-closing Step tag (with FM's universal step-type id). */
 export function stepSelfClose(name: string, enabled = true): string {
-  return `  <Step enable="${enabled ? 'True' : 'False'}" id="0" name="${escXml(name)}"/>`;
+  return `  <Step enable="${enabled ? 'True' : 'False'}" id="${resolveStepId(name)}" name="${escXml(name)}"/>`;
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="43" name="Print" enable="True">
+      <Options>33587328</Options>
+      <ParameterValues membercount="4">
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="Restore">
+          <Restore value="True" />
+        </Parameter>
+        <Parameter type="Print">
+          <Print name="Records being browsed" type="1" toFile="False">
+            <Pages All="True" />
+            <Copies value="1" />
+          </Print>
+        </Parameter>
+        <Parameter type="PageSetup">
+          <PageSetup>
+            <Orientation name="Portrait" value="0" />
+            <size height="1100" width="850" />
+            <scale value="100" />
+          </PageSetup>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

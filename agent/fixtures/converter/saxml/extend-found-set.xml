@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="127" name="Extend Found Set" enable="True">
+      <Options>33587200</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="FindRequest">
+          <FindRequestSet membercount="1">
+            <FindRequest membercount="0" action="omit" />
+          </FindRequestSet>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

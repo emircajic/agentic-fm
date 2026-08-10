@@ -274,3 +274,10 @@ Fall back to reading the snippet_examples file (path in `snippetFile`, prefixed 
 - A param has `"type": "complex"` — the legacy escape-hatch type whose structure is not modeled in the schema (prefer the structured types `attrGroup`/`fieldList`/`repeatGroup` documented in `CATALOG_SCHEMA.md`, which **can** be derived from the entry's `fields[]`; only true `complex` params need the example)
 - `parentElement` chains are deeply nested or ambiguous in the entry
 - Behavioral constraints in snippet XML comments are needed for correctness
+
+---
+
+## Conformance
+
+The project's converters implement exactly the param-type → XML mapping described here — they derive every non-control step from the catalog `params[]` grammar rather than re-declaring it.
+An offline gate freezes their verified output as golden fixtures so the guide and the converters cannot silently drift: `uvx pytest agent/scripts/test_converter_conformance.py` (see `agent/docs/CONVERTERS.md` § Conformance).

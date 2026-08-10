@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="142" name="Install Menu Set" enable="True">
+      <Options>520</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="CustomMenuSet">
+          <CustomMenuSetReference id="1" name="[Standard FileMaker Menus]">
+            <Boolean type="Use as file default" id="512" value="True" />
+          </CustomMenuSetReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

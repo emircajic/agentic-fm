@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="3" name="Save a Copy as XML" enable="True">
+      <Options>16672</Options>
+      <ParameterValues membercount="6">
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>Get ( WindowName )</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Include details for analysis tools" id="256" value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Save each layout object's binary data under its node" id="512" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Specify options as JSON" id="32768" value="False" />
+        </Parameter>
+        <Parameter type="JSONOutput">
+          <Calculation datatype="1" position="1">
+            <Calculation>
+              <Text>JSONSetElement ( "{}" ;
+  [ "catalogs_included" ; JSONMakeArray (
+  "PersistentStoreCatalog
+  BaseDirectoryCatalog
+  FileAccessCatalog
+  ExternalDataSourceCatalog
+  BaseTableCatalog
+  TableOccurrenceCatalog
+  CustomFunctionsCatalog
+  ValueListCatalog
+  FieldCatalog
+  RelationshipCatalog
+  CustomMenuCatalog
+  CustomMenuSetCatalog
+  ScriptCatalog
+  ThemeCatalog
+  LayoutCatalog
+  LibraryCatalog
+  PrivilegeSetsCatalog
+  ExtendedPrivilegesCatalog
+  AccountsCatalog
+  Metadata"
+  ; " " ; JSONString ) ; JSONArray ] ;
+  [ "include_details" ; False ; JSONBoolean ] ;
+  [ "split_catalogs" ; False ; JSONBoolean ] ;
+  [ "standalone_binarydata" ; False ; JSONBoolean ]
+)</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="141" name="Set Variable" enable="True">
+      <Options>16388</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Variable">
+          <value>
+            <Calculation datatype="1" position="1">
+              <Calculation>
+                <Text>JSONSetElement ( "{}" ;
+	[ "path" ; "" ; JSONString ]
+)</Text>
+              </Calculation>
+            </Calculation>
+          </value>
+          <Name value="$config_example" />
+          <repetition>
+            <Calculation datatype="1" position="2">
+              <Calculation>
+                <Text>1</Text>
+              </Calculation>
+            </Calculation>
+          </repetition>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

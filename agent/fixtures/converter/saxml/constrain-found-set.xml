@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="126" name="Constrain Found Set" enable="True">
+      <Options>33587456</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="FindRequest">
+          <FindRequestSet membercount="1">
+            <FindRequest membercount="0" action="omit" />
+          </FindRequestSet>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Find without indexes" id="256" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -47,6 +47,11 @@ DEFAULT_CONFIG = {
 }
 
 
+COMPANION_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "config", "companion.json"
+)
+
+
 def _load_config() -> dict:
     here = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(here, "..", "config", "automation.json")
@@ -58,7 +63,41 @@ def _load_config() -> dict:
         return DEFAULT_CONFIG.copy()
 
 
-def _resolve_target_file(config: dict) -> Optional[str]:
+def _load_companion_config() -> dict:
+    """Read the `companion` block from agent/config/companion.json (fail-open → {})."""
+    try:
+        with open(COMPANION_CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    comp = data.get("companion") if isinstance(data, dict) else None
+    return comp if isinstance(comp, dict) else {}
+
+
+def _resolve_companion_url(config: dict) -> str:
+    """Client-reach resolution — the URL deploy dials to reach the companion.
+
+    Precedence (highest wins):
+      1. COMPANION_URL env var.
+      2. companion.json  companion.advertise_host + companion.port  (canonical).
+      3. automation.json companion_url  (legacy — honored during the deprecation window).
+      4. built-in default.
+    The users[account] layer (#76) slots in above #2 once GET /whoami lands.
+    """
+    env = os.environ.get("COMPANION_URL")
+    if env:
+        return env.rstrip("/")
+    comp = _load_companion_config()
+    host, port = comp.get("advertise_host"), comp.get("port")
+    if host and port:
+        return f"http://{host}:{port}"
+    legacy = config.get("companion_url")
+    if legacy:
+        return legacy.rstrip("/")
+    return "http://local.hub:8765"
+
+
+def _resolve_target_file(config: dict) -> str | None:
     """Auto-resolve the FM file name to target for multi-file deploys.
 
     Priority:
@@ -655,7 +694,7 @@ def deploy(
     config = _load_config()
     effective_tier = tier if tier is not None else config.get("default_tier", 1)
     effective_auto_save = auto_save if auto_save is not None else bool(config.get("auto_save", False))
-    companion_url = config.get("companion_url", "http://local.hub:8765").rstrip("/")
+    companion_url = _resolve_companion_url(config)
     fm_app_name = config.get("fm_app_name", "FileMaker Pro")
 
     # Plug-in awareness (no hardcoded endpoints). When the plug-in is usable,

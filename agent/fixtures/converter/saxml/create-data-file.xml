@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="190" name="Create Data File" enable="True">
+      <Options>32</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$target</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

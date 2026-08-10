@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="192" name="Write to Data File" enable="True">
+      <Options>16903</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="id">
+          <Calculation datatype="2" position="0">
+            <Calculation>
+              <Text>$fileID</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$context">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+        <Encoding type="2" name="UTF-8" />
+        <Parameter type="Boolean">
+          <Boolean type="Append line feed" id="512" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

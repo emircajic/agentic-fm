@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="33" name="Open File" enable="True">
+      <Options>16</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Open hidden" id="256" value="False" />
+        </Parameter>
+        <Parameter type="DataSourceReference">
+          <DataSourceReference id="2" name="QuickStart" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

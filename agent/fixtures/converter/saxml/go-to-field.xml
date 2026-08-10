@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="17" name="Go to Field" enable="True">
+      <Options>1</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Select/perform" id="4096" value="False" />
+        </Parameter>
+        <Parameter type="FieldReference">
+          <FieldReference id="22" name="Logo">
+            <repetition>
+              <Calculation datatype="1" position="10">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+            <TableOccurrenceReference id="1065089" name="Admin" />
+          </FieldReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

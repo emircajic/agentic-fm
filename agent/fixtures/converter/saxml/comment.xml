@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="89" name="# (comment)" enable="True">
+      <Options>4</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Comment">
+          <Comment value="PURPOSE: Set a global variable used by other scripts to key/value pairs used by agentic-fm." />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

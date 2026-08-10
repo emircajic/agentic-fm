@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="112" name="Open Manage Value Lists" enable="True">
+      <Options>0</Options>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="22" name="Enter Find Mode" enable="True">
+      <Options>50364416</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="Boolean">
+          <Boolean type="Pause" id="16777216" value="True" />
+        </Parameter>
+        <Parameter type="FindRequest">
+          <FindRequestSet membercount="1">
+            <FindRequest membercount="0" action="omit" />
+          </FindRequestSet>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

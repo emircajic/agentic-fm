@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="144" name="Save Records as PDF" enable="True">
+      <Options>33571488</Options>
+      <ParameterValues membercount="7">
+        <Parameter type="Restore">
+          <Restore value="True" />
+        </Parameter>
+        <Parameter type="Options">
+          <Options type="Records being browsed" value="1">
+            <Document>
+              <Parameter type="Title">
+                <Calculation datatype="1" position="0">
+                  <Calculation>
+                    <Text>"title"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Parameter type="Subject">
+                <Calculation datatype="1" position="1">
+                  <Calculation>
+                    <Text>"subject"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Parameter type="Author">
+                <Calculation datatype="1" position="2">
+                  <Calculation>
+                    <Text>"author"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Parameter type="Keywords">
+                <Calculation datatype="1" position="3">
+                  <Calculation>
+                    <Text>"keywords"</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+            </Document>
+            <Pages>
+              <Parameter type="from">
+                <Calculation datatype="1" position="4">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </Parameter>
+              <Include All="True" />
+            </Pages>
+            <Security>
+              <Open value="False" />
+              <Control value="False" />
+              <Print name="High Resolution" value="2" />
+              <Edit name="Any except extracting pages" value="4" />
+              <EnableCopying value="True" />
+              <AllowScreenReader value="True" />
+            </Security>
+            <View>
+              <show name="Pages Panel and Page" value="2" />
+              <Layout name="Single Page" value="1" />
+              <Magnification name="100%" value="7" />
+            </View>
+          </Options>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Append to existing PDF" id="256" value="False" />
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Create folders" id="512" value="True" />
+        </Parameter>
+        <Parameter type="SaveResult">
+          <List name="File" value="0" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

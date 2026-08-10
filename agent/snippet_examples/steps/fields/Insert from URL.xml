@@ -24,5 +24,5 @@
 <!-- Supported protocols: http, https, ftp, ftps, sftp, file, smb, smtp, smtps, ldap, ldaps. -->
 <!-- file protocol: not supported in WebDirect, Data API, or CWP; server-side scripts can only access Documents or temporary folder. -->
 <!-- FileMaker Go does not support ldap/ldaps. -->
-<!-- Insert from URL supports only UTF-8 for the URL. Use --max-time cURL option to control timeout. -->
+<!-- Insert from URL supports only UTF-8 for the URL. Use the max-time cURL option to control timeout. -->
 <!-- See https://help.claris.com/en/pro-help/content/insert-from-url.html -->

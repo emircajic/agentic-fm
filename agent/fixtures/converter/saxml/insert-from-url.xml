@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="160" name="Insert from URL" enable="True">
+      <Options>16517</Options>
+      <ParameterValues membercount="5">
+        <Parameter type="Boolean">
+          <Boolean type="Verify SSL Certificates" id="268435456" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Select" id="4096" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$pendingJSON">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+        <Parameter type="URL">
+          <URL autoEncode="True">
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>"http://localhost:8765/pending"</Text>
+              </Calculation>
+            </Calculation>
+          </URL>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

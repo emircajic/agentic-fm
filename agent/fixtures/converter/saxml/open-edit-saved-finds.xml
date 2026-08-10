@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="149" name="Open Edit Saved Finds" enable="True">
+      <Options>0</Options>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="116" name="Set Next Serial Value" enable="True">
+      <Options>16385</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="FieldReference">
+          <FieldReference id="34" name="Number">
+            <repetition>
+              <Calculation datatype="1" position="10">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+            <TableOccurrenceReference id="1065094" name="Invoices" />
+          </FieldReference>
+        </Parameter>
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>1000</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

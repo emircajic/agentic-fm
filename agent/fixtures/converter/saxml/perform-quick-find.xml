@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="150" name="Perform Quick Find" enable="True">
+      <Options>16384</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>Admin::Search Global</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

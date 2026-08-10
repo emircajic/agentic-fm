@@ -116,3 +116,5 @@ Response shape: `{ "scriptResult": { "code": 0, "resultParameter": "<script resu
 ```
 
 Add one entry per FM file. The key must match `Get(FileName)` exactly — this is what appears in `CONTEXT.json["solution"]`. `automation.json` is gitignored; credentials are safe to store there.
+
+> **Deprecation — companion address.** The top-level `companion_url` in `automation.json` is deprecated in favour of `agent/config/companion.json` (`companion.advertise_host` + `companion.port`), which is the single source of truth for the companion address. It is still honoured during the migration window; when `companion.json` is present it wins. The per-solution `explode_xml.companion_url` (the URL **FileMaker Server** dials, e.g. `http://host.docker.internal:8765` under Docker) is unaffected — it is a distinct FMS-side reach path, not the client companion address, and stays in `automation.json`.

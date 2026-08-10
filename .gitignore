@@ -7,6 +7,7 @@ agent/CONTEXT.json
 .private/
 .venv/
 .cursor/in-development/
+.claude/worktrees/
 external_tools/
 plans/
 .claude/worktrees/
@@ -26,7 +27,6 @@ agent/docs/filemaker/error-codes.md
 *_PRIVATE.md
 Prompt.md
 .cursorignore
-# agent/library/ — intentionally tracked; contains reusable fmxmlsnippet code
 agent/config/removals.json
 agent/config/automation.json
 agent/scripts/companion_server_ext.py
@@ -45,6 +45,7 @@ tags
 .claude/rules
 .cursor/rules/
 sync-internal.sh
+.claude/scheduled_tasks.lock
 
 # macOS
 .DS_Store

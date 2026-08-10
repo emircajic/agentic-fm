@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="63" name="Send Mail" enable="True">
+      <Options>16512</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Email">
+          <Boolean type="No dialog" value="True" />
+          <SMTP>
+            <Name>
+              <Calculation datatype="1" position="5">
+                <Calculation>
+                  <Text>$name</Text>
+                </Calculation>
+              </Calculation>
+            </Name>
+            <Email>
+              <Calculation datatype="1" position="6">
+                <Calculation>
+                  <Text>$from</Text>
+                </Calculation>
+              </Calculation>
+            </Email>
+            <ReplyTo>
+              <Calculation datatype="1" position="7">
+                <Calculation>
+                  <Text>$reply</Text>
+                </Calculation>
+              </Calculation>
+            </ReplyTo>
+            <Server>
+              <Calculation datatype="1" position="8">
+                <Calculation>
+                  <Text>$server</Text>
+                </Calculation>
+              </Calculation>
+            </Server>
+            <Port>
+              <Calculation datatype="1" position="9">
+                <Calculation>
+                  <Text>587</Text>
+                </Calculation>
+              </Calculation>
+            </Port>
+            <Encryption name="TLS" value="2" />
+            <Authentication name="Plain Password" value="2" />
+            <UserName>
+              <Calculation datatype="1" position="10">
+                <Calculation>
+                  <Text>$user</Text>
+                </Calculation>
+              </Calculation>
+            </UserName>
+            <Password>
+              <Calculation datatype="1" position="11">
+                <Calculation>
+                  <Text>$pass</Text>
+                </Calculation>
+              </Calculation>
+            </Password>
+          </SMTP>
+          <Send OAuthAuthentication="False" SMTP="True">
+            <Multiple value="False" />
+            <To>
+              <CollectAddresses value="False" />
+              <Calculation datatype="1" position="0">
+                <Calculation>
+                  <Text>$to</Text>
+                </Calculation>
+              </Calculation>
+            </To>
+            <CC>
+              <CollectAddresses value="False" />
+            </CC>
+            <BCC>
+              <CollectAddresses value="False" />
+            </BCC>
+            <Subject>
+              <Calculation datatype="1" position="3">
+                <Calculation>
+                  <Text>$subject</Text>
+                </Calculation>
+              </Calculation>
+            </Subject>
+            <Message>
+              <Calculation datatype="1" position="4">
+                <Calculation>
+                  <Text>$message</Text>
+                </Calculation>
+              </Calculation>
+            </Message>
+          </Send>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

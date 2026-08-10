@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="67" name="Perform AppleScript" enable="True">
+      <Options>6</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Options">
+          <Options type="Text">tell me to activate</Options>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

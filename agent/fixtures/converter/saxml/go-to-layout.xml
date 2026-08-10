@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="6" name="Go to Layout" enable="True">
+      <Options>10</Options>
+      <ParameterValues membercount="2">
+        <Parameter type="LayoutReferenceContainer">
+          <LayoutReferenceContainer value="5" />
+        </Parameter>
+        <Parameter type="Animation">
+          <Animation name="None" value="0" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

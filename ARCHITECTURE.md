@@ -120,8 +120,7 @@ Each catalog entry provides:
 | `id`             | FileMaker internal step ID -- use in `<Step id="X">`                              |
 | `selfClosing`    | `true` = `<Step ... />`, `false` = `<Step ...>...</Step>`                         |
 | `params[]`       | Full parameter spec: `xmlElement`, `type`, `hrLabel`, `wrapperElement`, `xmlAttr`, `required`, `defaultValue`, `enumValues` |
-| `hrSignature`    | Human-readable parameter format for HR output                                     |
-| `monacoSnippet`  | VS Code / Monaco snippet for autocomplete                                         |
+| `hrSignature`    | Human-readable parameter format for HR output; also the sole source the Monaco editor derives its autocomplete snippet from (`completion.ts` `deriveSnippet`) |
 | `blockPair`      | Matching step partners and role (`open`/`middle`/`close`)                         |
 | `notes`          | Behavioral context with sub-keys: `constraints`, `platform`, `gotchas`, `performance`, `behavioral` |
 | `snippetFile`    | Path to the corresponding snippet_examples file (fallback reference)              |

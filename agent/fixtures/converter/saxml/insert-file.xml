@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="131" name="Insert File" enable="True">
+      <Options>16933</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Options">
+          <Options type="Title">
+            <Title>
+              <Calculation datatype="1" position="0">
+                <Calculation>
+                  <Text>"Dialog title"</Text>
+                </Calculation>
+              </Calculation>
+            </Title>
+          </Options>
+          <Options type="Filters">
+            <Filters size="1">
+              <Filter extension="*">
+                <Calculation>
+                  <Text>"All Files"</Text>
+                </Calculation>
+              </Filter>
+            </Filters>
+          </Options>
+          <Options type="Storage">
+            <Storage name="Insert" value="2" />
+          </Options>
+          <Options type="Display">
+            <Display name="Display icon" value="0" />
+          </Options>
+          <Options type="Compress">
+            <Compress name="Compress when possible" value="2" />
+          </Options>
+        </Parameter>
+        <Parameter type="Target">
+          <Variable value="$file">
+            <repetition>
+              <Calculation datatype="1" position="32">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+          </Variable>
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

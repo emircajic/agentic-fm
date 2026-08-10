@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="42" name="Print Setup" enable="True">
+      <Options>33587328</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Restore">
+          <Restore value="True" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="PageSetup">
+          <PageSetup>
+            <Orientation name="Portrait" value="0" />
+            <size height="1100" width="850" />
+            <scale value="100" />
+          </PageSetup>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

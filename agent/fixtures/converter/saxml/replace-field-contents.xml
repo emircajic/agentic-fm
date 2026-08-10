@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="91" name="Replace Field Contents" enable="True">
+      <Options>16517</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+        <Parameter type="FieldReference">
+          <FieldReference id="29" name="Date">
+            <repetition>
+              <Calculation datatype="1" position="10">
+                <Calculation>
+                  <Text>1</Text>
+                </Calculation>
+              </Calculation>
+            </repetition>
+            <TableOccurrenceReference id="1065094" name="Invoices" />
+          </FieldReference>
+        </Parameter>
+        <Parameter type="replace">
+          <List name="Replace with calculation: " value="3">
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>Get(CurrentDate) - Round(Random * 20;0)</Text>
+              </Calculation>
+            </Calculation>
+            <Boolean type="Skip auto-enter options" value="False" />
+          </List>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="147" name="Set Field By Name" enable="True">
+      <Options>134234112</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="Boolean">
+          <Boolean type="Specify target field" id="134217728" value="True" />
+        </Parameter>
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="1">
+            <Calculation>
+              <Text>$fName</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Calculation">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>$fValue</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

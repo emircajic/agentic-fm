@@ -287,12 +287,79 @@ const controlSteps = new Set([
   'Exit Script', 'Halt Script',
 ]);
 
-/** Generate snippet insert text from catalog entry */
-function getInsertText(entry: StepCatalogEntry): string {
-  if (entry.monacoSnippet) return entry.monacoSnippet;
-  if (entry.hrSignature) {
-    return `${entry.name} ${entry.hrSignature.replace(/\$/g, '\\$')}`;
+/**
+ * Wrap a single signature value token in an ordered Monaco tab-stop.
+ * Quoted strings keep their quotes ("${N:inner}"); a `{a|b}` group becomes a
+ * choice dropdown (${N|a,b|}); a leading `$` stays literal outside the stop
+ * (\$${N:name}); anything else becomes a plain placeholder (${N:token}).
+ * `next()` yields the running tab-stop index so numbering is left-to-right.
+ */
+function wrapValue(core: string, next: () => number): string {
+  if (!core) return core;
+  if (core.length >= 2 && core.startsWith('"') && core.endsWith('"')) {
+    return `"\${${next()}:${core.slice(1, -1)}}"`;
   }
+  if (core.startsWith('{') && core.endsWith('}')) {
+    const opts = core.slice(1, -1).split('|').map((o) => o.trim()).join(',');
+    return `\${${next()}|${opts}|}`;
+  }
+  if (core.startsWith('$')) {
+    return `\\$\${${next()}:${core.slice(1)}}`;
+  }
+  return `\${${next()}:${core}}`;
+}
+
+/**
+ * Derive a Monaco snippet from a catalog entry's hrSignature — the sole snippet
+ * source now that monacoSnippet is retired (no per-step snippet data). Each
+ * fill-in slot inside the `[ … ]` body becomes an ordered tab-stop (labels like
+ * "Title:" stay literal); a block-opening step (blockPair.role === 'open') gets
+ * its body plus a `$0` cursor plus the closing partner appended, so If/Loop
+ * still auto-scaffold on insert.
+ */
+function deriveSnippet(entry: StepCatalogEntry): string {
+  const sig = entry.hrSignature ?? '';
+  let n = 0;
+  const next = () => (n += 1);
+
+  // Wrap the first `[ … ]` bracket body; a bodiless signature (Else, End If)
+  // passes through untouched.
+  const m = /^(.*?\[)(.*)(\][^\]]*)$/s.exec(sig);
+  let body: string;
+  if (m) {
+    const [, head, inner, tail] = m;
+    body =
+      head +
+      inner
+        .split(';')
+        .map((seg) => {
+          const sm = /^(\s*)(.*?)(\s*)$/s.exec(seg);
+          if (!sm) return seg;
+          const [, lead, mid, trail] = sm;
+          const li = mid.indexOf(': ');
+          if (li >= 0) {
+            return lead + mid.slice(0, li + 2) + wrapValue(mid.slice(li + 2), next) + trail;
+          }
+          return lead + wrapValue(mid, next) + trail;
+        })
+        .join(';') +
+      tail;
+  } else {
+    body = sig;
+  }
+
+  let text = sig.startsWith(entry.name) ? body : `${entry.name} ${body}`;
+
+  const bp = entry.blockPair;
+  if (bp && bp.role === 'open' && bp.partners.length > 0) {
+    text += `\n\t$0\n${bp.partners[bp.partners.length - 1]}`;
+  }
+  return text;
+}
+
+/** Generate snippet insert text from catalog entry. */
+function getInsertText(entry: StepCatalogEntry): string {
+  if (entry.hrSignature) return deriveSnippet(entry);
   if (controlSteps.has(entry.name)) return entry.name;
   if (entry.selfClosing && entry.params.length === 0) return entry.name;
   return `${entry.name} [ $0 ]`;

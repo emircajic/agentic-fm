@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="122" name="New Window" enable="True">
+      <Options>16394</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="WindowReference">
+          <WindowReference>
+            <Style name="Document" value="1076299266" />
+            <Name />
+            <LayoutReferenceContainer value="3">
+              <Calculation datatype="1" position="5">
+                <Calculation>
+                  <Text>$param</Text>
+                </Calculation>
+              </Calculation>
+            </LayoutReferenceContainer>
+            <Bounds>
+              <height />
+              <width />
+              <top />
+              <left />
+            </Bounds>
+            <Options value="1076299266">
+              <Close>True</Close>
+              <Minimize>True</Minimize>
+              <Maximize>True</Maximize>
+              <Resize>True</Resize>
+              <MenuBar>True</MenuBar>
+              <Toolbar>True</Toolbar>
+              <DimParentWindow>False</DimParentWindow>
+            </Options>
+          </WindowReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

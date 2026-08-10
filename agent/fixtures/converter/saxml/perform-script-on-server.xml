@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="164" name="Perform Script on Server" enable="True">
+      <Options>33572864</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="List">
+          <List name="By name" value="2">
+            <Calculation datatype="1" position="2">
+              <Calculation>
+                <Text>$scriptName</Text>
+              </Calculation>
+            </Calculation>
+          </List>
+        </Parameter>
+        <Parameter type="Parameter">
+          <Parameter>
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>$param</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Wait for completion" id="256" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="87" name="Show Custom Dialog" enable="True">
+      <Options>16389</Options>
+      <ParameterValues membercount="12">
+        <Parameter type="Title">
+          <Calculation datatype="1" position="0">
+            <Calculation>
+              <Text>"Title"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Message">
+          <Calculation datatype="1" position="1">
+            <Calculation>
+              <Text>"Message"</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="height">
+          <Calculation datatype="1" position="8">
+            <Calculation>
+              <Text>100</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="width">
+          <Calculation datatype="1" position="9">
+            <Calculation>
+              <Text>300</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="top">
+          <Calculation datatype="1" position="11">
+            <Calculation>
+              <Text>200</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="left">
+          <Calculation datatype="1" position="12">
+            <Calculation>
+              <Text>500</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Button1" value="Default Button">
+          <Boolean type="Commit" value="True" />
+        </Parameter>
+        <Parameter type="Button2" value="Button 2">
+          <Boolean type="Commit" value="False" />
+        </Parameter>
+        <Parameter type="Button3" value="Button 4">
+          <Boolean type="Commit" value="False" />
+        </Parameter>
+        <Parameter type="Field1">
+          <Parameter type="Target">
+            <FieldReference id="17" name="Industry">
+              <repetition>
+                <Calculation datatype="1" position="32">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </repetition>
+              <TableOccurrenceReference id="1065089" name="Admin" />
+            </FieldReference>
+          </Parameter>
+          <Boolean type="Password" value="False" />
+          <Parameter type="Label">
+            <Calculation datatype="1" position="2">
+              <Calculation>
+                <Text>"Label 1"</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="Field2">
+          <Parameter type="Target">
+            <Variable value="$variable_input2">
+              <repetition>
+                <Calculation datatype="1" position="33">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </repetition>
+            </Variable>
+          </Parameter>
+          <Boolean type="Password" value="False" />
+          <Parameter type="Label">
+            <Calculation datatype="1" position="3">
+              <Calculation>
+                <Text>"Label 2"</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="Field3">
+          <Parameter type="Target">
+            <Variable value="$variable_input3">
+              <repetition>
+                <Calculation datatype="1" position="34">
+                  <Calculation>
+                    <Text>1</Text>
+                  </Calculation>
+                </Calculation>
+              </repetition>
+            </Variable>
+          </Parameter>
+          <Boolean type="Password" value="True" />
+          <Parameter type="Label">
+            <Calculation datatype="1" position="4">
+              <Calculation>
+                <Text>"Label 3"</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="74" name="Go to Related Record" enable="True">
+      <Options>33554442</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="Related">
+          <LayoutReferenceContainer value="5" />
+          <Animation name="None" value="0" />
+          <Options ShowRelated="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

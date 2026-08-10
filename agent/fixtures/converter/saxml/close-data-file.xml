@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="196" name="Close Data File" enable="True">
+      <Options>16384</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="id">
+          <Calculation datatype="2" position="0">
+            <Calculation>
+              <Text>$fileID</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>
