@@ -765,6 +765,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,
@@ -1186,6 +1187,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,
@@ -1438,6 +1440,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,

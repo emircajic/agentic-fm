@@ -36,7 +36,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"226\" name=\"Configure Prompt Template\">\n    <Option state=\"False\"/>\n    <ConfigurePromptTemplate>\n      <TemplateName>\n        <Calculation><![CDATA[\"template_name\"]]></Calculation>\n      </TemplateName>\n      <ModelProvider>Custom</ModelProvider>\n      <RequestType>SQLQuery</RequestType>\n      <SQLPrompt>\n        <Calculation><![CDATA[\"prompt\"]]></Calculation>\n      </SQLPrompt>\n    </ConfigurePromptTemplate>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure RAG Account.xml": {
-    "hr": "Configure RAG Account  [ RAG Account Name: \"rag_account_name\" ; Endpoint: \"endpoint\" ; API key: \"api_key\" ; Verify SSL Certificates: Off ]",
+    "hr": "Configure RAG Account  [ RAG Account Name: \"rag_account_name\" ; Endpoint: \"endpoint\" ; API key: \"api_key\" ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"227\" name=\"Configure RAG Account \">\n    <VerifySSLCertificates state=\"False\"/>\n    <ConfigureRAGAccount>\n      <RAGAccountName>\n        <Calculation><![CDATA[\"rag_account_name\"]]></Calculation>\n      </RAGAccountName>\n      <Endpoint>\n        <Calculation><![CDATA[\"endpoint\"]]></Calculation>\n      </Endpoint>\n      <AccessAPIKey>\n        <Calculation><![CDATA[\"api_key\"]]></Calculation>\n      </AccessAPIKey>\n    </ConfigureRAGAccount>\n  </Step>\n</fmxmlsnippet>"
   },
   "artificial intelligence/Configure Regression Model.xml": {
@@ -316,7 +316,7 @@
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"34\" name=\"Close File\">\n    <FileReference id=\"0\" name=\"\">\n      <UniversalPathList>file:NameOfFile</UniversalPathList>\n    </FileReference>\n  </Step>\n</fmxmlsnippet>"
   },
   "files/Convert File.xml": {
-    "hr": "Convert File [ With dialog: On ; Open File: Off ; Skip Indexes: On ; Verify SSL Certificates: On ; File ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=\"    \" ; $path ; Import options: TargetTableName=Table, CharacterSet=Macintosh, PreserveContainer=False, MatchFieldNames=False, AutoEnter=False, SplitRepetitions=False, method=Add ]",
+    "hr": "Convert File [ With dialog: On ; Open File: Off ; Skip Indexes: On ; Verify SSL Certificates ; File ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=\"    \" ; $path ; Import options: TargetTableName=Table, CharacterSet=Macintosh, PreserveContainer=False, MatchFieldNames=False, AutoEnter=False, SplitRepetitions=False, method=Add ]",
     "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"139\" name=\"Convert File\">\n    <NoInteract state=\"False\"/>\n    <Option state=\"False\"/>\n    <SkipIndexes state=\"True\"/>\n    <VerifySSLCertificates state=\"True\"/>\n    <DataSourceType value=\"File\"/>\n    <Profile FieldDelimiter=\"&#9;\" IsPredefined=\"-1\" FieldNameRow=\"-1\" DataType=\"    \"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <ImportOptions TargetTableName=\"Table\" CharacterSet=\"Macintosh\" PreserveContainer=\"False\" MatchFieldNames=\"False\" AutoEnter=\"False\" SplitRepetitions=\"False\" method=\"Add\"/>\n  </Step>\n</fmxmlsnippet>"
   },
   "files/Create Data File.xml": {
