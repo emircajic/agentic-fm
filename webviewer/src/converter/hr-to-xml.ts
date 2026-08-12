@@ -5,7 +5,7 @@
  */
 
 import { parseScript } from './parser';
-import { getHrToXmlConverter, stepOpen, cdata } from './step-registry';
+import { getHrToXmlConverter, stepOpen, stepSelfClose, cdata } from './step-registry';
 import type { IdResolver } from './id-resolver';
 import { createIdResolver } from './id-resolver';
 import type { FMContext } from '@/context/types';
@@ -52,9 +52,13 @@ export function hrToXml(hrText: string, context?: FMContext | null): ConversionR
   const stepXmls: string[] = [];
 
   for (const line of lines) {
-    // Empty lines become empty # (comment) steps
+    // Empty lines become empty # (comment) steps. The step id must be the
+    // catalog id for a comment (89), not 0: a Step-level id="0" fails snippet
+    // validation and forces FileMaker to resolve the step by its (localized)
+    // name on paste, which is fragile on non-English builds. stepSelfClose
+    // resolves the id from the catalog, so it stays correct and locale-independent.
     if (!line.stepName) {
-      stepXmls.push('  <Step enable="True" id="0" name="# (comment)"/>');
+      stepXmls.push(stepSelfClose('# (comment)', !line.disabled));
       continue;
     }
 
