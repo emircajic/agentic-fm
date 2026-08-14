@@ -1,0 +1,1377 @@
+<?xml version="1.0"?>
+<!--
+  FileMaker Pro 26.0.1 (macOS) "Save a Copy as XML" of a script built to measure where
+  FileMaker puts each step's calculations.
+
+  Every calculation holds a literal naming the catalog param it was entered into:
+  "CP<step>_<ParamKey>". A reader that places calcs by position emits well-formed XML
+  no matter which param it lands on, so tying a KNOWN VALUE to an EXPECTED param is
+  the only check that can see a misplacement. test_saxml_calc_placement does exactly
+  that; do not renumber or reword the literals.
+
+  Sanitized: hash/index attributes and UUID/OwnerID/DDRREF children removed.
+-->
+<Script><ObjectList><Step id="177" name="AVPlayer Play" enable="True">
+              <Options>20044</Options>
+              <ParameterValues membercount="7">
+                <Parameter type="Source">
+                  <Source type="LayoutObject">
+                    <Name />
+                    <repetition>
+                      <Calculation datatype="1" position="4">
+                        <Calculation>
+                          <Text>"CP01_Repetition"</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </Source>
+                </Parameter>
+                <Parameter type="Presentation">
+                  <List name="Start Full Screen" value="0" />
+                </Parameter>
+                <Parameter type="DisableInteraction">
+                  <Boolean type="DisableInteraction" value="True" />
+                </Parameter>
+                <Parameter type="Hide">
+                  <Boolean type="Hide" value="True" />
+                </Parameter>
+                <Parameter type="position">
+                  <Calculation datatype="2" position="0">
+                    <Calculation>
+                      <Text>"CP01_PlaybackPosition"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Start">
+                  <Calculation datatype="2" position="1">
+                    <Calculation>
+                      <Text>"CP01_StartOffset"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="End">
+                  <Calculation datatype="2" position="2">
+                    <Calculation>
+                      <Text>"CP01_EndOffset"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="179" name="AVPlayer Set Options" enable="True">
+              <Options>134500220</Options>
+              <ParameterValues membercount="11">
+                <Parameter type="Presentation">
+                  <List name="Start Full Screen" value="0" />
+                </Parameter>
+                <Parameter type="DisableInteraction">
+                  <Boolean type="DisableInteraction" value="True" />
+                </Parameter>
+                <Parameter type="Hide">
+                  <Boolean type="Hide" value="True" />
+                </Parameter>
+                <Parameter type="DisableExternalControls">
+                  <Boolean type="DisableExternalControls" value="True" />
+                </Parameter>
+                <Parameter type="PauseInBackground">
+                  <Boolean type="PauseInBackground" value="True" />
+                </Parameter>
+                <Parameter type="position">
+                  <Calculation datatype="2" position="0">
+                    <Calculation>
+                      <Text>"CP02_PlaybackPosition"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Start">
+                  <Calculation datatype="2" position="1">
+                    <Calculation>
+                      <Text>"CP02_StartOffset"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="End">
+                  <Calculation datatype="2" position="2">
+                    <Calculation>
+                      <Text>"CP02_EndOffset"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Volume">
+                  <Calculation datatype="2" position="13">
+                    <Calculation>
+                      <Text>"CP02_Volume"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Zoom">
+                  <List name="Fit" value="0" />
+                </Parameter>
+                <Parameter type="Sequence">
+                  <List name="None" value="0" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="134" name="Add Account" enable="True">
+              <Options>16386</Options>
+              <ParameterValues membercount="5">
+                <Parameter type="AccountType">
+                  <List name="FileMaker" value="0" />
+                </Parameter>
+                <Parameter type="Name">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP03_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Password">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP03_Password"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="PrivilegeSetReference">
+                  <PrivilegeSetReference id="0" name="&lt;unknown&gt;" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Expire password" value="True" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="83" name="Change Password" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="3">
+                <Parameter type="Old">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP04_OldPassword"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="New">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP04_NewPassword"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="With dialog" id="128" value="True" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="212" name="Configure AI Account" enable="True">
+              <Options>268435458</Options>
+              <ParameterValues membercount="2">
+                <Parameter type="Boolean">
+                  <Boolean type="Verify SSL Certificates" id="268435456" value="False" />
+                </Parameter>
+                <Parameter type="List">
+                  <List name="Anthropic" value="1" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="187" name="Configure Local Notification" enable="True">
+              <Options>1745112940</Options>
+              <ParameterValues membercount="12">
+                <Parameter type="action">
+                  <List name="Queue" value="0" />
+                </Parameter>
+                <Parameter type="Name">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP06_Name"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Delay">
+                  <Calculation datatype="2" position="3">
+                    <Calculation>
+                      <Text>"CP06_Delay"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Title">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP06_Title"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Body">
+                  <Calculation datatype="1" position="5">
+                    <Calculation>
+                      <Text>"CP06_Body"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button1Label">
+                  <Calculation datatype="1" position="6">
+                    <Calculation>
+                      <Text>"CP06_Button1Label"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button2Label">
+                  <Calculation datatype="1" position="8">
+                    <Calculation>
+                      <Text>"CP06_Button2Label"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button3Label">
+                  <Calculation datatype="1" position="10">
+                    <Calculation>
+                      <Text>"CP06_Button3Label"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button1Foreground">
+                  <Calculation datatype="2" position="7">
+                    <Calculation>
+                      <Text>"CP06_Button1ForceFgnd"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button2Foreground">
+                  <Calculation datatype="2" position="9">
+                    <Calculation>
+                      <Text>"CP06_Button2ForceFgnd"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Button3Foreground">
+                  <Calculation datatype="2" position="11">
+                    <Calculation>
+                      <Text>"CP06_Button3ForceFgnd"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="ShowInForeground">
+                  <Calculation datatype="7" position="12">
+                    <Calculation>
+                      <Text>"CP06_ShowWhenAppInForeground"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="201" name="Configure NFC Reading" enable="True">
+              <Options>17508</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="action">
+                  <List name="Read" value="0" />
+                </Parameter>
+                <Parameter type="Timeout">
+                  <Calculation datatype="2" position="2">
+                    <Calculation>
+                      <Text>"CP07_Timeout"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="JSONOutput">
+                  <Calculation datatype="2" position="4">
+                    <Calculation>
+                      <Text>"CP07_JSONOutput"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="ReadMultiple">
+                  <Calculation datatype="2" position="3">
+                    <Calculation>
+                      <Text>"CP07_ReadMultiple"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="238" name="Configure Persistent Data" enable="True">
+              <Options>16640</Options>
+              <ParameterValues membercount="1">
+                <Parameter type="PersistentStore">
+                  <Delete />
+                  <Name value="" />
+                  <instanceID>
+                    <Calculation datatype="1" position="2">
+                      <Calculation>
+                        <Text>"CP08_InstanceId"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </instanceID>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="226" name="Configure Prompt Template" enable="True">
+              <Options>18176</Options>
+              <ParameterValues membercount="6">
+                <Parameter type="NaturalLanguagePrompt">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP09_NaturalLanguagePrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="SQLPrompt">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP09_SQLPrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="TemplateType">
+                  <List name="SQL Query" value="1" />
+                </Parameter>
+                <Parameter type="ModelProvider">
+                  <List name="OpenAI" value="0" />
+                </Parameter>
+                <Parameter type="TemplateName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP09_TemplateName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="List">
+                  <List name="" value="0" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="227" name="Configure RAG Account " enable="True">
+              <Options>268451840</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="Boolean">
+                  <Boolean type="Verify SSL Certificates" id="268435456" value="True" />
+                </Parameter>
+                <Parameter type="RAGAPIKey">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP10_AccessAPIKey"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGEndpoint">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP10_Endpoint"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP10_RAGAccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="185" name="Configure Region Monitor Script" enable="True">
+              <Options>20332</Options>
+              <ParameterValues membercount="5">
+                <Parameter type="Monitor">
+                  <List name="iBeacon" value="0" />
+                </Parameter>
+                <Parameter type="Name">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP11_RangeName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="UUID">
+                  <Calculation datatype="2" position="5">
+                    <Calculation>
+                      <Text>"CP11_ProximityUUID"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Major">
+                  <Calculation datatype="2" position="6">
+                    <Calculation>
+                      <Text>"CP11_MajorID"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Minor">
+                  <Calculation datatype="1" position="7">
+                    <Calculation>
+                      <Text>"CP11_MinorID"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="213" name="Fine-Tune Model" enable="True">
+              <Options>18176</Options>
+              <ParameterValues membercount="6">
+                <Parameter type="FineTuneParameters">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP12_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="FineTuneDataCompleteField">
+                  <FieldReference id="0" name="" UUID="" />
+                </Parameter>
+                <Parameter type="FineTuneTable" />
+                <Parameter type="FineTuneDataSource">
+                  <List name="Table" value="1" />
+                </Parameter>
+                <Parameter type="FineTuneBaseModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP12_FineTuneBaseModelName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="FineTuneAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP12_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="220" name="Generate Response from Model" enable="True">
+              <Options>34069249</Options>
+              <ParameterValues membercount="13">
+                <Parameter type="Boolean">
+                  <Boolean type="Agentic mode" id="131072" value="True" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Stream" id="32768" value="True" />
+                </Parameter>
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMWebScript">
+                  <Parameter type="Name">
+                    <Calculation datatype="1" position="20">
+                      <Calculation>
+                        <Text>"CP13_ObjectName"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Parameter>
+                  <Parameter type="FunctionRef">
+                    <Calculation datatype="1" position="21">
+                      <Calculation>
+                        <Text>"CP13_FunctionName"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Parameter>
+                </Parameter>
+                <Parameter type="LLMParameters">
+                  <Calculation datatype="1" position="16">
+                    <Calculation>
+                      <Text>"CP13_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMAction">
+                  <List name="" value="0" />
+                </Parameter>
+                <Parameter type="LLMToolDefinitions">
+                  <Calculation datatype="1" position="13">
+                    <Calculation>
+                      <Text>"CP13_ToolDefinitions"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMTemperature">
+                  <Calculation datatype="2" position="12">
+                    <Calculation>
+                      <Text>"CP13_Temperature"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMSlidingWindow">
+                  <Parameter type="LLMSlidingWindowCount">
+                    <Calculation datatype="2" position="9">
+                      <Calculation>
+                        <Text>"CP13_SlidingWindowMessageCount"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Parameter>
+                  <Parameter type="LLMSlidingWindowVariable">
+                    <LLMSlidingWindowVariable IncludeToolCalls="0" />
+                  </Parameter>
+                </Parameter>
+                <Parameter type="LLMInstruction">
+                  <Calculation datatype="1" position="5">
+                    <Calculation>
+                      <Text>"CP13_Instructions"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMUserPrompt">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP13_UserPrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP13_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP13_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="145" name="Go to Object" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="1">
+                <Parameter type="Object">
+                  <Name>
+                    <Calculation datatype="1" position="0">
+                      <Calculation>
+                        <Text>"CP14_ObjectName"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Name>
+                  <repetition>
+                    <Calculation datatype="1" position="1">
+                      <Calculation>
+                        <Text>"CP14_Repetition"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </repetition>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="215" name="Insert Embedding" enable="True">
+              <Options>16385</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMEmbeddingInputText">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP15_InputText"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP15_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP15_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="216" name="Insert Embedding in Found Set" enable="True">
+              <Options>18945</Options>
+              <ParameterValues membercount="8">
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMParameters">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP16_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMBulkEmbeddingField">
+                  <FieldReference id="0" name="" repetition="1" UUID="" />
+                </Parameter>
+                <Parameter type="LLMEmbeddingModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP16_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP16_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Show summary" id="8192" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Continue on error" id="4096" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Replace target contents" id="1024" value="False" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="241" name="Insert Image Caption" enable="True">
+              <Options>16385</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMEmbeddingInputText">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP17_InputText"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP17_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP17_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="240" name="Insert Image Captions in Found Set" enable="True">
+              <Options>18945</Options>
+              <ParameterValues membercount="7">
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMParameters">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP18_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMBulkEmbeddingField">
+                  <FieldReference id="0" name="" repetition="1" UUID="" />
+                </Parameter>
+                <Parameter type="LLMEmbeddingModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP18_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMEmbeddingAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP18_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Continue on error" id="4096" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Replace target contents" id="1024" value="False" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="160" name="Insert from URL" enable="True">
+              <Options>268456192</Options>
+              <ParameterValues membercount="5">
+                <Parameter type="Boolean">
+                  <Boolean type="Verify SSL Certificates" id="268435456" value="True" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Select" id="4096" value="True" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="With dialog" id="128" value="True" />
+                </Parameter>
+                <Parameter type="URL">
+                  <URL autoEncode="False">
+                    <Calculation datatype="1" position="0">
+                      <Calculation>
+                        <Text>"CP19_Calculation"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </URL>
+                </Parameter>
+                <Parameter type="Calculation">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP19_CURLOptions"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="221" name="Perform Find by Natural Language" enable="True">
+              <Options>20737</Options>
+              <ParameterValues membercount="6">
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="LLMParameters">
+                  <Calculation datatype="1" position="5">
+                    <Calculation>
+                      <Text>"CP20_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMAction">
+                  <List name="Find Request as JSON" value="30" />
+                </Parameter>
+                <Parameter type="LLMMessage">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP20_PromptMessage"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP20_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP20_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="128" name="Perform Find/Replace" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="9">
+                <Parameter type="Boolean">
+                  <Boolean type="With dialog" id="128" value="True" />
+                </Parameter>
+                <Parameter type="perform">
+                  <List name="Find Next" value="0" />
+                </Parameter>
+                <Parameter type="find">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP21_FindCalc"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="replace">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP21_ReplaceCalc"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="direction">
+                  <List name="Forward" value="0" />
+                </Parameter>
+                <Parameter type="case">
+                  <Boolean type="Match case" value="False" />
+                </Parameter>
+                <Parameter type="whole">
+                  <Boolean type="Match whole words only" value="False" />
+                </Parameter>
+                <Parameter type="across">
+                  <List name="All records/requests" value="0" />
+                </Parameter>
+                <Parameter type="within">
+                  <List name="All fields" value="0" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="219" name="Perform RAG Action" enable="True">
+              <Options>29697</Options>
+              <ParameterValues membercount="10">
+                <Parameter type="RAGPromptParameters">
+                  <Calculation datatype="1" position="7">
+                    <Calculation>
+                      <Text>"CP22_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="TemplateName">
+                  <Calculation datatype="1" position="11">
+                    <Calculation>
+                      <Text>"CP22_TemplateName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Stream" id="4096" value="True" />
+                </Parameter>
+                <Parameter type="Target">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="32">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="RAGModel">
+                  <Calculation datatype="1" position="8">
+                    <Calculation>
+                      <Text>"CP22_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGAIAccountName">
+                  <Calculation datatype="1" position="9">
+                    <Calculation>
+                      <Text>"CP22_AIAccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMMessage">
+                  <Calculation datatype="1" position="6">
+                    <Calculation>
+                      <Text>"CP22_PromptMessage"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGAction">
+                  <List name="Send Prompt" value="3" />
+                </Parameter>
+                <Parameter type="RAGSpaceID">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP22_SpaceID"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP22_RAGAccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="219" name="Perform RAG Action" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="5">
+                <Parameter type="RAGInputText">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP22_InputText"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGDataSource">
+                  <List name="From Text" value="1" />
+                </Parameter>
+                <Parameter type="RAGAction">
+                  <List name="Add Data" value="1" />
+                </Parameter>
+                <Parameter type="RAGSpaceID">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP22_SpaceID"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="RAGAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP22_RAGAccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="214" name="Perform SQL Query by Natural Language" enable="True">
+              <Options>30976</Options>
+              <ParameterValues membercount="8">
+                <Parameter type="Boolean">
+                  <Boolean type="Stream" id="4096" value="True" />
+                </Parameter>
+                <Parameter type="LLMOptionsName">
+                  <Calculation datatype="1" position="16">
+                    <Calculation>
+                      <Text>"CP23_OptionsName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMOptionsSelection">
+                  <List name="By JSON data" value="1" />
+                </Parameter>
+                <Parameter type="LLMMessage">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP23_PromptMessage"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMPromptTemplateName">
+                  <Calculation datatype="1" position="18">
+                    <Calculation>
+                      <Text>"CP23_TemplateName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMParameters">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP23_Parameters"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMModel">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP23_Model"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="LLMAccountName">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP23_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="164" name="Perform Script on Server" enable="True">
+              <Options>33572928</Options>
+              <ParameterValues membercount="3">
+                <Parameter type="List">
+                  <List name="By name" value="2">
+                    <Calculation datatype="1" position="2">
+                      <Calculation>
+                        <Text>"CP24_Calculated"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </List>
+                </Parameter>
+                <Parameter type="Parameter">
+                  <Parameter>
+                    <Calculation datatype="1" position="0">
+                      <Calculation>
+                        <Text>"CP24_Calculation"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Parameter>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Wait for completion" id="256" value="True" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="218" name="Perform Semantic Find" enable="True">
+              <Options>18201</Options>
+              <ParameterValues membercount="8">
+                <Parameter type="Query">
+                  <List name="" value="0" />
+                </Parameter>
+                <Parameter type="Records">
+                  <List name="" value="0" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Return count" id="256" value="True" />
+                </Parameter>
+                <Parameter type="Count">
+                  <Calculation datatype="2" position="3">
+                    <Calculation>
+                      <Text>"CP25_Count"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Condition">
+                  <List name="" value="0" />
+                </Parameter>
+                <Parameter type="Threshold">
+                  <Calculation datatype="2" position="5">
+                    <Calculation>
+                      <Text>"CP25_Threshold"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="FieldReference">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="10">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="SaveResult">
+                  <Parameter type="Target">
+                    <FieldReference id="0" name="" UUID="">
+                      <repetition>
+                        <Calculation datatype="1" position="10">
+                          <Calculation>
+                            <Text>1</Text>
+                          </Calculation>
+                        </Calculation>
+                      </repetition>
+                    </FieldReference>
+                  </Parameter>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="138" name="Re-Login" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="DataSourceReference">
+                  <DataSourceReference id="0" name="Current File" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="With dialog" id="128" value="True" />
+                </Parameter>
+                <Parameter type="Name">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP26_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Password">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP26_Password"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="193" name="Read from Data File" enable="True">
+              <Options>49154</Options>
+              <ParameterValues membercount="2">
+                <Parameter type="id">
+                  <Calculation datatype="2" position="0">
+                    <Calculation>
+                      <Text>"CP27_Calculation"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="size">
+                  <Calculation datatype="2" position="1">
+                    <Calculation>
+                      <Text>"CP27_Count"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Encoding type="3" name="Bytes" />
+              </ParameterValues>
+            </Step>
+            <Step id="167" name="Refresh Object" enable="True">
+              <Options>16384</Options>
+              <ParameterValues membercount="1">
+                <Parameter type="Object">
+                  <Name>
+                    <Calculation datatype="1" position="0">
+                      <Calculation>
+                        <Text>"CP28_ObjectName"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Name>
+                  <repetition>
+                    <Calculation datatype="1" position="1">
+                      <Calculation>
+                        <Text>"CP28_Repetition"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </repetition>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="136" name="Reset Account Password" enable="True">
+              <Options>16386</Options>
+              <ParameterValues membercount="3">
+                <Parameter type="Name">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP29_AccountName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Password">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP29_Password"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean value="True" type="Password" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="205" name="Open Transaction" enable="True">
+              <Options>0</Options>
+              <ParameterValues membercount="4">
+                <Parameter type="Boolean">
+                  <Boolean type="Collapsed" id="33554432" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Skip auto-enter options" id="4096" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Skip data entry validation" id="256" value="False" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Override ESS locking conflicts" id="512" value="False" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="207" name="Revert Transaction" enable="True">
+              <Options>17152</Options>
+              <ParameterValues membercount="5">
+                <Parameter type="Boolean">
+                  <Boolean type="Condition" id="256" value="True" />
+                </Parameter>
+                <Parameter type="Condition">
+                  <Calculation datatype="7" position="0">
+                    <Calculation>
+                      <Text>"CP30_Condition"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Error Code" id="512" value="True" />
+                </Parameter>
+                <Parameter type="ErrorCode">
+                  <Calculation datatype="2" position="1">
+                    <Calculation>
+                      <Text>"CP30_ErrorCode"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="ErrorMessage">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP30_ErrorMessage"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="206" name="Commit Transaction" enable="True">
+              <Options>0</Options>
+            </Step>
+            <Step id="225" name="Save Records as JSONL" enable="True">
+              <Options>1610633984</Options>
+              <ParameterValues membercount="6">
+                <Parameter type="SaveAsJSONLAssistantPromptField">
+                  <Calculation datatype="1" position="4">
+                    <Calculation>
+                      <Text>"CP31_AssistantPrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="SaveAsJSONLUserPromptField">
+                  <Calculation datatype="1" position="3">
+                    <Calculation>
+                      <Text>"CP31_UserPrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="SaveAsJSONLSystemPromptField">
+                  <Calculation datatype="1" position="2">
+                    <Calculation>
+                      <Text>"CP31_SystemPrompt"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="SaveAsJSONLTable" />
+                <Parameter type="Boolean">
+                  <Boolean type="Format for fine-tuning" id="4096" value="True" />
+                </Parameter>
+                <Parameter type="Boolean">
+                  <Boolean type="Create folders" id="512" value="True" />
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="195" name="Set Data File Position" enable="True">
+              <Options>49152</Options>
+              <ParameterValues membercount="2">
+                <Parameter type="id">
+                  <Calculation datatype="2" position="0">
+                    <Calculation>
+                      <Text>"CP32_Calculation"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="position">
+                  <Calculation datatype="2" position="1">
+                    <Calculation>
+                      <Text>"CP32_position"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="147" name="Set Field By Name" enable="True">
+              <Options>134234112</Options>
+              <ParameterValues membercount="3">
+                <Parameter type="Boolean">
+                  <Boolean type="Specify target field" id="134217728" value="True" />
+                </Parameter>
+                <Parameter type="Calculation">
+                  <Calculation datatype="1" position="1">
+                    <Calculation>
+                      <Text>"CP33_TargetName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="Calculation">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP33_Result"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="130" name="Set Selection" enable="True">
+              <Options>16385</Options>
+              <ParameterValues membercount="2">
+                <Parameter type="FieldReference">
+                  <FieldReference id="0" name="" UUID="">
+                    <repetition>
+                      <Calculation datatype="1" position="10">
+                        <Calculation>
+                          <Text>1</Text>
+                        </Calculation>
+                      </Calculation>
+                    </repetition>
+                  </FieldReference>
+                </Parameter>
+                <Parameter type="Select">
+                  <Start>
+                    <Calculation datatype="1" position="0">
+                      <Calculation>
+                        <Text>"CP34_StartPosition"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </Start>
+                  <End>
+                    <Calculation datatype="1" position="1">
+                      <Calculation>
+                        <Text>"CP34_EndPosition"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </End>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="146" name="Set Web Viewer" enable="True">
+              <Options>16386</Options>
+              <ParameterValues membercount="2">
+                <Parameter type="Calculation">
+                  <Calculation datatype="1" position="0">
+                    <Calculation>
+                      <Text>"CP35_ObjectName"</Text>
+                    </Calculation>
+                  </Calculation>
+                </Parameter>
+                <Parameter type="action">
+                  <List name="Go to URL..." value="5">
+                    <Calculation datatype="1" position="1">
+                      <Calculation>
+                        <Text>"CP35_URL"</Text>
+                      </Calculation>
+                    </Calculation>
+                  </List>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+            <Step id="124" name="Set Window Title" enable="True">
+              <Options>-2147467262</Options>
+              <ParameterValues membercount="1">
+                <Parameter type="WindowReference">
+                  <WindowReference>
+                    <Select kind="1" type="Calculated">
+                      <Name current="True">
+                        <Calculation datatype="1" position="0">
+                          <Calculation>
+                            <Text>"CP36_Name"</Text>
+                          </Calculation>
+                        </Calculation>
+                      </Name>
+                    </Select>
+                    <Rename>
+                      <Calculation datatype="1" position="1">
+                        <Calculation>
+                          <Text>"CP36_NewName"</Text>
+                        </Calculation>
+                      </Calculation>
+                    </Rename>
+                  </WindowReference>
+                </Parameter>
+              </ParameterValues>
+            </Step>
+          </ObjectList></Script>

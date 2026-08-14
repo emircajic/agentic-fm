@@ -14,7 +14,8 @@
  * uses ElementTree-`find` semantics — **direct children only** — never
  * `querySelector` (which would match descendants); see `findChild`/`findChildren`.
  *
- * `ComputeParamHr` → `computeParamHr`; `RenderGenericXmlToHr` → `renderStepHr`.
+ * The reference's per-param HR computation maps here to `computeParamHr` and its
+ * whole-step renderer to `renderStepHr`.
  * Control-flow steps are NOT rendered here — they stay hand-coded in
  * steps/control.ts (the sanctioned exception), exactly as snippet_to_hr.py keeps
  * them hand-coded.
@@ -145,11 +146,13 @@ export interface GrammarParam {
   parentElement: string | null;
   defaultValue: string | null;
   hrEnumValues: Record<string, string>;
+  hrHiddenValues: string[];
   invertedHr: boolean | null;
   enumStyle: string | null;
   flagStyle: boolean | null;
   hrSlot: number | null;
   hrHidden: boolean | null;
+  hrBare: boolean | null;
   omitWhenEmpty: boolean | null;
   discriminator: string | null;
   discriminatorValues: Record<string, DiscriminatorBranch>;
@@ -187,7 +190,7 @@ export function blockIndent(name: string): { closeBefore: boolean; openAfter: bo
 }
 
 /**
- * The ParamKey rule (matches the reference converter and Python `param_key`): a
+ * The param-key rule (matches the reference converter and Python `param_key`): a
  * `namedCalc` param keys off its `wrapperElement`; any other param off its
  * `xmlElement`.
  */
@@ -228,11 +231,13 @@ function buildParam(d: Record<string, unknown>): GrammarParam {
     parentElement: (d.parentElement as string) ?? null,
     defaultValue: (d.defaultValue as string) ?? null,
     hrEnumValues: (d.hrEnumValues as Record<string, string>) ?? {},
+    hrHiddenValues: (d.hrHiddenValues as string[]) ?? [],
     invertedHr: (d.invertedHr as boolean) ?? null,
     enumStyle: (d.enumStyle as string) ?? null,
     flagStyle: (d.flagStyle as boolean) ?? null,
     hrSlot: typeof d.hrSlot === 'number' ? (d.hrSlot as number) : null,
     hrHidden: (d.hrHidden as boolean) ?? null,
+    hrBare: (d.hrBare as boolean) ?? null,
     omitWhenEmpty: (d.omitWhenEmpty as boolean) ?? null,
     discriminator: (d.discriminator as string) ?? null,
     discriminatorValues,
@@ -276,7 +281,7 @@ export function getGrammarEntry(name: string): GrammarEntry | undefined {
 /**
  * FileMaker's universal step-type id for `name` (the `<Step id="N">` constant),
  * resolved from the loaded catalog — 0 when the catalog isn't loaded or the name
- * is unknown. Mirrors the reference converter's `ResolveStepId`; shared so the
+ * is unknown. Mirrors the reference converter's own step-id lookup; shared so the
  * HR→XML emit path and control-flow hand-coders write the same real id FM does.
  */
 export function resolveStepId(name: string): number {
@@ -309,7 +314,7 @@ export function valueRevealsCompanion(
 /**
  * Every label a param's HR token may carry — its base hrLabel plus any
  * `hrLabelWhen` variant labels — longest first (lexicographic tiebreak) with
- * duplicates removed. Port of the reference `CandidateHrLabels`; the HR parse
+ * duplicates removed. Ports the reference converter's candidate-label rule; the HR parse
  * matcher tries each so a variant-labeled value round-trips.
  */
 export function candidateHrLabels(param: GrammarParam): string[] {
@@ -513,9 +518,9 @@ function bitmaskMaskForFlags(param: GrammarParam, labels: string[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Per-param HR fragment (ComputeParamHr)
+// Per-param HR fragment
 // ---------------------------------------------------------------------------
-/** Compute one param's HR fragment ('' = no token). Port of ComputeParamHr. */
+/** Compute one param's HR fragment ('' = no token), as the reference does. */
 export function computeParamHr(entry: GrammarEntry, step: Element, param: GrammarParam): string {
   let val = '';
   let base = !param.parentElement ? step : descendPath(step, param.parentElement);
@@ -550,6 +555,13 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
       const eattr = isElemAttr ? g11Attr : param.xmlAttr || 'value';
       const eelem = isElemAttr ? g11Elem : param.xmlElement;
       val = childAttr(base, eelem, eattr);
+    }
+    // P7.2: FileMaker renders no token at all for some of an enum's values -- it
+    // shows the companion the value reveals, in that companion's own slot
+    // (`Go to Record/Request/Page [ With dialog: Off ; 1 ]` is the ByCalculation
+    // form, and `1` is the row calculation, not the location).
+    if (param.hrHiddenValues.includes(val || param.defaultValue || '\u0000')) {
+      val = '';
     }
     if (!param.flagStyle && Object.keys(param.hrEnumValues).length > 0) {
       const mapped = param.hrEnumValues[val];
@@ -607,7 +619,9 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
   } else if (ptype === 'namedCalc') {
     const wrapper = param.wrapperElement || param.xmlElement;
     val = nestedText(base, wrapper, 'Calculation');
-    if (val) {
+    // hrBare params (Show Custom Dialog's Title/Message) print positionally
+    // with no label, mirroring FileMaker; every other namedCalc keeps its label.
+    if (val && !param.hrBare) {
       const lbl = effectiveHrLabel(entry, step, param);
       if (lbl) val = lbl + ': ' + val;
     }
@@ -693,13 +707,21 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
     if (param.discriminator) {
       const dest = childAttr(base, param.discriminator, 'value');
       if (ciEquals(dest, 'OriginalLayout')) val = 'original layout';
-      else if (ciEquals(dest, 'CurrentLayout')) val = 'current layout';
-      else if (ciEquals(dest, 'LayoutNameByCalc')) val = 'by name: ' + childText(layoutNode, 'Calculation');
+      // FileMaker's own spelling, angle-bracketed (measured 26.0.1).
+      else if (ciEquals(dest, 'CurrentLayout')) val = '<Current Layout>';
+      // FileMaker prints the calculation bare, with no keyword.
+      else if (ciEquals(dest, 'LayoutNameByCalc')) val = childText(layoutNode, 'Calculation');
+      // Deliberately NOT FileMaker's spelling: FM renders this exactly like
+      // LayoutNameByCalc, so mirroring it would collapse the two destinations.
       else if (ciEquals(dest, 'LayoutNumberByCalc')) val = 'by number: ' + childText(layoutNode, 'Calculation');
       else {
         const name = layoutNode !== null ? layoutNode.getAttribute('name') ?? '' : '';
-        if (name) val = '"' + name + '"';
+        val = name ? '"' + name + '"' : '<unknown>';
       }
+      // The label belongs to THIS param ("Using layout: <token>"); the sibling
+      // discriminator carries none, or the parse reads label plus payload as a
+      // literal layout name.
+      if (val && label) val = label + ': ' + val;
     } else if (layoutNode !== null || param.required) {
       const name = layoutNode !== null ? layoutNode.getAttribute('name') ?? '' : '';
       let tok = '';
@@ -748,7 +770,7 @@ function renderDiscriminatorGroup(entry: GrammarEntry, step: Element, param: Gra
 }
 
 /**
- * Render a full step to its HR bracket line. Port of RenderGenericXmlToHr.
+ * Render a full step to its HR bracket line, as the reference does.
  * Returns `entry.name` alone when no param contributes a token, else
  * `Name [ tok ; tok ; … ]`. Does not handle control-flow steps.
  */

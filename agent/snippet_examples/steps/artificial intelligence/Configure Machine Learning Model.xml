@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="202" name="Configure Machine Learning Model">
-    <Field table="" id="0" name=""/>
-    <ConfigureCoreML>General<Name><Calculation><![CDATA["model name"]]></Calculation></Name></ConfigureCoreML>
-    <Field table="" id="0" name=""/>
+    <ConfigureCoreML><Operation>Uninstall</Operation><Name><Calculation><![CDATA["model name"]]></Calculation></Name></ConfigureCoreML>
   </Step>
 </fmxmlsnippet>
-<!-- ConfigureCoreML text content: "Uninstall" (HR: Unload) | "Vision" | "General". The text node is mixed with child elements. -->
+<!-- Re-captured from FileMaker Pro 26.0.1 (macOS). The operation is an <Operation> CHILD of <ConfigureCoreML>, not the wrapper's mixed text content; the previous capture in this file showed mixed text and predates 26. -->
+<!-- Operation text content: "Uninstall" (HR: Unload) | "Vision" | "General". -->
+<!-- HR "Unload" maps to XML "Uninstall". -->
+<!-- 26.0.1 DISCARDS whatever operation a pasted snippet carries and re-serializes "Uninstall" every time — as mixed text, as an <Operation> child, with or without a resolvable <Field>. The clipboard was verified to hold the authored value byte-for-byte before the paste, so the coercion is FileMaker's. Vision/General are therefore settable only in the step's own options UI, and their shapes below are retained from the pre-26 capture rather than re-measured. -->
 <!-- For Vision/General: <Field> element appears twice (duplicated) as sibling of ConfigureCoreML, and <Name> calc is inside ConfigureCoreML. -->
 <!-- For Uninstall: only <Name> calc inside ConfigureCoreML, no <Field>. -->
 <!-- Field supports repetition attribute for repeating fields (e.g. repetition="2"). -->
-<!-- HR "Unload" maps to XML "Uninstall". -->

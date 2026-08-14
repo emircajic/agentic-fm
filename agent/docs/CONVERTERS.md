@@ -73,6 +73,152 @@ python3 agent/scripts/fm_xml_to_snippet.py \
 - Maps nested SaXML `<ParameterValues>` to flat fmxmlsnippet child elements
 - See `agent/scripts/XML_TRANSFORMATION.md` for the structural mapping reference
 
+#### Placing a SaXML boolean
+
+A step's booleans are matched by the SaXML `<Boolean type="…">` attribute against the catalog param's `hrLabel`.
+When that fails the reader falls back to position — but **only when exactly one unclaimed `<Parameter><Boolean>` is left**.
+
+The fallback has to be that strict because FileMaker's SaXML carries booleans the catalog does not model as params:
+
+| Kind | Example |
+|---|---|
+| Script-editor state, not a step param at all | `<Boolean type="Collapsed">` on block steps |
+| A presence flag for a companion the catalog models as a calc | `Revert Transaction`'s `Condition` / `Error Code` |
+| The boolean of a param the reader skipped because it is `hrHidden` | `Print PDF`'s `Password` / `Use print options from` / `Save print options to` |
+
+With one candidate there is no choice to get wrong, so the positional read stands — FileMaker omits `type` entirely on single-boolean steps (`Allow User Abort`, `Set Error Capture`) and names it differently from the catalog on others (`Set Error Logging` exports `enabled` against a `Logging` label).
+With more than one it refuses, counting the step as unsupported and emitting a marked placeholder.
+Guessing produces a plausible `<Elem state="…"/>` holding a value that means something else, and nothing downstream can tell.
+
+#### Placing a SaXML calculation
+
+Calculations are placed by **name**, against `saxml_read._SAXML_CALC_PARAMS`.
+
+An address is a path that starts at the top-level `<Parameter type="…">` and reads downward, where a nested `<Parameter type="X">` contributes `X` and any other element contributes its tag.
+It matches as an ordered subsequence anchored at the top, so it only needs to be long enough to separate two params that share a parent: `Go to Object` addresses its object name as `Object/Name` and its repetition as `Object/repetition`, while a param with a parent to itself is just its type.
+Two params may share one address — `Set Field By Name` exports both calcs as `<Parameter type="Calculation">` — and then claim that address's calcs in document order, which is catalog order in every case measured.
+
+A step absent from the table still reads positionally.
+A step present in it does not fall back: a param with no address reads as empty, and a calc no address claims makes the reader refuse the step, because on a step whose layout was measured whole a leftover calc means the measurement no longer matches what FileMaker exports.
+
+**The names are data, not a rule.** 88 of the 114 measured addresses differ from the param's own fmxmlsnippet element name, and no prefix rule relates them:
+
+| Catalog element | SaXML `<Parameter type>` |
+|---|---|
+| `Instructions` | `LLMInstruction` |
+| `SlidingWindowMessageCount` | `LLMSlidingWindowCount` |
+| `PromptMessage` | `LLMMessage` |
+| `AccountName` | `Name` (Add Account) / `LLMAccountName` (AI steps) / `FineTuneAccountName` (Fine-Tune Model) |
+| `ShowWhenAppInForeground` | `ShowInForeground` |
+
+Extend the table only by measurement: build a script in which every calculation holds a literal naming its param, export it from FileMaker, and read back which `<Parameter>` carried each literal.
+A guessed address is worse than none, because it looks authoritative.
+
+**Why position could not work.** FileMaker exports `Perform SQL Query by Natural Language` last-to-first, so the account name landed on `PromptMessage` and the prompt on `AccountName`.
+That reversal is the loud case; the quiet one is more common and was live for every one of these.
+Counts are from a measurement sample of ~104k script steps exported from real solutions — not a corpus in this repo, so the numbers are provenance rather than something you can re-run:
+
+| Step | What a positional read did | Steps affected |
+|---|---|---|
+| `Perform Script on Server` | script chosen from a list exports no calc for it, so the script *parameter* shifted up into "specify script by calculated name" | 158 |
+| `Go to Object` / `Refresh Object` | the repetition calc was dropped entirely | 461 |
+| `Set Selection` | the end position was dropped | 30 |
+| `Set Window Title` | the new title was placed as the *window to rename* | 12 |
+| `Configure Local Notification` | an absent button label shifted the foreground flag onto `Button1Label` | 2 |
+
+An **absent optional calc shifts every later one**, which is why a sweep comparing export order against catalog order reported that sample clean while 663 of its steps converted wrongly.
+Tying a known value to an expected param is the only check that sees it.
+
+Because a positional read always emits well-formed XML, a sample that converts cleanly is **not** verified — check that each calc's value sits under the expected wrapper before committing its golden.
+`test_saxml_calc_placement` does exactly that against `fixtures/converter/saxml_calc_placement/`, where every calculation is a literal naming its param.
+
+#### Placing a SaXML enum, and reading its label
+
+Enums had both halves of the calc defect and needed one more thing on top, so they are placed the same way and then **translated**.
+
+*Placed by name,* against `saxml_read._SAXML_ENUM_PARAMS`, using the same addresses and the same `_addressed_nodes` walk as the calcs.
+The rules carry over unchanged: a step absent from the table still reads positionally, a step present in it does not fall back, and a param with no address reads as empty rather than claiming the next list along.
+Two params are deliberately absent from their step's map — `AVPlayer Play`'s `Source` and `Perform SQL Query by Natural Language`'s `UniversalPathList` — because FileMaker exports no list for either, and both were previously claiming the next param's.
+
+Position fails here for the same two reasons it fails for calcs, plus one that is worse.
+FileMaker exports out of catalog order (`Perform RAG Action` puts its data source ahead of its action, `Configure Regression Model` its algorithm ahead of its action), and an absent optional shifts every later one (`AVPlayer Set Options` omits an unset `Presentation`, and the `Zoom` behind it slides into the slot).
+The extra cost is that an enum can **govern**: a swapped discriminator leaves the emitter unable to recognise the branch, so it drops every param that branch would have revealed, calculations included.
+That is how six correctly-placed calcs disappeared from `Perform RAG Action` and how `Set Web Viewer` lost its URL.
+
+*Translated by measurement,* against `saxml_read._SAXML_ENUM_LABELS`.
+A SaXML `<List name="…">` carries the label the script editor DISPLAYS, not the value FileMaker writes, and where they differ and nothing reverses the label, the label reaches the emitted attribute unchanged:
+
+| Step / param | SaXML label | FileMaker writes |
+|---|---|---|
+| `Replace Field Contents` / `With` | `Replace with calculation: ` | `Calculation` |
+| `Go to Record/Request/Page`, `Go to Portal Row` / `RowPageLocation` | `By Calculation…` | `ByCalculation` |
+| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` |
+| `Arrange All Windows` / `WindowArrangement` | `Cascade Window` | `Cascade` |
+| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace` | `FindMatchingReplace` |
+| `Enable Touch Keyboard` / `ShowHide` | `On` | `Show` |
+| `Configure AI Account` / `LLMType` | `OpenAI` | `ChatGPT` |
+| `Set Web Viewer` / `Action` | `Go to URL...` | `GoToURL` |
+
+**No rule relates the two.** De-spacing explains `Resize to Fit` and breaks on `Cascade Window`; a prefix explains `Replace` and breaks on everything else; `On` → `Show` and `OpenAI` → `ChatGPT` share nothing with either.
+Like the calc addresses, this is data, and every entry is sourced from FileMaker's own corpus under `agent/snippet_examples/steps` — either a comment that states the mapping outright (`MonitorType value: "iBeacon" | "GeoLocation" (HR: Geofence) | "Clear"`, `ShowHide value: "Show" [On] | "Hide" [Off]`) or a legal-value list whose unchanged members anchor the changed one.
+Resolution order is the measured map, then the catalog's `hrEnumValues` reversed, then the label unchanged.
+Seven steps' entries were removed from the measured map once the catalog's own `hrEnumValues` was corrected to reverse the same labels (Adjust Window, Arrange All Windows, AVPlayer Set Options, Configure AI Account, Configure Region Monitor Script, Enable Touch Keyboard, Find Matching Records) — see the closed section below.
+What remains is what the catalog cannot reverse: a SaXML label that differs from the displayed one (`By Calculation…` carries a trailing ellipsis the Script Workspace does not show), or a param the catalog models differently.
+
+An unmeasured label still passes through rather than refusing the step: refusing would cost every other param on the step to fix nothing, and most enums do label themselves with their own value.
+`test_converter_conformance.test_saxml_enum_values_are_filemakers` is the guard — it asserts every emitted enum value against those same corpus comments, so a label that reaches the output fails the gate.
+A golden cannot do this job: regenerate it from a reader that emits labels and the labels become the expectation.
+
+#### Closed — the catalog's `enumValues` had the same disease, on the HR→XML path
+
+Eighteen enum params held FileMaker's **display label** where the catalog is supposed to hold the value FileMaker writes.
+The SaXML reader routed around ten of them through `_SAXML_ENUM_LABELS` above; **HR→XML did not**, in Python or TypeScript.
+`Adjust Window [ Resize to Fit ]` emitted `<WindowState value="Resize to Fit"/>`, which FileMaker discards.
+
+Each now holds FileMaker's value in `enumValues` and FileMaker's label in `hrEnumValues`, so the existing reverse map does the work on emit and the forward map renders the label on read:
+
+| Step / param | was in `enumValues` | FileMaker writes | FileMaker displays |
+|---|---|---|---|
+| `Adjust Window` / `WindowState` | `Resize to Fit` | `ResizeToFit` | `Resize to Fit` |
+| `Arrange All Windows` / `WindowArrangement` | `Tile Horizontally`, `Tile Vertically`, `Cascade Window`, `Bring All To Front` | `TileHorizontally`, `TileVertically`, `Cascade`, `BringAllToFront` | the four label forms |
+| `AVPlayer Set Options` / `Zoom` | `Fit Only`, `Fill Only`, `Stretch Only` | `FitOnly`, `FillOnly`, `StretchOnly` | `Fit Only`, `Fill Only`, `Stretch Only` |
+| `Configure AI Account` / `LLMType` | `OpenAI`, `Custom` | `ChatGPT`, `Other` | `OpenAI`, `Custom` |
+| `Configure Machine Learning Model` / `Operation` | `Unload` | `Uninstall` | `Unload` |
+| `Configure Region Monitor Script` / `MonitorType` | `Geofence` | `GeoLocation` | `Geofence` |
+| `Enable Touch Keyboard` / `ShowHide` | `On`, `Off` | `Show`, `Hide` | `On`, `Off` |
+| `Find Matching Records` / `FindMatchingRecordsByField` | `Replace`, `Constrain`, `Extend` | `FindMatchingReplace`, `FindMatchingConstrain`, `FindMatchingExtend` | `Replace`, `Constrain`, `Extend` |
+| `Go to Record/Request/Page`, `Go to Portal Row` / `RowPageLocation` | `By Calculation` | `ByCalculation` | *(nothing — see below)* |
+| `Add Account` / `AccountType` | `External Server`, `Apple Account`, `Microsoft Entra ID`, `Custom OAuth` | `ExternalServer`, `AppleID`, `Azure`, `CustomOauth`, plus `AzureGroup` and `CustomOauthGroup`, which were missing | `Apple Account`, `Microsoft Entra ID`, `Custom OAuth` |
+| `Configure Prompt Template` / `ModelProvider` | `OpenAI` | `ChatGPT` | `OpenAI` |
+| `Configure Prompt Template` / `RequestType` | `SQL Query`, `Find Request`, `RAG Prompt` | `SQLQuery`, `FindRequest`, `RAGPrompt` | `SQL Query`, `Find Request`, `RAG Prompt` |
+| `Configure Regression Model` / `LLMTrainAction` | `Train Model`, `Save Model`, `Load Model`, `Unload Model` | `LLMTrainTrainModel`, `LLMTrainSaveModel`, `LLMTrainLoadModel`, `LLMTrainUnloadModel` | the four label forms |
+| `Configure Regression Model` / `LLMAlgorithm` | `Random Forest` | `LLMTrainAlgForest` | `Random Forest` |
+| `Fine-Tune Model` / `DataSource` | `Table`, `File` | `DataTable`, `TrainingFile` | `Table`, `File` |
+| `Go to Layout` / `LayoutDestination` | `CurrentLayout`, `LayoutNameByCalc`, `LayoutNumberByCalc` | `SelectedLayout`, `OriginalLayout`, `LayoutNameByCalc`, `LayoutNumberByCalc` | *(the layout token)* |
+| `Go to List of Records` / `LayoutDestination` | `<Current Layout>` | `CurrentLayout` | *(the layout token)* |
+| `Go to Related Record` / `LayoutDestination` | `OriginalLayout` | `UseExternalTableLayouts` was missing; `OriginalLayout` is not accepted | *(the layout token)* |
+
+Two spellings that look interchangeable and are not: `RowPageLocation` is `ByCalculation` in fmxmlsnippet, `By Calculation…` in SaXML (with a trailing ellipsis), and the Script Workspace shows **no token at all** — FileMaker puts the calculation in that slot instead.
+And `LayoutDestination` is `LayoutNameByCalc` on `Go to Related Record` and `Go to List of Records` but the *same* short spelling on `Go to Layout`, where the corpus comment had claimed `LayoutNameByCalculation`; FileMaker 26.0.1 discards the long form. `CurrentLayout` is legal on the other two steps and not on `Go to Layout`.
+
+Every value of every corrected param was pasted into a live FileMaker 26.0.1 and read back — the labels above are what its Script Workspace rendered, not what the catalog previously claimed.
+`test_converter_conformance.test_catalog_enum_values_are_filemakers` is the standing guard: it asserts the catalog's `enumValues` against FileMaker's own legal-value comments, which is the check that would have caught this class the day it landed.
+
+Three things this pass measured that are **not** enum-value defects and are still open:
+
+- **`RowPageLocation = ByCalculation` loses the calculation on HR→XML.** FileMaker renders no location token for that value, so parsing FileMaker's own HR line back consumes the calculation as the location. It needs a render-gating facet, not a value.
+- **`LayoutDestination` is a driven discriminator** — its value is re-derived from the layout token, which cannot distinguish `CurrentLayout` / `LayoutNameByCalc` / `LayoutNumberByCalc` / `UseExternalTableLayouts`, so all four resolve to `SelectedLayout` on the way back.
+- **`Add Account`'s group types (`ExternalServer`, `AzureGroup`, `CustomOauthGroup`) cannot round-trip through HR** — FileMaker shows no `Authenticate via` token for them at all, so there is nothing to read back. They are in `enumValues` (FileMaker writes them) with no `hrEnumValues` entry, because no label was observed and one must not be invented.
+
+**Every catalog change must be verified end-to-end against a live FileMaker, through every converter it feeds.**
+The catalog is not a document, it is the program driving HR→XML, XML→HR and SaXML→XML at once, and each direction can be wrong in a way the others hide.
+A green suite is not verification — the goldens are generated from these same converters, so they agree with whatever the converter emits; re-blessing them is a consequence of a fix, never evidence for it.
+Neither is an unchanged corpus diff, nor `snippet_examples` alone: that corpus is FileMaker's own output and the best offline oracle for the value FileMaker *writes*, but it is a fixed sample and it cannot tell you the label FileMaker *displays*.
+For this defect the corpus diff could not move **at all**: `enumValues` is inert on the XML→HR→XML path, because the same wrong token travels in both directions.
+Paste the emitted step into the Script Workspace, confirm FileMaker renders the option you meant, then copy it back out and diff — FileMaker silently discards a parameter it does not recognise, so a clean paste proves nothing until you read the step back.
+Cover every value of every param touched, not one sample per step.
+Full rule: `agent/catalogs/UPDATING_CATALOGS.md` § "The verification rule".
+
 ### `agent/scripts/snippet_to_hr.py`
 
 **fmxmlsnippet → HR**
@@ -224,7 +370,8 @@ An offline, dependency-free gate freezes the verified output as golden fixtures 
   - `xml-to-hr.json` — `{corpus file → HR}` from `snippet_to_hr.py` over `agent/snippet_examples/steps`.
   - `saxml/*.xml` — SaXML input samples, one per step type.
   - `saxml-to-snippet.json` — `{sample → fmxmlsnippet}` from `fm_xml_to_snippet.py` over those samples.
-- **Checks:** fmxmlsnippet → HR matches the golden; SaXML → fmxmlsnippet matches the golden and is well-formed; and the Python fmxmlsnippet → HR output matches the web viewer's committed `webviewer/test/fixtures/xml-to-hr.json`, keeping the Python and TypeScript readers in lockstep.
+  - `saxml_unsupported/*.xml` — real exports whose shape the reader cannot place. Pinned to prove it **refuses** rather than guesses; kept out of `saxml/`, which asserts zero unsupported.
+- **Checks:** fmxmlsnippet → HR matches the golden; SaXML → fmxmlsnippet matches the golden and is well-formed; every `saxml_unsupported/` fixture is counted unsupported and emits a marked placeholder; and the Python fmxmlsnippet → HR output matches the web viewer's committed `webviewer/test/fixtures/xml-to-hr.json`, keeping the Python and TypeScript readers in lockstep.
 
 ```bash
 uvx pytest agent/scripts/test_converter_conformance.py            # the gate
@@ -249,3 +396,36 @@ The TypeScript HR → fmxmlsnippet direction has no Python counterpart and is ga
 | `blockPair` | Indentation logic | If/Loop open/middle/close roles |
 
 See `agent/docs/SCHEMA_GUIDANCE.md` for the complete param type → XML mapping reference.
+
+### Hidden booleans and the params they gate
+
+Some catalog booleans render no HR token at all.
+FileMaker shows none either, so a converter that printed one would be inventing a token FileMaker cannot read back.
+
+- **`hrHidden: true`** — the param renders no HR token but still emits its XML element.
+- **`visibleWhen: {param, values}`** — a sibling renders at its own HR slot only when the named param holds one of `values`. This is how a hidden boolean's state reaches HR at all: not as a token of its own, but as the presence or absence of what it gates.
+
+Together those two produce a param that XML → HR can read but HR → XML cannot, because the round-trip's return leg has no token to parse.
+The grammar closes that with a derive rule:
+
+> For each `hrHidden` boolean **G** that at least one sibling names in its `visibleWhen.param`: G's emitted state is the gate-open value when **any** of those gated siblings carried a non-empty HR token, and the opposite value otherwise.
+> An `hrHidden` boolean that nothing gates on is untouched — it keeps emitting its catalog default.
+
+Read the gate-open value from a gating sibling's `visibleWhen.values[0]` rather than assuming `True`.
+Letting `defaultValue` answer instead is the defect this replaced: both `Restore` params default to `True`, so HR meaning "no stored import order" serialized as "restore the stored order".
+
+Three params carry the facet today — `Import Records.Restore` (gates `Table`, `ImportOptions`), `Export Records.Restore` (gates `ExportOptions`) and `Fine-Tune Model.Option` (gates `Table`).
+Derive the list rather than trusting it; the catalog is the source of truth.
+
+**Why only these three, when fifteen params are `hrHidden`.**
+FileMaker splits hidden booleans into two classes, and only FileMaker can tell you which one a param belongs to:
+
+- **Derived** — FileMaker recomputes the flag from the content it travels with. Hand `Append PDF` an `Option=False` next to an `OpenPassword` and it comes back `True`; `Generate Response from Model` repairs all four of its flags. Emitting the catalog default is lossless here.
+- **Obeyed** — FileMaker takes the flag at face value and *discards what it gated*. `Import Records` handed `Restore=False` kept `False`, reset the import options and wiped the target table. `Export Records` reset the character set. `Fine-Tune Model` wiped its training table.
+
+Only the obeyed class needs the derive rule; for the derived class it would be redundant.
+The two are indistinguishable from the catalog — the class was established by handing FileMaker Pro 26.0.1 a flag that contradicts the content beside it and reading back what it returned.
+
+**Regression cover.** `agent/scripts/test_catalog_emit.py` and `webviewer/test/catalog-emit.engine.test.ts` pin both directions.
+The byte-identity corpus cannot: every corpus step carrying one of these gates also carries its companion, so the derived value and the catalog default agree there.
+Only the companion-absent case separates them.

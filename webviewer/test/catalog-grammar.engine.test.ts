@@ -75,7 +75,11 @@ describe('catalog-grammar engine (TS port parity with Python)', () => {
     const out = render('Configure AI Account');
     expect(out).toContain('Account Name: "account_name"');
     expect(out).toContain('API key: "api_key"');
-    expect(out).toContain('Model Provider: ChatGPT');
+    // ChatGPT is the value FileMaker WRITES; OpenAI is the label it DISPLAYS,
+    // and the label is what belongs in HR (measured against FileMaker 26.0.1's
+    // Script Workspace). This assertion read "ChatGPT" while the catalog held
+    // the label in `enumValues` with no `hrEnumValues` to map it.
+    expect(out).toContain('Model Provider: OpenAI');
   });
 
   it('empty reference token is omitted', () => {

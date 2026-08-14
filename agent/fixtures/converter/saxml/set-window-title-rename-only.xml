@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="124" name="Set Window Title" enable="True">
+      <Options>-2147467262</Options>
+      <ParameterValues membercount="1">
+        <Parameter type="WindowReference">
+          <WindowReference>
+            <Select kind="0" type="current" />
+            <Rename>
+              <Calculation datatype="1" position="1">
+                <Calculation>
+                  <Text>$TASK_NAME</Text>
+                </Calculation>
+              </Calculation>
+            </Rename>
+          </WindowReference>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

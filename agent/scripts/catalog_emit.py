@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """catalog_emit.py — the shared catalog grammar engine, values→XML direction (P6.4).
 
-A faithful Python port of the reference converter's HR→fmxmlsnippet emit path
-(``MatchParamValues`` + ``ConvertStepWithCatalog`` + every ``Emit*`` helper), and a
+A faithful Python port of the reference converter's HR→fmxmlsnippet emit path (its
+HR-param matcher, its step orchestrator and every per-type emit helper), and a
 line-for-line counterpart of the shipped TS ``webviewer/src/converter/catalog-emit.ts``
 (P6.3). Both are kept deliberately parallel so a facet added to one port is obviously
 missing from the other (the plan's "Python↔TS structural parity" risk).
+
+**Caveat to that parallelism — ``convert_step_with_catalog`` has TWO callers here and
+one in the reference.** The reference converter's function is HR→XML only; this one is
+also the emitter for the SaXML→snippet path (``saxml_read.read_saxml_step`` builds
+``values[]`` from a SaXML ``<Step>`` and feeds it straight in). So a facet ported from
+the reference inherits a question the reference never has to answer: *is this rule
+derived from HR semantics that the SaXML input never went through?* Where it is, the
+rule must only fill a slot the caller left EMPTY, never override one. The
+governed-visibility derive below is written that way — an unconditional override would
+discard the gate value a SaXML decoder had read from the source (Export Records seeds
+its own ``Restore``).
 
 Two public entry points:
 
@@ -13,7 +24,7 @@ Two public entry points:
     the per-catalog-param ``values[]`` token array (two-phase: pass 1 flags/labels,
     pass 2 positional). Used to *gate* the emitter against the committed
     ``hr-to-xml.json`` reference fixtures (the same 213/213 oracle the TS port uses),
-    since no C++ reference exists for the SaXML direction.
+    since the reference converter has no SaXML direction to grade against.
   * ``convert_step_with_catalog(entry, disabled, values, resolver)`` — emit the step's
     fmxmlsnippet XML in **catalog param order** from a ``values[]`` array (one token per
     catalog param). This is the shared emitter the P6.4 SaXML reader feeds directly
@@ -21,7 +32,8 @@ Two public entry points:
     HR→XML gate and SaXML→snippet conversion.
 
 The ``values[]`` array *is* the OSS's made-explicit form of the reference's inline
-value threading (the C++ threads values inline with no struct; this names them). Object
+value threading (the reference threads values inline with no struct; this names
+them). Object
 references resolve through an injected ``IdResolver`` — an empty resolver yields the
 ``id="0"`` name-only refs the fixtures use, while the SaXML path seeds the resolver from
 the source's own IDs so real IDs are preserved.
@@ -436,6 +448,8 @@ def _resolve_bool_state(param: StepParam, hr_value: str) -> str:
 
 def _renders_bare_in_hr(param: StepParam) -> bool:
     """Whether a param renders bare (positional) in HR — the pass-2 eligibility test."""
+    if param.hr_bare:  # per-param opt-in: FileMaker prints it bare
+        return True
     if not param.hr_label:
         return True
     if param.type in ("calc", "field", "script"):
@@ -450,12 +464,50 @@ def _renders_bare_in_hr(param: StepParam) -> bool:
 # ---------------------------------------------------------------------------
 # Layout token (self-describing) → LayoutDestination value + <Layout> child XML
 # ---------------------------------------------------------------------------
+def _strip_resolved_layout_decoration(tok: str) -> tuple[bool, str]:
+    """Strip FileMaker's display decoration from a resolved-layout token.
+
+    FM wraps a resolved layout NAME in curly quotes and appends the table
+    occurrence: ``“Dashboard” (Admin)``. It renders calculation source text with
+    whatever straight quotes the calc itself contains, so a curly-quoted token is
+    FM's unambiguous marker for "this is a layout reference". Returns
+    ``(was_curly, stripped)``.
+    """
+    if not tok.startswith("“"):
+        return False, tok
+    close = tok.rfind("”")
+    if close < 1:
+        return False, tok
+    return True, tok[1:close]
+
+
+def _looks_like_layout_calculation(tok: str) -> bool:
+    """Whether a bare layout token is calculation source text, not a name.
+
+    FileMaker never renders a layout name bare — resolved is curly-quoted,
+    unresolved is ``<unknown>`` — so every bare token it emits here is a
+    calculation. An agent may reasonably write a bare layout name though, and
+    reading that as a calculation would emit a step that evaluates the name. So
+    only tokens that cannot be a name are taken as calculations.
+    """
+    if not tok:
+        return False
+    if _is_variable(tok):
+        return True
+    if tok.isdigit():
+        return True
+    return "(" in tok or "&" in tok
+
+
 def _resolve_layout_token(hr_value: str, resolver: IdResolver) -> tuple[str, str]:
     tok = _trim(hr_value)
     if _ci_equals(tok, "original layout") or _ci_equals(tok, "<original layout>"):
         return "OriginalLayout", ""
     if _ci_equals(tok, "current layout") or _ci_equals(tok, "<current layout>"):
         return "CurrentLayout", ""
+    # FM's rendering of a SelectedLayout whose <Layout> is the empty default.
+    if _ci_equals(tok, "<unknown>"):
+        return "SelectedLayout", '    <Layout id="0" name=""/>'
 
     def by_calc(kw: str, dest: str) -> tuple[str, str] | None:
         if _starts_with_ci(tok, kw):
@@ -485,6 +537,17 @@ def _resolve_layout_token(hr_value: str, resolver: IdResolver) -> tuple[str, str
             "LayoutNameByCalc",
             "    <Layout>\n      <Calculation>"
             + cdata(calc)
+            + "</Calculation>\n    </Layout>",
+        )
+    # Curly quotes mark a layout REFERENCE; strip them (and the trailing table
+    # occurrence) before resolving. Checked before the bare-calculation test so a
+    # name carrying calculation-looking punctuation is never mistaken for a calc.
+    was_resolved_form, tok = _strip_resolved_layout_decoration(tok)
+    if not was_resolved_form and _looks_like_layout_calculation(tok):
+        return (
+            "LayoutNameByCalc",
+            "    <Layout>\n      <Calculation>"
+            + cdata(tok)
             + "</Calculation>\n    </Layout>",
         )
     rid, rname = resolver.resolve_layout(_unquote(tok))
@@ -1091,6 +1154,44 @@ def convert_step_with_catalog(
             continue
         gov_discrim_value[p.xml_element] = (p.default_value or "") if values[pi] == "" else values[pi]
 
+    # Governed-visibility boolean: an ``hrHidden`` boolean that some sibling's
+    # ``visibleWhen`` gates on carries NO HR token of its own — FileMaker's HR shows
+    # none either — so it cannot be read back from HR the way a flag-style boolean
+    # can. Its state is instead DERIVED on emit from whether any gated sibling
+    # contributed a token, which is exactly how FileMaker's own HR encodes it:
+    # Import Records shows Table/method/charset only under Restore=True, and
+    # FileMaker discards the stored import order when the flag is off.
+    #
+    # Without this the flag falls through to its catalog ``defaultValue`` (True for
+    # both Restore params), so HR that says "no stored import order" would serialize
+    # as "restore the stored order".
+    #
+    # The ``values[gi] == ""`` guard is what keeps the SaXML reader whole: on the HR
+    # path a hidden param is excluded from matching so its slot is always empty, but
+    # a SaXML decoder may have read the gate's real value from the source (Export
+    # Records sets its own Restore), and that reading wins.
+    implied_bool: dict[int, str] = {}
+    for gi, gate in enumerate(params):
+        if not gate.hr_hidden or gate.type != "boolean" or values[gi] != "":
+            continue
+        gate_key = param_key(gate)
+        on_value = ""  # the gate value that REVEALS a companion
+        gates = False
+        any_content = False
+        for pi, p in enumerate(params):
+            vw = p.visible_when
+            if vw is None or vw.param != gate_key or not vw.values:
+                continue
+            gates = True
+            if on_value == "":
+                on_value = vw.values[0]
+            if _trim(values[pi]) != "":
+                any_content = True
+        if not gates:
+            continue  # hrHidden but nothing gates on it: default emit
+        off_value = "False" if on_value == "True" else "True"
+        implied_bool[gi] = on_value if any_content else off_value
+
     prev_was_text_element = False
     open_groups: list[str] = []
 
@@ -1125,7 +1226,11 @@ def convert_step_with_catalog(
         if gov_handled:
             pass  # piece already decided (a value or intentionally empty)
         elif param.type == "boolean":
-            piece = _emit_boolean(param, hr_value)
+            if pi in implied_bool:
+                attr = param.xml_attr or "state"
+                piece = "    <" + param.xml_element + " " + attr + '="' + implied_bool[pi] + '"/>'
+            else:
+                piece = _emit_boolean(param, hr_value)
         elif param.type == "enum":
             if param.xml_element in discrim_value:
                 attr = param.xml_attr or "value"

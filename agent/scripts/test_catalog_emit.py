@@ -2,8 +2,8 @@
 """test_catalog_emit.py — gate the P6.4 emit engine against the reference fixtures.
 
 ``catalog_emit.py`` is a faithful port of the reference HR→fmxmlsnippet emit path and a
-line-for-line counterpart of the shipped TS ``catalog-emit.ts``. Since no C++ reference
-converter exists for the SaXML direction (P6.4's defining constraint), the emitter is
+line-for-line counterpart of the shipped TS ``catalog-emit.ts``. Since the reference
+converter has no SaXML direction (P6.4's defining constraint), the emitter is
 gated the same way the TS port was: byte-identity against the committed
 ``webviewer/test/fixtures/hr-to-xml.json`` — the reference ``/api/hr-to-xml`` output.
 
@@ -183,3 +183,102 @@ def test_emit_byte_identical_to_reference():
     assert not mismatches, f"{len(mismatches)} emit mismatches: {mismatches[:10]}"
     # Guard against the corpus silently shrinking (203 engine steps at time of writing).
     assert checked >= 200, f"only {checked} engine steps checked — corpus shrank?"
+
+
+# ---------------------------------------------------------------------------
+# Governed-visibility boolean — the hrHidden gate derived on emit.
+#
+# The facet: an ``hrHidden`` boolean that a sibling's ``visibleWhen`` gates on
+# carries no HR token of its own, so HR→XML must DERIVE its state from whether a
+# gated companion contributed a token. Letting ``defaultValue`` answer instead
+# turns "no stored import order" into "restore the stored order" on every
+# round-trip — and FileMaker obeys that flag, discarding what it gated.
+#
+# The byte-identity gate above cannot catch a regression here: every corpus step
+# carrying one of these gates also carries its companion, so the derived value
+# and the catalog default agree. Only the companion-absent case separates them.
+#
+# Mirrors webviewer/test/catalog-emit.engine.test.ts (tests 1-3) — test 4 is
+# Python-only because the SaXML reader is.
+# ---------------------------------------------------------------------------
+def _emit_hr(by_name, hr: str) -> str:
+    """HR line -> emitted <Step> block, context-free (the fixtures' id="0" shape)."""
+    _disabled, step_name, params = _parse_hr_line(hr)
+    entry = by_name[step_name]
+    values = match_param_values(entry, params)
+    return convert_step_with_catalog(entry, False, values, EmptyResolver())
+
+
+def test_governed_visibility_derives_gate_open_from_companion():
+    """A companion token present => the gate serializes the gate-open value."""
+    by_name, _ = _load()
+    assert '<Restore state="True"/>' in _emit_hr(
+        by_name, "Import Records [ Table: Customers ]")
+    assert '<Restore state="True"/>' in _emit_hr(
+        by_name, "Export Records [ Export options: CharacterSet=UTF-8 ]")
+
+
+def test_governed_visibility_derives_gate_closed_not_default_value():
+    """No companion token => the closed value, NOT the catalog default of True."""
+    by_name, _ = _load()
+    assert '<Restore state="False"/>' in _emit_hr(
+        by_name, "Import Records [ Import fields: Customers::Name ]")
+    assert '<Restore state="False"/>' in _emit_hr(
+        by_name, "Export Records [ Create folders: On ]")
+
+
+def test_governed_visibility_survives_xml_hr_xml_round_trip():
+    """The gate carries no HR token — only the companions can preserve it."""
+    from snippet_to_hr import snippet_to_hr
+
+    by_name, _ = _load()
+    head = ('<fmxmlsnippet type="FMObjectList">'
+            '<Step enable="True" id="35" name="Import Records">')
+    tail = ('<ImportOptions CharacterSet="UTF-8" method="Add"/>'
+            '<Table id="7" name="Customers"/></Step></fmxmlsnippet>')
+    for state in ("True", "False"):
+        hr = "\n".join(snippet_to_hr(f'{head}<Restore state="{state}"/>{tail}'))
+        assert f'<Restore state="{state}"/>' in _emit_hr(by_name, hr), state
+
+
+def test_hr_hidden_without_gating_sibling_keeps_catalog_default():
+    """The derive rule fires ONLY for a gate something actually gates on."""
+    by_name, _ = _load()
+    out = _emit_hr(
+        by_name, "Insert from URL [ Select ; With dialog: Off ; Target: $file ; $url ]")
+    assert '<DontEncodeURL state="False"/>' in out
+
+
+def test_saxml_reading_of_the_gate_wins_over_the_derived_value():
+    """A SaXML decoder that read the gate itself keeps its value — the emitter
+    derives only into an EMPTY slot.
+
+    ``convert_step_with_catalog`` has two callers in this repo and one in the
+    reference: the SaXML reader feeds it a values[] built from a <Step>, where
+    the gate may already carry the source's own reading. Export Records' decoder
+    sets Restore explicitly; an unconditional derive would throw that away and
+    substitute a value derived from HR semantics that never applied here.
+    """
+    import xml.etree.ElementTree as ET
+
+    from saxml_read import read_saxml_step
+
+    by_name, _ = _load()
+    entry = by_name["Export Records"]
+    sample = os.path.join(
+        _REPO, "agent", "fixtures", "converter", "saxml", "export-records.xml")
+    step_el = ET.parse(sample).getroot().find(".//Step")
+    assert step_el is not None
+
+    disabled, values, resolver = read_saxml_step(entry, step_el)
+    gi = next(i for i, p in enumerate(entry.params) if p.xml_element == "Restore")
+    assert values[gi] == "On", "decoder no longer seeds Restore — test premise stale"
+
+    out = convert_step_with_catalog(entry, disabled, values, resolver)
+    assert '<Restore state="True"/>' in out
+
+    # And the guard is load-bearing: with the decoder's reading blanked, the
+    # derive takes over rather than the slot silently emitting a default.
+    values[gi] = ""
+    blanked = convert_step_with_catalog(entry, disabled, values, resolver)
+    assert '<Restore state="True"/>' in blanked  # this sample DOES carry ExportOptions

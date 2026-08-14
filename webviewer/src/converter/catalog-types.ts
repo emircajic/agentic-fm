@@ -120,6 +120,14 @@ export interface StepParam {
   enumValues?: string[];
   /** HR enum labels mapped to XML state values (e.g. { "True": "Off", "False": "On" }) */
   hrEnumValues?: Record<string, string>;
+  /**
+   * P7.2: the enum values FileMaker renders NO HR token for. `hrHidden`
+   * suppresses a param in every state; this suppresses it in some. FileMaker
+   * shows the companion such a value reveals instead of the value itself, so
+   * the value is read back from that companion's `visibleWhen` gate rather than
+   * from a token of its own. Emit is unaffected -- only HR rendering.
+   */
+  hrHiddenValues?: string[];
   /** When true, the HR label is inverted from the XML attribute value */
   invertedHr?: boolean;
   /** Rendering style for enum values (e.g. bare token vs labeled) */
@@ -130,10 +138,14 @@ export interface StepParam {
   wrapperElement?: string;
   /** Enclosing element the param nests under, when not a direct Step child */
   parentElement?: string;
-  /** HR slot index — overrides catalog order for HR rendering (HrParamOrder) */
+  /** HR slot index — overrides catalog order for HR rendering (see `hrParamOrder`) */
   hrSlot?: number;
   /** When true, the param is hidden from HR but still emitted to XML (attrGroup defaults) */
   hrHidden?: boolean;
+  /** When true, a labeled-type param (namedCalc) FileMaker prints bare/positional:
+   *  rendered without a "Label: " prefix and parsed by position (Show Custom Dialog's
+   *  Title/Message). Set only where FileMaker renders bare, verified against live FM. */
+  hrBare?: boolean;
   /** Governing enum branches: enum value → what it reveals / how it renders */
   discriminatorValues?: Record<string, DiscriminatorValue>;
   /** String form: names the sibling element that governs this param's shape */
@@ -192,7 +204,7 @@ export interface StepBlockPair {
 // ---------------------------------------------------------------------------
 
 /**
- * The ParamKey rule: a `namedCalc` param keys off its `wrapperElement`; every
+ * The param-key rule: a `namedCalc` param keys off its `wrapperElement`; every
  * other param keys off its `xmlElement`. Every namedCalc shares
  * `xmlElement === "Calculation"`, so the wrapper is what disambiguates them.
  * Matches the reference converter's param-key rule.
@@ -219,7 +231,7 @@ export const ABSENT: Value = { kind: 'absent' };
 
 /**
  * The shared in-memory shape every converter reads or writes. `values` is keyed
- * by ParamKey (see `paramKey`); a param absent from the source is either omitted
+ * by param key (see `paramKey`); a param absent from the source is either omitted
  * or mapped to `ABSENT`.
  */
 export interface StepInstance {

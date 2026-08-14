@@ -2,7 +2,7 @@
  * catalog-emit.ts — the shared catalog grammar engine, HR→XML direction (TS port).
  *
  * A faithful TypeScript port of the reference converter's HR→fmxmlsnippet path
- * (`MatchParamValues` + `ConvertStepWithCatalog` + every `Emit*` helper): parse an
+ * (its HR-param matcher, its step orchestrator and every per-type emit helper): parse an
  * HR bracket line into per-param values (two-phase label/flag then positional),
  * then emit the step's XML in **catalog param order** with the full grammar —
  * discriminators, attrGroup/repeatGroup/fieldList/findRequests/parametersList,
@@ -11,7 +11,7 @@
  *
  * The inverse of catalog-grammar.ts (XML→HR). Both read the same catalog grammar
  * model (`GrammarEntry`/`GrammarParam`, incl. the untyped `raw` facet tail) and
- * are kept deliberately parallel to the Python/C++ references so a facet added to
+ * are kept deliberately parallel to the Python port and the reference so a facet added to
  * one direction is obviously missing from the other (plan's structural-parity
  * risk). Control-flow steps are NOT emitted here — they stay hand-coded in
  * steps/control.ts (the sanctioned exception).
@@ -321,8 +321,39 @@ function resolveBoolState(param: GrammarParam, hrValue: string): string {
   return state;
 }
 
+/**
+ * Whether a positional (bare) token may be assigned to `param` at all.
+ *
+ * Pass 2 hands out leftover tokens by POSITION alone, which is safe for a param
+ * that accepts free text and wrong for one with a closed vocabulary: the enum
+ * swallows whatever token lands at its index and every later bare param shifts
+ * up one, silently, because the result is still well-formed XML.
+ *
+ * Measured (FileMaker Pro 26.0.1): `Go to Record/Request/Page [ With dialog:
+ * Off ; 1 ]` is FileMaker's OWN rendering of the ByCalculation form — it prints
+ * the row CALCULATION in the slot where the location token would go and prints
+ * no location token at all. Reading it positionally produced
+ * `<RowPageLocation value="1"/>` with an empty <Calculation>, i.e. the step's
+ * only payload dropped. `Go to Portal Row` renders and lost it identically.
+ *
+ * Only enums that DECLARE a vocabulary are checked, so this narrows nothing
+ * that was previously working.
+ */
+function positionalTokenFitsParam(param: GrammarParam, token: string): boolean {
+  if (param.type !== 'enum') return true;
+  const enumValues = (param.raw.enumValues as string[] | undefined) ?? [];
+  if (enumValues.length === 0) return true;
+  for (const v of enumValues) if (ciEquals(token, v)) return true;
+  // hrEnumValues holds FileMaker's DISPLAY spelling of a value; a token in that
+  // form is legal input and resolves on emit.
+  for (const label of Object.values(param.hrEnumValues))
+    if (label && ciEquals(token, label)) return true;
+  return false;
+}
+
 /** Whether a param renders bare (positional) in HR — the pass-2 eligibility test. */
 function rendersBareInHr(param: GrammarParam): boolean {
+  if (param.hrBare) return true; // per-param opt-in: FileMaker prints it bare
   if (!param.hrLabel) return true;
   if (param.type === 'calc' || param.type === 'field' || param.type === 'script') return true;
   if (param.type === 'layout') return !param.hrLabel;
@@ -334,6 +365,32 @@ function rendersBareInHr(param: GrammarParam): boolean {
 // ---------------------------------------------------------------------------
 // Layout token (self-describing) → LayoutDestination value + <Layout> child XML
 // ---------------------------------------------------------------------------
+// Strip FileMaker's display decoration from a resolved-layout token: the curly
+// quotes it wraps a layout NAME in, and the trailing " (TableOccurrence)". FM
+// renders calculation source text with whatever straight quotes the calc itself
+// contains, so a curly-quoted token is its unambiguous "this is a layout
+// reference" marker. Measured FM 26.0.1: SelectedLayout prints “Dashboard”
+// (Admin); a LayoutNameByCalc of "Dashboard" prints "Dashboard".
+function stripResolvedLayoutDecoration(tok: string): { wasResolvedForm: boolean; tok: string } {
+  if (!tok.startsWith('“')) return { wasResolvedForm: false, tok };
+  const close = tok.lastIndexOf('”');
+  if (close < 1) return { wasResolvedForm: false, tok };
+  return { wasResolvedForm: true, tok: tok.slice(1, close) };
+}
+
+// Whether a bare layout token is calculation source text rather than a name.
+// FileMaker never renders a layout name bare — resolved is curly-quoted,
+// unresolved is <unknown> — so every bare token it emits here is a calculation.
+// An agent may reasonably write a bare layout name though, and reading that as a
+// calculation would emit a step that evaluates the name as an expression, so only
+// tokens that cannot be a name are taken as calculations.
+function looksLikeLayoutCalculation(tok: string): boolean {
+  if (!tok) return false;
+  if (isVariable(tok)) return true;
+  if (/^[0-9]+$/.test(tok)) return true;
+  return tok.includes('(') || tok.includes('&');
+}
+
 function resolveLayoutToken(
   hrValue: string,
   resolver: IdResolver,
@@ -344,6 +401,10 @@ function resolveLayoutToken(
   }
   if (ciEquals(tok, 'current layout') || ciEquals(tok, '<current layout>')) {
     return { dest: 'CurrentLayout', piece: '' };
+  }
+  // FM's rendering of a SelectedLayout whose <Layout> is the empty default.
+  if (ciEquals(tok, '<unknown>')) {
+    return { dest: 'SelectedLayout', piece: '    <Layout id="0" name=""/>' };
   }
   const byCalc = (kw: string, dest: string): { dest: string; piece: string } | null => {
     if (startsWithCi(tok, kw)) {
@@ -371,7 +432,17 @@ function resolveLayoutToken(
       };
     }
   }
-  const resolved = resolver.resolveLayout(unquote(tok));
+  // Curly quotes mark a layout REFERENCE; strip them (and the trailing table
+  // occurrence) before resolving. Checked before the bare-calculation test so a
+  // name carrying calculation-looking punctuation is never mistaken for a calc.
+  const stripped = stripResolvedLayoutDecoration(tok);
+  if (!stripped.wasResolvedForm && looksLikeLayoutCalculation(stripped.tok)) {
+    return {
+      dest: 'LayoutNameByCalc',
+      piece: `    <Layout>\n      <Calculation>${cdata(stripped.tok)}</Calculation>\n    </Layout>`,
+    };
+  }
+  const resolved = resolver.resolveLayout(unquote(stripped.tok));
   const piece =
     resolved.id === 0 && resolved.name
       ? `    <Layout name="${escXml(resolved.name)}"/>`
@@ -386,6 +457,11 @@ function matchParamValues(entry: GrammarEntry, hrParams: string[]): string[] {
   const values: string[] = new Array(entry.params.length).fill('');
   const resolved: boolean[] = new Array(entry.params.length).fill(false);
   const consumed: boolean[] = new Array(hrParams.length).fill(false);
+  // Which params actually claimed an HR token, by label or by position.
+  // Deliberately distinct from "has a non-empty value": FileMaker renders a
+  // present-but-empty slot for a revealed companion, and that empty slot is
+  // still evidence of which gate value is active (see the P7.2 derive below).
+  const gotToken: boolean[] = new Array(entry.params.length).fill(false);
 
   for (let pi = 0; pi < entry.params.length; pi++) {
     const param = entry.params[pi];
@@ -451,6 +527,7 @@ function matchParamValues(entry: GrammarEntry, hrParams: string[]): string[] {
         if (ciEquals(trim(hrParams[i]), param.hrLabel!)) {
           consumed[i] = true;
           values[pi] = 'True';
+          gotToken[pi] = true;
           break;
         }
       }
@@ -466,6 +543,7 @@ function matchParamValues(entry: GrammarEntry, hrParams: string[]): string[] {
           if (startsWithCi(t, prefix)) {
             consumed[i] = true;
             values[pi] = trim(t.slice(prefix.length));
+            gotToken[pi] = true;
             resolved[pi] = true;
             break;
           }
@@ -488,11 +566,46 @@ function matchParamValues(entry: GrammarEntry, hrParams: string[]): string[] {
     }
     while (pos < hrParams.length && consumed[pos]) pos++;
     if (pos < hrParams.length) {
+      const token = trim(hrParams[pos]);
+      // A closed-vocabulary enum only claims a token that names one of its own
+      // values; anything else belongs to a later bare param.
+      if (!positionalTokenFitsParam(entry.params[pi], token)) continue;
       consumed[pos] = true;
-      values[pi] = trim(hrParams[pos]);
+      values[pi] = token;
+      gotToken[pi] = true;
       resolved[pi] = true;
       pos++;
     }
+  }
+
+  // P7.2 governed-visibility ENUM: a `visibleWhen` gate names a sibling enum and
+  // the values of it under which this param is shown. FileMaker renders a gate
+  // value that reveals a companion as the COMPANION ALONE, with no token of its
+  // own, so the gate cannot be read back from the HR the way a value that prints
+  // a bare token can -- it falls through to its catalog default instead, and
+  // FileMaker obeys the default and discards the companion.
+  //
+  // "A token was present" is the test rather than "the value was non-empty":
+  // FileMaker renders the ByCalculation form with an empty calculation as
+  // `[ With dialog: Off ;    ]`, and that empty slot is still evidence. Refused
+  // when two gate values would explain the same companions equally well.
+  for (let gi = 0; gi < entry.params.length; gi++) {
+    const gate = entry.params[gi];
+    if (gate.type !== 'enum' || values[gi] !== '') continue;
+    const gateKey = paramKey(gate);
+    let chosen = '';
+    let ambiguous = false;
+    for (let qi = 0; qi < entry.params.length && !ambiguous; qi++) {
+      const gated = entry.params[qi];
+      const vw = gated.visibleWhen;
+      if (!vw || vw.param !== gateKey || vw.values.length === 0) continue;
+      if (!gotToken[qi]) continue;
+      for (const v of vw.values) {
+        if (chosen === '') chosen = v;
+        else if (chosen !== v) { ambiguous = true; break; }
+      }
+    }
+    if (!ambiguous && chosen !== '') values[gi] = chosen;
   }
 
   return values;
@@ -882,6 +995,41 @@ export function convertStepWithCatalog(
     govDiscrimValue.set(p.xmlElement, values[pi] === '' ? (p.defaultValue ?? '') : values[pi]);
   }
 
+  // Governed-visibility boolean: an `hrHidden` boolean that some sibling's
+  // `visibleWhen` gates on carries NO HR token of its own — FileMaker's HR shows
+  // none either — so it cannot be read back from HR the way a flag-style boolean
+  // can. Its state is instead DERIVED on emit from whether any gated sibling
+  // contributed a token, which is exactly how FileMaker's own HR encodes it:
+  // Import Records shows Table/method/charset only under Restore=True, and
+  // FileMaker discards the stored import order when the flag is off.
+  //
+  // Without this the flag falls through to its catalog `defaultValue` (True for
+  // both Restore params), so HR that says "no stored import order" would
+  // serialize as "restore the stored order".
+  //
+  // The `values[gi] === ''` guard is what keeps the SaXML reader whole: on the
+  // HR path a hidden param is excluded from matching so its slot is always
+  // empty, but a SaXML decoder may have read the gate's real value from the
+  // source (Export Records sets its own Restore), and that reading wins.
+  const impliedBool = new Map<number, string>(); // param idx -> state
+  for (let gi = 0; gi < params.length; gi++) {
+    const gate = params[gi];
+    if (!gate.hrHidden || gate.type !== 'boolean' || values[gi] !== '') continue;
+    const gateKey = paramKey(gate);
+    let onValue = ''; // the gate value that REVEALS a companion
+    let gates = false, anyContent = false;
+    for (let pi = 0; pi < params.length; pi++) {
+      const vw = params[pi].visibleWhen;
+      if (!vw || vw.param !== gateKey || vw.values.length === 0) continue;
+      gates = true;
+      if (onValue === '') onValue = vw.values[0];
+      if (trim(values[pi]) !== '') anyContent = true;
+    }
+    if (!gates) continue; // hrHidden but nothing gates on it: default emit
+    const offValue = onValue === 'True' ? 'False' : 'True';
+    impliedBool.set(gi, anyContent ? onValue : offValue);
+  }
+
   let prevWasTextElement = false;
   const openGroups: string[] = [];
 
@@ -918,7 +1066,12 @@ export function convertStepWithCatalog(
     if (govHandled) {
       // piece already decided (a value or intentionally empty).
     } else if (param.type === 'boolean') {
-      piece = emitBoolean(param, hrValue);
+      if (impliedBool.has(pi)) {
+        const attr = param.xmlAttr || 'state';
+        piece = `    <${param.xmlElement} ${attr}="${impliedBool.get(pi)!}"/>`;
+      } else {
+        piece = emitBoolean(param, hrValue);
+      }
     } else if (param.type === 'enum') {
       if (discrimValue.has(param.xmlElement)) {
         const attr = param.xmlAttr || 'value';
