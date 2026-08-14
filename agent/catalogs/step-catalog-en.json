@@ -4189,19 +4189,22 @@
         "xmlElement": "SelectAll",
         "xmlAttr": "state",
         "flagStyle": true,
+        "hrSlot": 0,
         "notes": "HR shows \"Select\" when True (replaces entire contents). Absent when False (inserts at insertion point, or appends for variables)."
-      },
-      {
-        "hrLabel": "Target",
-        "type": "fieldOrVariable",
-        "xmlElement": "Field",
-        "notes": "Field element uses <Field table=\"\" id=\"0\" name=\"\"/> for field refs, or <Field>$variable</Field> for variables. Both support repetition attribute (e.g., repetition=\"2\" shown as [2] in HR). Optional; if omitted, active field is used."
       },
       {
         "hrLabel": "text",
         "type": "text",
         "xmlElement": "Text",
-        "notes": "Raw text content (not a Calculation/CDATA block). The value is literal text — no FileMaker expression syntax is evaluated. Multi-line text uses &#xD; (carriage return) entities in XML. Content can be arbitrarily long, making this step suitable for storing large static strings such as a complete HTML document into a variable (e.g., <Field>$html</Field>). Special characters in the XML must be entity-encoded: & → &amp;, < → &lt;, > → &gt;, \" → &quot;. Required."
+        "hrSlot": 2,
+        "notes": "Raw text content (not a Calculation/CDATA block). Emitted BEFORE <Field> — FM serializes the value <Text> ahead of the target and it doubles as the variable-target marker (see flagstyle_oracle.json / script_full_multi.xml); hrSlot keeps the HR order Select ; Target ; text. The value is literal text — no FileMaker expression syntax is evaluated. Multi-line text uses &#xD; (carriage return) entities in XML. Content can be arbitrarily long, making this step suitable for storing large static strings such as a complete HTML document into a variable (e.g., <Field>$html</Field>). Special characters in the XML must be entity-encoded: & → &amp;, < → &lt;, > → &gt;, \" → &quot;. Required."
+      },
+      {
+        "hrLabel": "Target",
+        "type": "fieldOrVariable",
+        "xmlElement": "Field",
+        "hrSlot": 1,
+        "notes": "Field element uses <Field table=\"\" id=\"0\" name=\"\"/> for field refs, or <Field>$variable</Field> for variables. Both support repetition attribute (e.g., repetition=\"2\" shown as [2] in HR). Optional; if omitted, active field is used. Emitted AFTER the value <Text>, which serves as its variable-target marker (no separate <Text/> injected)."
       }
     ],
     "hrSignature": "Insert Text [ <Select ;> Target: <target> ; \"<text>\" ]",
