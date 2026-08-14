@@ -179,6 +179,7 @@ class StepParam:
     flag_style: bool | None = None
     hr_slot: int | None = None
     hr_hidden: bool | None = None
+    hr_bare: bool | None = None
     omit_when_empty: bool | None = None
     emit_empty_default: bool | None = None
     # Governing discriminator: string form names a sibling; map form carries branches.
@@ -222,6 +223,7 @@ class StepParam:
             flag_style=d.get("flagStyle"),
             hr_slot=d.get("hrSlot"),
             hr_hidden=d.get("hrHidden"),
+            hr_bare=d.get("hrBare"),
             omit_when_empty=d.get("omitWhenEmpty"),
             emit_empty_default=d.get("emitEmptyDefault"),
             discriminator=d.get("discriminator"),
@@ -843,7 +845,9 @@ def compute_param_hr(entry: CatalogEntry, step: ET.Element, param: StepParam) ->
     elif ptype == "namedCalc":
         wrapper = param.wrapper_element or param.xml_element
         val = _nested_text(base, wrapper, "Calculation")
-        if val:
+        # hr_bare params (Show Custom Dialog's Title/Message) print positionally
+        # with no label, mirroring FileMaker; every other namedCalc keeps its label.
+        if val and not param.hr_bare:
             lbl = effective_hr_label(entry, step, param)
             if lbl:
                 val = lbl + ": " + val

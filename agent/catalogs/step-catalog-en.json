@@ -8145,14 +8145,18 @@
         "type": "namedCalc",
         "hrLabel": "Title",
         "wrapperElement": "Title",
-        "required": true
+        "required": true,
+        "hrBare": true,
+        "note": "FileMaker prints Title bare/positional in HR (`[ \"Title\" ; \"Message\" ; Height: … ]`), so hrBare renders it without a label and accepts it positionally."
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
         "hrLabel": "Message",
         "wrapperElement": "Message",
-        "required": true
+        "required": true,
+        "hrBare": true,
+        "note": "FileMaker prints Message bare/positional in HR (second positional token), so hrBare renders it without a label and accepts it positionally."
       },
       {
         "xmlElement": "Calculation",
@@ -8173,7 +8177,7 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Distance from top",
+        "hrLabel": "Top",
         "wrapperElement": "DistanceFromTop",
         "required": false,
         "note": "FM26+ only; optional."
@@ -8181,7 +8185,7 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Distance from left",
+        "hrLabel": "Left",
         "wrapperElement": "DistanceFromLeft",
         "required": false,
         "note": "FM26+ only; optional."
@@ -8212,7 +8216,7 @@
         "note": "repeatGroup: up to 3 <InputField UsePasswordCharacter><Field/ or $var><Label><Calculation></InputField>. field = Table::Field ref or $variable; FM always serializes a <Field>."
       }
     ],
-    "hrSignature": "[ Title: \"title\" ; Message: \"message\" ]",
+    "hrSignature": "[ \"title\" ; \"message\" ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",

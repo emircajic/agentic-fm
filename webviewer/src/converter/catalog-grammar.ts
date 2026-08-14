@@ -152,6 +152,7 @@ export interface GrammarParam {
   flagStyle: boolean | null;
   hrSlot: number | null;
   hrHidden: boolean | null;
+  hrBare: boolean | null;
   omitWhenEmpty: boolean | null;
   discriminator: string | null;
   discriminatorValues: Record<string, DiscriminatorBranch>;
@@ -236,6 +237,7 @@ function buildParam(d: Record<string, unknown>): GrammarParam {
     flagStyle: (d.flagStyle as boolean) ?? null,
     hrSlot: typeof d.hrSlot === 'number' ? (d.hrSlot as number) : null,
     hrHidden: (d.hrHidden as boolean) ?? null,
+    hrBare: (d.hrBare as boolean) ?? null,
     omitWhenEmpty: (d.omitWhenEmpty as boolean) ?? null,
     discriminator: (d.discriminator as string) ?? null,
     discriminatorValues,
@@ -617,7 +619,9 @@ export function computeParamHr(entry: GrammarEntry, step: Element, param: Gramma
   } else if (ptype === 'namedCalc') {
     const wrapper = param.wrapperElement || param.xmlElement;
     val = nestedText(base, wrapper, 'Calculation');
-    if (val) {
+    // hrBare params (Show Custom Dialog's Title/Message) print positionally
+    // with no label, mirroring FileMaker; every other namedCalc keeps its label.
+    if (val && !param.hrBare) {
       const lbl = effectiveHrLabel(entry, step, param);
       if (lbl) val = lbl + ': ' + val;
     }

@@ -142,6 +142,10 @@ export interface StepParam {
   hrSlot?: number;
   /** When true, the param is hidden from HR but still emitted to XML (attrGroup defaults) */
   hrHidden?: boolean;
+  /** When true, a labeled-type param (namedCalc) FileMaker prints bare/positional:
+   *  rendered without a "Label: " prefix and parsed by position (Show Custom Dialog's
+   *  Title/Message). Set only where FileMaker renders bare, verified against live FM. */
+  hrBare?: boolean;
   /** Governing enum branches: enum value → what it reveals / how it renders */
   discriminatorValues?: Record<string, DiscriminatorValue>;
   /** String form: names the sibling element that governs this param's shape */

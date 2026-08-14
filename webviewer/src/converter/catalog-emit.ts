@@ -353,6 +353,7 @@ function positionalTokenFitsParam(param: GrammarParam, token: string): boolean {
 
 /** Whether a param renders bare (positional) in HR — the pass-2 eligibility test. */
 function rendersBareInHr(param: GrammarParam): boolean {
+  if (param.hrBare) return true; // per-param opt-in: FileMaker prints it bare
   if (!param.hrLabel) return true;
   if (param.type === 'calc' || param.type === 'field' || param.type === 'script') return true;
   if (param.type === 'layout') return !param.hrLabel;

@@ -448,6 +448,8 @@ def _resolve_bool_state(param: StepParam, hr_value: str) -> str:
 
 def _renders_bare_in_hr(param: StepParam) -> bool:
     """Whether a param renders bare (positional) in HR — the pass-2 eligibility test."""
+    if param.hr_bare:  # per-param opt-in: FileMaker prints it bare
+        return True
     if not param.hr_label:
         return True
     if param.type in ("calc", "field", "script"):
