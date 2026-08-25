@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="205" name="Open Transaction" enable="True">
+      <Options>0</Options>
+      <ParameterValues membercount="4">
+        <Parameter type="Boolean">
+          <Boolean type="Collapsed" id="33554432" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Skip auto-enter options" id="4096" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Skip data entry validation" id="256" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Override ESS locking conflicts" id="512" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="164" name="Perform Script on Server" enable="True">
+      <Options>16464</Options>
+      <ParameterValues membercount="3">
+        <Parameter type="List">
+          <List name="From list" value="1">
+            <DataSourceReference id="6" name="TFI FM Cloud" />
+            <ScriptReference id="81" name="NOEC Abrechnung Positionen2 AKZ" />
+          </List>
+        </Parameter>
+        <Parameter type="Parameter">
+          <Parameter>
+            <Calculation datatype="1" position="0">
+              <Calculation>
+                <Text>$DatVon &amp; ¶ &amp; 
+$DatBis &amp; ¶ &amp;
+$$SYSTEM.ID &amp; ¶ &amp;
+$$SAISON.ID &amp; ¶ &amp;
+$$ABRECHNUNG.IMFOKUS</Text>
+              </Calculation>
+            </Calculation>
+          </Parameter>
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Wait for completion" id="256" value="True" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

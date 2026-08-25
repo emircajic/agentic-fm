@@ -6,7 +6,7 @@
  * this test feeds each fixture's XML through the real browser-path xmlToHr and
  * asserts the output equals the recorded HR line exactly.
  *
- * The Python side was itself verified 215/216 byte-identical to the C++ reference
+ * The Python side was itself verified 215/216 byte-identical to the reference
  * converter in P6.2, so matching Python inherits that validation. Both ports read
  * the SAME catalog (agent/catalogs/step-catalog-en.json), so this also proves the
  * two engines apply the catalog grammar identically.

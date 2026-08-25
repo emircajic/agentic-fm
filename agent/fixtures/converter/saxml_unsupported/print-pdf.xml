@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="242" name="Print PDF" enable="True">
+      <Options>160</Options>
+      <ParameterValues membercount="8">
+        <Parameter type="PDFtoPrint">
+          <List name="File" value="1" />
+        </Parameter>
+        <Parameter type="UniversalPathList">
+          <UniversalPathList membercount="1">
+            <ObjectList>
+              <Location>$path</Location>
+            </ObjectList>
+          </UniversalPathList>
+        </Parameter>
+        <Parameter type="Restore">
+          <Restore value="False" />
+        </Parameter>
+        <Parameter type="PageSetup" />
+        <Parameter type="Boolean">
+          <Boolean type="Password" id="256" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Save print options to" id="1024" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="Use print options from" id="512" value="False" />
+        </Parameter>
+        <Parameter type="Boolean">
+          <Boolean type="With dialog" id="128" value="False" />
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>

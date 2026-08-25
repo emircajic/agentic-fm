@@ -29,18 +29,26 @@
         "xmlElement": "AccountType",
         "type": "enum",
         "hrLabel": "Authenticate via",
-        "wrapperElement": "AddAccount",
+        "parentElement": "AddAccount",
+        "enumStyle": "text",
         "required": true,
         "defaultValue": "FileMaker",
         "enumValues": [
           "FileMaker",
-          "External Server",
-          "Apple Account",
+          "ExternalServer",
+          "AppleID",
           "Amazon",
           "Google",
-          "Microsoft Entra ID",
-          "Custom OAuth"
-        ]
+          "Azure",
+          "AzureGroup",
+          "CustomOauth",
+          "CustomOauthGroup"
+        ],
+        "hrEnumValues": {
+          "AppleID": "Apple Account",
+          "Azure": "Microsoft Entra ID",
+          "CustomOauth": "Custom OAuth"
+        }
       },
       {
         "xmlElement": "Calculation",
@@ -91,12 +99,15 @@
         "required": false,
         "defaultValue": "ResizeToFit",
         "enumValues": [
-          "Resize to Fit",
+          "ResizeToFit",
           "Maximize",
           "Minimize",
           "Restore",
           "Hide"
-        ]
+        ],
+        "hrEnumValues": {
+          "ResizeToFit": "Resize to Fit"
+        }
       }
     ],
     "hrSignature": "[ Resize to Fit|Maximize|Minimize|Restore|Hide ]",
@@ -163,13 +174,19 @@
         "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
-        "defaultValue": "Cascade Window",
+        "defaultValue": "Cascade",
         "enumValues": [
-          "Tile Horizontally",
-          "Tile Vertically",
-          "Cascade Window",
-          "Bring All To Front"
-        ]
+          "TileHorizontally",
+          "TileVertically",
+          "Cascade",
+          "BringAllToFront"
+        ],
+        "hrEnumValues": {
+          "TileHorizontally": "Tile Horizontally",
+          "TileVertically": "Tile Vertically",
+          "Cascade": "Cascade Window",
+          "BringAllToFront": "Bring All To Front"
+        }
       }
     ],
     "hrSignature": "[ Tile Horizontally|Tile Vertically|Cascade Window|Bring All To Front ]",
@@ -363,10 +380,15 @@
           "Fit",
           "Fill",
           "Stretch",
-          "Fit Only",
-          "Fill Only",
-          "Stretch Only"
-        ]
+          "FitOnly",
+          "FillOnly",
+          "StretchOnly"
+        ],
+        "hrEnumValues": {
+          "FitOnly": "Fit Only",
+          "FillOnly": "Fill Only",
+          "StretchOnly": "Stretch Only"
+        }
       },
       {
         "xmlElement": "Sequence",
@@ -720,13 +742,17 @@
         "hrLabel": "Model Provider",
         "xmlAttr": "value",
         "required": false,
-        "defaultValue": "OpenAI",
+        "defaultValue": "ChatGPT",
         "enumValues": [
-          "OpenAI",
+          "ChatGPT",
           "Anthropic",
           "Cohere",
-          "Custom"
-        ]
+          "Other"
+        ],
+        "hrEnumValues": {
+          "ChatGPT": "OpenAI",
+          "Other": "Custom"
+        }
       },
       {
         "xmlElement": "Calculation",
@@ -739,6 +765,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,
@@ -885,16 +912,22 @@
     "selfClosing": false,
     "params": [
       {
-        "xmlElement": "ConfigureCoreML",
+        "xmlElement": "Operation",
+        "parentElement": "ConfigureCoreML",
         "type": "enum",
+        "enumStyle": "text",
         "hrLabel": "Operation",
         "required": true,
-        "defaultValue": "Unload",
+        "defaultValue": "Uninstall",
         "enumValues": [
-          "Unload",
+          "Uninstall",
           "Vision",
           "General"
-        ]
+        ],
+        "hrEnumValues": {
+          "Uninstall": "Unload"
+        },
+        "notes": "FileMaker 26.0.1 writes the operation as an <Operation> child of <ConfigureCoreML>, alongside <Name> — not as the wrapper's own text or value attribute. It also DISCARDS whatever operation a pasted snippet carries and re-serializes Uninstall, so Vision/General are settable only in the step's own options UI."
       },
       {
         "xmlElement": "Calculation",
@@ -1041,14 +1074,17 @@
         "hrLabel": "Model Provider",
         "parentElement": "ConfigurePromptTemplate",
         "required": false,
-        "defaultValue": "OpenAI",
+        "defaultValue": "ChatGPT",
         "enumValues": [
-          "OpenAI",
+          "ChatGPT",
           "Anthropic",
           "Cohere",
           "Custom"
         ],
-        "enumStyle": "text"
+        "enumStyle": "text",
+        "hrEnumValues": {
+          "ChatGPT": "OpenAI"
+        }
       },
       {
         "xmlElement": "RequestType",
@@ -1056,13 +1092,18 @@
         "hrLabel": "Template Type",
         "parentElement": "ConfigurePromptTemplate",
         "required": false,
-        "defaultValue": "SQL Query",
+        "defaultValue": "SQLQuery",
         "enumValues": [
-          "SQL Query",
-          "Find Request",
-          "RAG Prompt"
+          "SQLQuery",
+          "FindRequest",
+          "RAGPrompt"
         ],
-        "enumStyle": "text"
+        "enumStyle": "text",
+        "hrEnumValues": {
+          "SQLQuery": "SQL Query",
+          "FindRequest": "Find Request",
+          "RAGPrompt": "RAG Prompt"
+        }
       },
       {
         "xmlElement": "Calculation",
@@ -1099,10 +1140,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
-        "defaultValue": "False"
+        "defaultValue": "False",
+        "notes": "Renders no HR token of its own; FM shows the Natural Language Prompt token when True. DERIVED: handed False alongside a NaturalLanguagePrompt, FM re-canonicalized it to True (live copy-back)."
       }
     ],
     "hrSignature": "[ Template Name: calc ; Model Provider: option ; Template Type: option ; SQL Prompt: calc ; Natural Language Prompt: calc ; Find Request Prompt: calc ; RAG Prompt: calc ]",
@@ -1144,6 +1187,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,
@@ -1172,8 +1216,11 @@
         "enumValues": [
           "Clear",
           "iBeacon",
-          "Geofence"
-        ]
+          "GeoLocation"
+        ],
+        "hrEnumValues": {
+          "GeoLocation": "Geofence"
+        }
       },
       {
         "xmlElement": "Calculation",
@@ -1262,14 +1309,20 @@
         "hrLabel": "Action",
         "parentElement": "LLMTrain",
         "required": true,
-        "defaultValue": "Train Model",
+        "defaultValue": "LLMTrainTrainModel",
         "enumValues": [
-          "Train Model",
-          "Save Model",
-          "Load Model",
-          "Unload Model"
+          "LLMTrainTrainModel",
+          "LLMTrainSaveModel",
+          "LLMTrainLoadModel",
+          "LLMTrainUnloadModel"
         ],
-        "enumStyle": "text"
+        "enumStyle": "text",
+        "hrEnumValues": {
+          "LLMTrainTrainModel": "Train Model",
+          "LLMTrainSaveModel": "Save Model",
+          "LLMTrainLoadModel": "Load Model",
+          "LLMTrainUnloadModel": "Unload Model"
+        }
       },
       {
         "xmlElement": "LLMAlgorithm",
@@ -1277,11 +1330,14 @@
         "hrLabel": "Algorithm",
         "parentElement": "LLMTrain",
         "required": false,
-        "defaultValue": "Random Forest",
+        "defaultValue": "LLMTrainAlgForest",
         "enumValues": [
-          "Random Forest"
+          "LLMTrainAlgForest"
         ],
-        "enumStyle": "text"
+        "enumStyle": "text",
+        "hrEnumValues": {
+          "LLMTrainAlgForest": "Random Forest"
+        }
       },
       {
         "xmlElement": "Calculation",
@@ -1312,22 +1368,24 @@
     "selfClosing": false,
     "params": [
       {
-        "xmlElement": "Option",
-        "type": "boolean",
-        "hrLabel": "Find without indexes",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "False",
-        "notes": "Flag-style: shown as \"Find without indexes\" when True, omitted when False"
-      },
-      {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Restore",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
         "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
+      },
+      {
+        "xmlElement": "Option",
+        "flagStyle": true,
+        "type": "boolean",
+        "hrLabel": "Find without indexes",
+        "xmlAttr": "state",
+        "required": false,
+        "defaultValue": "False",
+        "notes": "Flag-style: shown as \"Find without indexes\" when True, omitted when False"
       },
       {
         "xmlElement": "Query",
@@ -1382,6 +1440,7 @@
       {
         "xmlElement": "VerifySSLCertificates",
         "type": "boolean",
+        "flagStyle": true,
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
         "required": false,
@@ -1702,11 +1761,12 @@
       {
         "xmlElement": "UseDialPreferences",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "defaultValue": "False",
-        "notes": "Not shown in HR."
+        "notes": "Renders no HR token in either state (live copy-back; both states landed once forced on the `value` attribute FM actually keys off, not `state`)."
       },
       {
         "xmlElement": "Calculation",
@@ -1851,10 +1911,14 @@
         "required": false,
         "defaultValue": "Show",
         "enumValues": [
-          "On",
-          "Off",
+          "Show",
+          "Hide",
           "Toggle"
-        ]
+        ],
+        "hrEnumValues": {
+          "Show": "On",
+          "Hide": "Off"
+        }
       }
     ],
     "hrSignature": "Enable Touch Keyboard [ {On|Off|Toggle} ]",
@@ -1929,6 +1993,16 @@
     "selfClosing": false,
     "params": [
       {
+        "xmlElement": "Restore",
+        "flagStyle": true,
+        "type": "boolean",
+        "hrLabel": "Restore",
+        "xmlAttr": "state",
+        "required": false,
+        "defaultValue": "True",
+        "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
+      },
+      {
         "xmlElement": "Pause",
         "type": "boolean",
         "hrLabel": "Pause",
@@ -1939,15 +2013,6 @@
           "On",
           "Off"
         ]
-      },
-      {
-        "xmlElement": "Restore",
-        "type": "boolean",
-        "hrLabel": "Restore",
-        "xmlAttr": "state",
-        "required": false,
-        "defaultValue": "True",
-        "notes": "Flag-style: shown as \"Restore\" when True, omitted when False"
       },
       {
         "xmlElement": "Query",
@@ -2271,11 +2336,12 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "Not shown in HR. Controls whether stored export order is used."
+        "notes": "Renders no HR token of its own; FM shows the stored export order's character set only when True (live copy-back: <ExportOptions CharacterSet> is serialized in BOTH states, so this gates RENDERING, not presence). FM does NOT re-canonicalize it from content — handed False with a non-default charset it kept False and reset the charset — so the converter derives the state from whether the gated companion carries an HR token."
       },
       {
         "xmlElement": "AutoOpen",
@@ -2316,6 +2382,7 @@
         "xmlElement": "ExportOptions",
         "type": "attrGroup",
         "hrLabel": "Export options",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false,
         "fields": [
           { "key": "FormatUsingCurrentLayout", "kind": "attr", "xmlAttr": "FormatUsingCurrentLayout", "defaultValue": "False" },
@@ -2372,6 +2439,7 @@
     "params": [
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Restore",
         "xmlAttr": "state",
@@ -2407,10 +2475,15 @@
         "required": false,
         "defaultValue": "FindMatchingReplace",
         "enumValues": [
-          "Replace",
-          "Constrain",
-          "Extend"
-        ]
+          "FindMatchingReplace",
+          "FindMatchingConstrain",
+          "FindMatchingExtend"
+        ],
+        "hrEnumValues": {
+          "FindMatchingReplace": "Replace",
+          "FindMatchingConstrain": "Constrain",
+          "FindMatchingExtend": "Extend"
+        }
       },
       {
         "xmlElement": "Field",
@@ -2455,15 +2528,20 @@
         "parentElement": "FineTuneLLM",
         "required": false,
         "enumValues": [
-          "Table",
-          "File"
+          "DataTable",
+          "TrainingFile"
         ],
-        "enumStyle": "text"
+        "enumStyle": "text",
+        "hrEnumValues": {
+          "DataTable": "Table",
+          "TrainingFile": "File"
+        }
       },
       {
         "xmlElement": "Table",
         "type": "complex",
         "hrLabel": null,
+        "visibleWhen": { "param": "Option", "values": ["True"] },
         "required": false,
         "notes": "Sibling. For DataTable source only. <Table id='' name=''/> with table id/name. Shown in HR as quoted table name."
       },
@@ -2501,11 +2579,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "False when no table selected or TrainingFile. True when table explicitly selected for DataTable. Not shown in HR."
+        "notes": "Renders no HR token of its own; FM shows the training table and Completion Field only when True. FM does NOT re-canonicalize it from content — handed False with a real <Table> it kept False and wiped the table to id 0 — so the converter derives the state from whether the gated table carries an HR token. The Completion Field cannot be gated as well until this step's two colliding <Field> params get distinct keys."
       }
     ],
     "hrSignature": "Fine-Tune Model [ Account Name: {calc} ; Base Model: {calc} ; Training Data: {Table|File} ; {table|path} ; Completion Field: {field} ; Response Target: {field|$variable} ; Parameters: {calc} ]",
@@ -2674,38 +2753,42 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when Parameters present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Parameters. Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "SelectAll",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when ToolDefinitions present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Tool Definitions (and Tool Calls from Model). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "LinkAvail",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when Messages/SlidingWindow present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Save Message History To (the sliding-window group). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       },
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "True when WebScript present. Not shown in HR."
+        "notes": "Renders no HR token of its own; gates Web Viewer / Function Name (the WebScript group). Isolated live probe: forced True alone on a minimal step, that companion and only that companion appears. DERIVED: with the content present FM re-canonicalizes all four flags to True on paste."
       }
     ],
     "hrSignature": "Generate Response from Model [ Account Name: {calc} ; Model: {calc} ; User Prompt: {calc} ; Agentic mode ; Response: {field|$variable} ; Tool Calls from Model: {$variable} ; Instructions: {calc} ; Messages: {$variable} ; Save Message History To: {$variable} ; Message History Count: {calc} ; Temperature: {calc} ; Tool Definitions: {calc} ; Stream ; Parameters: {calc} ; Web Viewer: {$object} ; Function Name: {calc} ]",
@@ -2853,6 +2936,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select/perform",
         "xmlAttr": "state",
@@ -2890,7 +2974,6 @@
         "enumValues": [
           "SelectedLayout",
           "OriginalLayout",
-          "CurrentLayout",
           "LayoutNameByCalc",
           "LayoutNumberByCalc"
         ]
@@ -2936,23 +3019,24 @@
       {
         "xmlElement": "LayoutDestination",
         "type": "enum",
-        "hrLabel": "Using layout",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
         "enumValues": [
-          "<Current Layout>",
+          "CurrentLayout",
           "SelectedLayout",
           "LayoutNameByCalc",
           "LayoutNumberByCalc"
         ],
-        "notes": "See animation-enums.md for full LayoutDestination mapping."
+        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately. See animation-enums.md for full LayoutDestination mapping."
       },
       {
         "xmlElement": "Layout",
-        "type": "complex",
-        "hrLabel": null,
+        "type": "layout",
+        "hrLabel": "Using layout",
         "required": false,
-        "notes": "Layout ref (id/name) for SelectedLayout. Calculation child for LayoutNameByCalc/LayoutNumberByCalc. Absent for CurrentLayout."
+        "discriminator": "LayoutDestination",
+        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for CurrentLayout, <Layout id name/> for SelectedLayout, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token behind the \"Using layout\" label."
       },
       {
         "xmlElement": "Animation",
@@ -3041,7 +3125,7 @@
           "On",
           "Off"
         ],
-        "notes": "Flag-style in HR: shown as \"Select\" when On"
+        "notes": "FM renders this LABELED as \"Select: On|Off\" (live copy-back), NOT flag-style \u2014 do not add flagStyle. Selects the field contents on arrival when On."
       },
       {
         "xmlElement": "RowPageLocation",
@@ -3055,8 +3139,13 @@
           "Last",
           "Previous",
           "Next",
-          "By Calculation"
-        ]
+          "ByCalculation"
+        ],
+        "hrEnumValues": {
+          "ByCalculation": "By Calculation"
+        },
+        "hrHiddenValues": ["ByCalculation"],
+        "notes": "FileMaker renders NO location token for ByCalculation \u2014 the row calculation appears in that slot instead (live copy-back: `[ With dialog: Off ; 1 ]`), so the calculation's presence is what selects it. The other four values render their own bare token."
       },
       {
         "xmlElement": "Exit",
@@ -3090,10 +3179,11 @@
         "type": "calc",
         "hrLabel": null,
         "required": false,
+        "visibleWhen": { "param": "RowPageLocation", "values": ["ByCalculation"] },
         "notes": "Row number calculation. Only applies when RowPageLocation is ByCalculation"
       }
     ],
-    "hrSignature": "[ Select: On|Off ; First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
+    "hrSignature": "[ Select: On|Off ; First|Last|Previous|Next ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-portal-row.html"
@@ -3129,8 +3219,13 @@
           "Last",
           "Previous",
           "Next",
-          "By Calculation"
-        ]
+          "ByCalculation"
+        ],
+        "hrEnumValues": {
+          "ByCalculation": "By Calculation"
+        },
+        "hrHiddenValues": ["ByCalculation"],
+        "notes": "FileMaker renders NO location token for ByCalculation \u2014 the row calculation appears in that slot instead (live copy-back: `[ With dialog: Off ; 1 ]`), so the calculation's presence is what selects it. The other four values render their own bare token."
       },
       {
         "xmlElement": "Exit",
@@ -3164,10 +3259,11 @@
         "type": "calc",
         "hrLabel": null,
         "required": false,
+        "visibleWhen": { "param": "RowPageLocation", "values": ["ByCalculation"] },
         "notes": "Record/request/page number calculation. Only applies when RowPageLocation is ByCalculation"
       }
     ],
-    "hrSignature": "[ First|Last|Previous|Next|By Calculation ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
+    "hrSignature": "[ First|Last|Previous|Next ; Exit after last: On|Off ; With dialog: On|Off ; calc ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/go-to-record-request-page.html"
@@ -3181,15 +3277,17 @@
     "params": [
       {
         "xmlElement": "Option",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": "Show only related records",
+        "hrLabel": "External",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "Flag-style: shown as \"Show only related records\" when True, omitted when False"
+        "notes": "Flag-style: FM renders the bare token \"External\" when True (live copy-back), omitted when False. NOT \"Show only related records\" — that label belongs to Restore."
       },
       {
         "xmlElement": "MatchAllRecords",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Match found set",
         "xmlAttr": "state",
@@ -3199,6 +3297,7 @@
       },
       {
         "xmlElement": "ShowInNewWindow",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "New window",
         "xmlAttr": "state",
@@ -3208,28 +3307,29 @@
       },
       {
         "xmlElement": "Restore",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": "Restore",
+        "hrLabel": "Show only related records",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "FM serializes <Restore state=...> between ShowInNewWindow and LayoutDestination; faithful passthrough."
+        "notes": "Flag-style: FM renders the bare token \"Show only related records\" when True (live copy-back), omitted when False. FM serializes <Restore state=...> between ShowInNewWindow and LayoutDestination."
       },
       {
         "xmlElement": "LayoutDestination",
         "type": "enum",
-        "hrLabel": "Using layout",
+        "hrLabel": null,
         "xmlAttr": "value",
         "required": false,
-        "defaultValue": "SelectedLayout",
+        "defaultValue": "CurrentLayout",
         "enumValues": [
           "SelectedLayout",
-          "OriginalLayout",
           "CurrentLayout",
           "LayoutNameByCalc",
-          "LayoutNumberByCalc"
+          "LayoutNumberByCalc",
+          "UseExternalTableLayouts"
         ],
-        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately."
+        "notes": "Driven discriminator for the sibling Layout (type:layout); see that param. Silent companion — encoded in the layout token, not rendered separately. Default is CurrentLayout, measured: a bare <Step id=\"74\"/> comes back <LayoutDestination value=\"CurrentLayout\"/>. OriginalLayout is NOT legal here (FM 26.0.1 coerces it to SelectedLayout). UseExternalTableLayouts is declared by FM's own docs but is refused from a pasted snippet even with Option state=\"True\", so it is readable but not authorable."
       },
       {
         "xmlElement": "NewWndStyles",
@@ -3255,13 +3355,13 @@
       {
         "xmlElement": "Layout",
         "type": "layout",
-        "hrLabel": null,
+        "hrLabel": "Using layout",
         "required": false,
         "discriminator": "LayoutDestination",
-        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for Original/Current, <Layout id name/> for Selected, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token."
+        "notes": "Presence + shape governed by the sibling LayoutDestination (discriminator): none for Current, <Layout id name/> for Selected, <Layout><Calculation/></Layout> for the by-calc forms. One self-describing HR token behind the \"Using layout\" label — the label belongs HERE, not on the discriminator, or the parse reads label-plus-payload as a literal layout name."
       }
     ],
-    "hrSignature": "[ Show only related records ; Match found set ; New window ; Restore: <On/Off> ; Using layout: layout ; Window style: ... ; From table: \"table\" ]",
+    "hrSignature": "[ Show only related records ; Match found set ; From table: \"table\" ; External ; Using layout: layout ; New window ; Window style: ... ]",
     "notesAnimation": "FileMaker Go's <Animation> is NOT modeled: desktop FM drops <Animation value=\"None\"/> on paste, so emitting it diverges from the FM baseline and its bare 'None' token mis-binds positionally to Layout.",
     "blockPair": null,
     "status": "complete",
@@ -3357,14 +3457,16 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "True",
-        "notes": "Internal flag for stored import order. Not directly shown in HR."
+        "notes": "Renders no HR token of its own; FM shows the stored import order (target table, method, character set) only when True (live copy-back: <Table> and <ImportOptions> are serialized in BOTH states, so this gates RENDERING, not presence). FM does NOT re-canonicalize it from content — handed False with a non-default method it kept False, reset the options and wiped the table — so the converter derives the state from whether a gated companion carries an HR token."
       },
       {
         "xmlElement": "VerifySSLCertificates",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
@@ -3397,6 +3499,7 @@
         "xmlElement": "ImportOptions",
         "type": "attrGroup",
         "hrLabel": "Import options",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false,
         "fields": [
           { "key": "CharacterSet", "kind": "attr", "xmlAttr": "CharacterSet", "defaultValue": "UTF-8" },
@@ -3412,6 +3515,7 @@
         "xmlElement": "Table",
         "type": "tableRef",
         "hrLabel": "Table",
+        "visibleWhen": { "param": "Restore", "values": ["True"] },
         "required": false
       },
       {
@@ -3493,6 +3597,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3529,6 +3634,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3558,6 +3664,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3587,6 +3694,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3872,6 +3980,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3901,6 +4010,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3930,6 +4040,7 @@
     "params": [
       {
         "xmlElement": "SelectAll",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Select",
         "xmlAttr": "state",
@@ -3966,6 +4077,7 @@
       },
       {
         "xmlElement": "VerifySSLCertificates",
+        "flagStyle": true,
         "type": "boolean",
         "hrLabel": "Verify SSL Certificates",
         "xmlAttr": "state",
@@ -3982,15 +4094,16 @@
       },
       {
         "xmlElement": "DontEncodeURL",
+        "flagStyle": true,
         "type": "boolean",
-        "hrLabel": null,
+        "hrLabel": "Do not automatically encode URL",
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "Not shown in HR. False = auto-encode special chars. True = leave URL as-is."
+        "notes": "Flag-style: FM renders the bare token \"Do not automatically encode URL\" when True, omitted when False (live copy-back, verified with and without CURLOptions). False = auto-encode special chars."
       }
     ],
-    "hrSignature": "[ Select ; With dialog: On|Off ; Target: Table::Field| ; calc_url ; Verify SSL Certificates ; cURL options: calc ]",
+    "hrSignature": "[ Select ; With dialog: On|Off ; Target: Table::Field| ; calc_url ; Verify SSL Certificates ; cURL options: calc ; Do not automatically encode URL ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/insert-from-url.html"
@@ -4076,19 +4189,22 @@
         "xmlElement": "SelectAll",
         "xmlAttr": "state",
         "flagStyle": true,
+        "hrSlot": 0,
         "notes": "HR shows \"Select\" when True (replaces entire contents). Absent when False (inserts at insertion point, or appends for variables)."
-      },
-      {
-        "hrLabel": "Target",
-        "type": "fieldOrVariable",
-        "xmlElement": "Field",
-        "notes": "Field element uses <Field table=\"\" id=\"0\" name=\"\"/> for field refs, or <Field>$variable</Field> for variables. Both support repetition attribute (e.g., repetition=\"2\" shown as [2] in HR). Optional; if omitted, active field is used."
       },
       {
         "hrLabel": "text",
         "type": "text",
         "xmlElement": "Text",
-        "notes": "Raw text content (not a Calculation/CDATA block). The value is literal text — no FileMaker expression syntax is evaluated. Multi-line text uses &#xD; (carriage return) entities in XML. Content can be arbitrarily long, making this step suitable for storing large static strings such as a complete HTML document into a variable (e.g., <Field>$html</Field>). Special characters in the XML must be entity-encoded: & → &amp;, < → &lt;, > → &gt;, \" → &quot;. Required."
+        "hrSlot": 2,
+        "notes": "Raw text content (not a Calculation/CDATA block). Emitted BEFORE <Field> — FM serializes the value <Text> ahead of the target and it doubles as the variable-target marker (see flagstyle_oracle.json / script_full_multi.xml); hrSlot keeps the HR order Select ; Target ; text. The value is literal text — no FileMaker expression syntax is evaluated. Multi-line text uses &#xD; (carriage return) entities in XML. Content can be arbitrarily long, making this step suitable for storing large static strings such as a complete HTML document into a variable (e.g., <Field>$html</Field>). Special characters in the XML must be entity-encoded: & → &amp;, < → &lt;, > → &gt;, \" → &quot;. Required."
+      },
+      {
+        "hrLabel": "Target",
+        "type": "fieldOrVariable",
+        "xmlElement": "Field",
+        "hrSlot": 1,
+        "notes": "Field element uses <Field table=\"\" id=\"0\" name=\"\"/> for field refs, or <Field>$variable</Field> for variables. Both support repetition attribute (e.g., repetition=\"2\" shown as [2] in HR). Optional; if omitted, active field is used. Emitted AFTER the value <Text>, which serves as its variable-target marker (no separate <Text/> injected)."
       }
     ],
     "hrSignature": "Insert Text [ <Select ;> Target: <target> ; \"<text>\" ]",
@@ -4869,10 +4985,12 @@
       {
         "xmlElement": "Restore",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
-        "defaultValue": "False"
+        "defaultValue": "False",
+        "notes": "Renders no HR token, and FM will not store True: pasted True alongside the step's other three flags (which all landed True), it came back False. A dead flag. Probed with a paired Commit Transaction, since FM rejects the opener alone."
       }
     ],
     "hrSignature": "[ Skip auto-enter options ; Skip data entry validation ; Override ESS locking conflicts ]",
@@ -7396,6 +7514,7 @@
       },
       {
         "xmlElement": "MultipleEmails",
+        "hrHidden": true,
         "type": "boolean",
         "hrLabel": null,
         "xmlAttr": "state",
@@ -8029,14 +8148,18 @@
         "type": "namedCalc",
         "hrLabel": "Title",
         "wrapperElement": "Title",
-        "required": true
+        "required": true,
+        "hrBare": true,
+        "note": "FileMaker prints Title bare/positional in HR (`[ \"Title\" ; \"Message\" ; Height: … ]`), so hrBare renders it without a label and accepts it positionally."
       },
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
         "hrLabel": "Message",
         "wrapperElement": "Message",
-        "required": true
+        "required": true,
+        "hrBare": true,
+        "note": "FileMaker prints Message bare/positional in HR (second positional token), so hrBare renders it without a label and accepts it positionally."
       },
       {
         "xmlElement": "Calculation",
@@ -8057,7 +8180,7 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Distance from top",
+        "hrLabel": "Top",
         "wrapperElement": "DistanceFromTop",
         "required": false,
         "note": "FM26+ only; optional."
@@ -8065,7 +8188,7 @@
       {
         "xmlElement": "Calculation",
         "type": "namedCalc",
-        "hrLabel": "Distance from left",
+        "hrLabel": "Left",
         "wrapperElement": "DistanceFromLeft",
         "required": false,
         "note": "FM26+ only; optional."
@@ -8096,7 +8219,7 @@
         "note": "repeatGroup: up to 3 <InputField UsePasswordCharacter><Field/ or $var><Label><Calculation></InputField>. field = Table::Field ref or $variable; FM always serializes a <Field>."
       }
     ],
-    "hrSignature": "[ Title: \"title\" ; Message: \"message\" ]",
+    "hrSignature": "[ \"title\" ; \"message\" ]",
     "blockPair": null,
     "status": "complete",
     "helpUrl": "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",
@@ -8705,11 +8828,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when a source password (OpenPassword) is specified"
+        "notes": "Renders no HR token of its own; FM shows a masked Password token when True. DERIVED: handed False alongside an OpenPassword, FM re-canonicalized it to True (live copy-back), so emitting the catalog default here is repaired by FM."
       },
       {
         "xmlElement": "UniversalPathList",
@@ -8762,11 +8886,12 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when a source password (OpenPassword) is specified"
+        "notes": "Renders no HR token of its own; FM shows a masked Password token when True. DERIVED: handed False alongside an OpenPassword, FM re-canonicalized it to True (live copy-back), so emitting the catalog default here is repaired by FM."
       },
       {
         "xmlElement": "UniversalPathList",
@@ -8911,29 +9036,32 @@
       {
         "xmlElement": "Option",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True when stored print options (PrintSettings) are attached"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when stored print options are attached. FM obeys the flag and drops the PrintSettings child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "UsePrintOptionsFromEnabled",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True reads print options from a container (PrintSettings/UsePrintOptionsFrom)"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when print options are read from a container (PrintSettings/UsePrintOptionsFrom). FM obeys the flag and drops that child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "SavePrintOptionsToEnabled",
         "type": "boolean",
+        "hrHidden": true,
         "hrLabel": null,
         "xmlAttr": "state",
         "required": false,
         "defaultValue": "False",
-        "notes": "state=True saves print options to a container (PrintSettings/SavePrintOptionsTo)"
+        "notes": "Renders no HR token of its own in any observed state (live copy-back). state=True when print options are saved to a container (PrintSettings/SavePrintOptionsTo). FM obeys the flag and drops that child when it is off, but PrintSettings is machine-specific and not HR-authorable, so HR carries no information about it either way."
       },
       {
         "xmlElement": "Restore",

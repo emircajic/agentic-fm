@@ -1,7 +1,7 @@
 {
  "accounts/Add Account.xml": {
-  "hr": "Add Account [ Account Name: \"Account Name\" ; Password: \"Password\" ; Expire password: On ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"134\" name=\"Add Account\">\n    <AccountType value=\"FileMaker\"/>\n    <AccountName>\n      <Calculation><![CDATA[\"Account Name\"]]></Calculation>\n    </AccountName>\n    <Password>\n      <Calculation><![CDATA[\"Password\"]]></Calculation>\n    </Password>\n    <PrivilegeSet></PrivilegeSet>\n    <ChgPwdOnNextLogin value=\"True\"/>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Add Account [ Authenticate via: FileMaker ; Account Name: \"Account Name\" ; Password: \"Password\" ; Expire password: On ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"134\" name=\"Add Account\">\n    <AddAccount>\n    <AccountType>FileMaker</AccountType>\n    </AddAccount>\n    <AccountName>\n      <Calculation><![CDATA[\"Account Name\"]]></Calculation>\n    </AccountName>\n    <Password>\n      <Calculation><![CDATA[\"Password\"]]></Calculation>\n    </Password>\n    <PrivilegeSet></PrivilegeSet>\n    <ChgPwdOnNextLogin value=\"True\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "accounts/Change Password.xml": {
   "hr": "Change Password [ Old Password: \"old\" ; Password: \"new\" ; With dialog: On ]",
@@ -24,15 +24,15 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"136\" name=\"Reset Account Password\">\n    <AccountName>\n      <Calculation><![CDATA[\"account name\"]]></Calculation>\n    </AccountName>\n    <Password>\n      <Calculation><![CDATA[\"password\"]]></Calculation>\n    </Password>\n    <ChgPwdOnNextLogin value=\"True\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Configure AI Account.xml": {
-  "hr": "Configure AI Account [ Account Name: \"account_name\" ; Model Provider: ChatGPT ; API key: \"api_key\" ]",
+  "hr": "Configure AI Account [ Account Name: \"account_name\" ; Model Provider: OpenAI ; API key: \"api_key\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"212\" name=\"Configure AI Account\">\n    <SetLLMAccout>\n    <AccoutName>\n      <Calculation><![CDATA[\"account_name\"]]></Calculation>\n    </AccoutName>\n    </SetLLMAccout>\n    <LLMType value=\"ChatGPT\"/>\n    <VerifySSLCertificates state=\"False\"/>\n    <SetLLMAccout>\n    <AccessAPIKey>\n      <Calculation><![CDATA[\"api_key\"]]></Calculation>\n    </AccessAPIKey>\n    </SetLLMAccout>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Configure Machine Learning Model.xml": {
-  "hr": "Configure Machine Learning Model [ Name: \"model name\" ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"202\" name=\"Configure Machine Learning Model\">\n    <ConfigureCoreML value=\"Unload\">\n    <Name>\n      <Calculation><![CDATA[\"model name\"]]></Calculation>\n    </Name>\n    </ConfigureCoreML>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Configure Machine Learning Model [ Operation: Unload ; Name: \"model name\" ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"202\" name=\"Configure Machine Learning Model\">\n    <ConfigureCoreML>\n    <Operation>Uninstall</Operation>\n    <Name>\n      <Calculation><![CDATA[\"model name\"]]></Calculation>\n    </Name>\n    </ConfigureCoreML>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Configure Prompt Template.xml": {
-  "hr": "Configure Prompt Template [ Template Name: \"template_name\" ; Model Provider: Custom ; Template Type: SQLQuery ; SQL Prompt: \"prompt\" ; Off ]",
+  "hr": "Configure Prompt Template [ Template Name: \"template_name\" ; Model Provider: Custom ; Template Type: SQL Query ; SQL Prompt: \"prompt\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"226\" name=\"Configure Prompt Template\">\n    <ConfigurePromptTemplate>\n    <TemplateName>\n      <Calculation><![CDATA[\"template_name\"]]></Calculation>\n    </TemplateName>\n    <ModelProvider>Custom</ModelProvider>\n    <RequestType>SQLQuery</RequestType>\n    <SQLPrompt>\n      <Calculation><![CDATA[\"prompt\"]]></Calculation>\n    </SQLPrompt>\n    </ConfigurePromptTemplate>\n    <Option state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Configure RAG Account.xml": {
@@ -40,16 +40,16 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"227\" name=\"Configure RAG Account \">\n    <ConfigureRAGAccount>\n    <RAGAccountName>\n      <Calculation><![CDATA[\"rag_account_name\"]]></Calculation>\n    </RAGAccountName>\n    <Endpoint>\n      <Calculation><![CDATA[\"endpoint\"]]></Calculation>\n    </Endpoint>\n    <AccessAPIKey>\n      <Calculation><![CDATA[\"api_key\"]]></Calculation>\n    </AccessAPIKey>\n    </ConfigureRAGAccount>\n    <VerifySSLCertificates state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Configure Regression Model.xml": {
-  "hr": "Configure Regression Model [ Action: LLMTrainTrainModel ; Algorithm: LLMTrainAlgForest ; Model Name: \"model_name\" ]",
+  "hr": "Configure Regression Model [ Action: Train Model ; Algorithm: Random Forest ; Model Name: \"model_name\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"222\" name=\"Configure Regression Model\">\n    <LLMTrain>\n    <LLMTrainAction>LLMTrainTrainModel</LLMTrainAction>\n    <LLMAlgorithm>LLMTrainAlgForest</LLMAlgorithm>\n    <LLMTrainModelName>\n      <Calculation><![CDATA[\"model_name\"]]></Calculation>\n    </LLMTrainModelName>\n    </LLMTrain>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Fine-Tune Model.xml": {
-  "hr": "Fine-Tune Model [ Account Name: \"account\" ; Base Model: \"model\" ; Training Data: DataTable ; Products::Name ; Parameters: \"Fine-Tune-Parameters\" ; On ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"213\" name=\"Fine-Tune Model\">\n    <FineTuneLLM>\n    <AccountName>\n      <Calculation><![CDATA[\"account\"]]></Calculation>\n    </AccountName>\n    <FineTuneBaseModelName>\n      <Calculation><![CDATA[\"model\"]]></Calculation>\n    </FineTuneBaseModelName>\n    <DataSource>DataTable</DataSource>\n    <Field table=\"Products\" id=\"0\" name=\"Name\"/>\n    </FineTuneLLM>\n    <Field table=\"\" id=\"0\" name=\"On\"/>\n    <FineTuneLLM>\n    <Parameters>\n      <Calculation><![CDATA[\"Fine-Tune-Parameters\"]]></Calculation>\n    </Parameters>\n    </FineTuneLLM>\n    <Option state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Fine-Tune Model [ Account Name: \"account\" ; Base Model: \"model\" ; Training Data: Table ; Products::Name ; Parameters: \"Fine-Tune-Parameters\" ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"213\" name=\"Fine-Tune Model\">\n    <FineTuneLLM>\n    <AccountName>\n      <Calculation><![CDATA[\"account\"]]></Calculation>\n    </AccountName>\n    <FineTuneBaseModelName>\n      <Calculation><![CDATA[\"model\"]]></Calculation>\n    </FineTuneBaseModelName>\n    <DataSource>DataTable</DataSource>\n    <Field table=\"Products\" id=\"0\" name=\"Name\"/>\n    <Parameters>\n      <Calculation><![CDATA[\"Fine-Tune-Parameters\"]]></Calculation>\n    </Parameters>\n    </FineTuneLLM>\n    <Option state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Generate Response from Model.xml": {
-  "hr": "Generate Response from Model [ Account Name: \"account\" ; Model: \"model\" ; User Prompt: \"user-prompt\" ; Agentic mode: On ; Instructions: \"Instructions\" ; Message History Count: $count ; Temperature: \"Temperature\" ; Tool Definitions: \"Tool_Definitions\" ; Stream: On ; Parameters: \"Parameters\" ; Web Viewer: $object_name ; Function Name: $function_name ; On ; On ; On ; On ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"220\" name=\"Generate Response from Model\">\n    <LLMRequestWithTools>\n    <AccountName>\n      <Calculation><![CDATA[\"account\"]]></Calculation>\n    </AccountName>\n    <Model>\n      <Calculation><![CDATA[\"model\"]]></Calculation>\n    </Model>\n    <UserPrompt>\n      <Calculation><![CDATA[\"user-prompt\"]]></Calculation>\n    </UserPrompt>\n    </LLMRequestWithTools>\n    <Set state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"On\"/>\n    <LLMRequestWithTools>\n    <Field table=\"\" id=\"0\" name=\"On\"/>\n    <Instructions>\n      <Calculation><![CDATA[\"Instructions\"]]></Calculation>\n    </Instructions>\n    <Field table=\"\" id=\"0\" name=\"On\"/>\n    <SlidingWindowMessageCount>\n      <Calculation><![CDATA[$count]]></Calculation>\n    </SlidingWindowMessageCount>\n    <Temperature>\n      <Calculation><![CDATA[\"Temperature\"]]></Calculation>\n    </Temperature>\n    <ToolDefinitions>\n      <Calculation><![CDATA[\"Tool_Definitions\"]]></Calculation>\n    </ToolDefinitions>\n    </LLMRequestWithTools>\n    <Stream state=\"True\"/>\n    <LLMRequestWithTools>\n    <Parameters>\n      <Calculation><![CDATA[\"Parameters\"]]></Calculation>\n    </Parameters>\n    <WebScript>\n    <ObjectName>\n      <Calculation><![CDATA[$object_name]]></Calculation>\n    </ObjectName>\n    <FunctionName>\n      <Calculation><![CDATA[$function_name]]></Calculation>\n    </FunctionName>\n    </WebScript>\n    </LLMRequestWithTools>\n    <Option state=\"True\"/>\n    <SelectAll state=\"False\"/>\n    <LinkAvail state=\"False\"/>\n    <Restore state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Generate Response from Model [ Account Name: \"account\" ; Model: \"model\" ; User Prompt: \"user-prompt\" ; Agentic mode: On ; Instructions: \"Instructions\" ; Message History Count: $count ; Temperature: \"Temperature\" ; Tool Definitions: \"Tool_Definitions\" ; Stream: On ; Parameters: \"Parameters\" ; Web Viewer: $object_name ; Function Name: $function_name ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"220\" name=\"Generate Response from Model\">\n    <LLMRequestWithTools>\n    <AccountName>\n      <Calculation><![CDATA[\"account\"]]></Calculation>\n    </AccountName>\n    <Model>\n      <Calculation><![CDATA[\"model\"]]></Calculation>\n    </Model>\n    <UserPrompt>\n      <Calculation><![CDATA[\"user-prompt\"]]></Calculation>\n    </UserPrompt>\n    </LLMRequestWithTools>\n    <Set state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n    <LLMRequestWithTools>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n    <Instructions>\n      <Calculation><![CDATA[\"Instructions\"]]></Calculation>\n    </Instructions>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n    <SlidingWindowMessageCount>\n      <Calculation><![CDATA[$count]]></Calculation>\n    </SlidingWindowMessageCount>\n    <Temperature>\n      <Calculation><![CDATA[\"Temperature\"]]></Calculation>\n    </Temperature>\n    <ToolDefinitions>\n      <Calculation><![CDATA[\"Tool_Definitions\"]]></Calculation>\n    </ToolDefinitions>\n    </LLMRequestWithTools>\n    <Stream state=\"True\"/>\n    <LLMRequestWithTools>\n    <Parameters>\n      <Calculation><![CDATA[\"Parameters\"]]></Calculation>\n    </Parameters>\n    <WebScript>\n    <ObjectName>\n      <Calculation><![CDATA[$object_name]]></Calculation>\n    </ObjectName>\n    <FunctionName>\n      <Calculation><![CDATA[$function_name]]></Calculation>\n    </FunctionName>\n    </WebScript>\n    </LLMRequestWithTools>\n    <Option state=\"False\"/>\n    <SelectAll state=\"False\"/>\n    <LinkAvail state=\"False\"/>\n    <Restore state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "artificial intelligence/Insert Embedding in Found Set.xml": {
   "hr": "Insert Embedding in Found Set [ Account Name: \"account_name\" ; Embedding Model: \"model\" ; Replace target contents ; Continue on error ; Show summary ; Parameters: \"parameters\" ]",
@@ -152,7 +152,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"71\" name=\"Loop\">\n    <Restore state=\"False\"/>\n    <FlushType value=\"Always\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "control/Open Transaction.xml": {
-  "hr": "Open Transaction [ Off ]",
+  "hr": "Open Transaction",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"205\" name=\"Open Transaction\">\n    <Option state=\"False\"/>\n    <ESSForceCommit state=\"False\"/>\n    <SkipAutoEntry state=\"False\"/>\n    <Restore state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "control/Pause-Resume Script.xml": {
@@ -240,19 +240,19 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"159\" name=\"Insert Audio/Video\">\n    <UniversalPathList type=\"Reference\">$path</UniversalPathList>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert Calculated Result.xml": {
-  "hr": "Insert Calculated Result [ Select: On ; \"calculation\" ; Target: $variable ]",
+  "hr": "Insert Calculated Result [ Select ; \"calculation\" ; Target: $variable ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"77\" name=\"Insert Calculated Result\">\n    <SelectAll state=\"True\"/>\n    <Calculation><![CDATA[\"calculation\"]]></Calculation>\n    <Text/>\n    <Field>$variable</Field>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert Current Date.xml": {
-  "hr": "Insert Current Date [ Select: On ; Target: $variable ]",
+  "hr": "Insert Current Date [ Select ; Target: $variable ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"13\" name=\"Insert Current Date\">\n    <SelectAll state=\"True\"/>\n    <Text/>\n    <Field>$variable</Field>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert Current Time.xml": {
-  "hr": "Insert Current Time [ Select: On ; Target: $variable ]",
+  "hr": "Insert Current Time [ Select ; Target: $variable ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"14\" name=\"Insert Current Time\">\n    <SelectAll state=\"True\"/>\n    <Text/>\n    <Field>$variable</Field>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert Current User Name.xml": {
-  "hr": "Insert Current User Name [ Select: On ; Target: $variable ]",
+  "hr": "Insert Current User Name [ Select ; Target: $variable ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"60\" name=\"Insert Current User Name\">\n    <SelectAll state=\"True\"/>\n    <Text/>\n    <Field>$variable</Field>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert File.xml": {
@@ -276,15 +276,15 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"161\" name=\"Insert from Device\">\n    <InsertFrom value=\"Camera\"/>\n    <DeviceOptions>\n      <Camera choice=\"Back\"/>\n      <Resolution choice=\"Full\"/>\n      <LightMode choice=\"Auto\"/>\n    </DeviceOptions>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert from Index.xml": {
-  "hr": "Insert from Index [ Select: On ]",
+  "hr": "Insert from Index [ Select ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"11\" name=\"Insert from Index\">\n    <SelectAll state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert from Last Visited.xml": {
-  "hr": "Insert from Last Visited [ Select: On ]",
+  "hr": "Insert from Last Visited [ Select ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"12\" name=\"Insert from Last Visited\">\n    <SelectAll state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Insert from URL.xml": {
-  "hr": "Insert from URL [ Select: On ; With dialog: Off ; Target: $file ; $url ; Verify SSL Certificates: On ; cURL options: \"--flags\" ; Off ]",
+  "hr": "Insert from URL [ Select ; With dialog: Off ; Target: $file ; $url ; Verify SSL Certificates ; cURL options: \"--flags\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"160\" name=\"Insert from URL\">\n    <SelectAll state=\"True\"/>\n    <NoInteract state=\"True\"/>\n    <Text/>\n    <Field>$file</Field>\n    <Calculation><![CDATA[$url]]></Calculation>\n    <VerifySSLCertificates state=\"True\"/>\n    <CURLOptions>\n      <Calculation><![CDATA[\"--flags\"]]></Calculation>\n    </CURLOptions>\n    <DontEncodeURL state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "fields/Relookup Field Contents.xml": {
@@ -316,7 +316,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"34\" name=\"Close File\">\n    <FileReference id=\"0\" name=\"\">\n      <UniversalPathList>file:NameOfFile</UniversalPathList>\n    </FileReference>\n  </Step>\n</fmxmlsnippet>"
  },
  "files/Convert File.xml": {
-  "hr": "Convert File [ With dialog: On ; Open File: Off ; Skip Indexes: On ; Verify SSL Certificates: On ; File ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=\"    \" ; $path ; Import options: TargetTableName=Table, CharacterSet=Macintosh, PreserveContainer=False, MatchFieldNames=False, AutoEnter=False, SplitRepetitions=False, method=Add ]",
+  "hr": "Convert File [ With dialog: On ; Open File: Off ; Skip Indexes: On ; Verify SSL Certificates ; File ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=\"    \" ; $path ; Import options: TargetTableName=Table, CharacterSet=Macintosh, PreserveContainer=False, MatchFieldNames=False, AutoEnter=False, SplitRepetitions=False, method=Add ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"139\" name=\"Convert File\">\n    <NoInteract state=\"False\"/>\n    <Option state=\"False\"/>\n    <SkipIndexes state=\"True\"/>\n    <VerifySSLCertificates state=\"True\"/>\n    <DataSourceType value=\"File\"/>\n    <Profile FieldDelimiter=\"&#9;\" IsPredefined=\"-1\" FieldNameRow=\"-1\" DataType=\"    \"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <ImportOptions TargetTableName=\"Table\" CharacterSet=\"Macintosh\" PreserveContainer=\"False\" MatchFieldNames=\"False\" AutoEnter=\"False\" SplitRepetitions=\"False\" method=\"Add\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "files/Create Data File.xml": {
@@ -396,15 +396,15 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"192\" name=\"Write to Data File\">\n    <Calculation><![CDATA[$fileID]]></Calculation>\n    <Text/>\n    <Field>$variable</Field>\n    <DataSourceType value=\"2\"/>\n    <AppendLineFeed state=\"True\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "found sets/Constrain Found Set.xml": {
-  "hr": "Constrain Found Set [ Find without indexes: On ; Restore: On ; Find Requests: $query ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"126\" name=\"Constrain Found Set\">\n    <Option state=\"True\"/>\n    <Restore state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Constrain Found Set [ Restore ; Find without indexes ; Find Requests: $query ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"126\" name=\"Constrain Found Set\">\n    <Restore state=\"True\"/>\n    <Option state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
  },
  "found sets/Extend Found Set.xml": {
-  "hr": "Extend Found Set [ Restore: On ; Find Requests: $query ]",
+  "hr": "Extend Found Set [ Restore ; Find Requests: $query ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"127\" name=\"Extend Found Set\">\n    <Restore state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
  },
  "found sets/Find Matching Records.xml": {
-  "hr": "Find Matching Records [ FindMatchingReplace ]",
+  "hr": "Find Matching Records [ Replace ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"155\" name=\"Find Matching Records\">\n    <FindMatchingRecordsByField value=\"FindMatchingReplace\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "found sets/Modify Last Find.xml": {
@@ -472,11 +472,11 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"93\" name=\"Beep\"/>\n</fmxmlsnippet>"
  },
  "miscellaneous/Dial Phone.xml": {
-  "hr": "Dial Phone [ With dialog: Off ; Off ]",
+  "hr": "Dial Phone [ With dialog: Off ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"65\" name=\"Dial Phone\">\n    <NoInteract state=\"True\"/>\n    <UseDialPreferences value=\"False\"/>\n    <Calculation><![CDATA[]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Enable Touch Keyboard.xml": {
-  "hr": "Enable Touch Keyboard [ Show ]",
+  "hr": "Enable Touch Keyboard [ On ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"174\" name=\"Enable Touch Keyboard\">\n    <ShowHide value=\"Show\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Execute FileMaker Data API.xml": {
@@ -544,7 +544,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"57\" name=\"Send Event\">\n    <ContentType value=\"Text\"/>\n    <Text></Text>\n    <Event CopyResultToClipboard=\"False\" WaitForCompletion=\"True\" BringTargetToForeground=\"False\" TargetType=\"NUTD\" TargetName=\"&lt;unknown&gt;\" id=\"dosc\" class=\"misc\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Send Mail.xml": {
-  "hr": "Send Mail [ With dialog: Off ; Attachment path: $attachmentFilePathList ; To: useFoundSet=False, value=$to ; CC: useFoundSet=False, value=$cc ; BCC: useFoundSet=False, value=$bcc ; Subject: $subject ; Message: $message ; Server name: $name ; From address: $from ; Reply address: $replyTo ; SMTP server: $smtp ; Port: 587 ; Username: $username ; Password: $password ; OAuth name: $name ; OAuth from address: $from ; OAuth reply address: $replyTo ; Admin user ID: $adminUserEmail ; Service account email: $serviceAccountEmail ; Private key: $privateKey ; Off ; Send via: Off ; Send via: On ; SMTPEncryptionTLS ; SMTPAuthenticationPlain ; OAuthProviderGoogle ]",
+  "hr": "Send Mail [ With dialog: Off ; Attachment path: $attachmentFilePathList ; To: useFoundSet=False, value=$to ; CC: useFoundSet=False, value=$cc ; BCC: useFoundSet=False, value=$bcc ; Subject: $subject ; Message: $message ; Server name: $name ; From address: $from ; Reply address: $replyTo ; SMTP server: $smtp ; Port: 587 ; Username: $username ; Password: $password ; OAuth name: $name ; OAuth from address: $from ; OAuth reply address: $replyTo ; Admin user ID: $adminUserEmail ; Service account email: $serviceAccountEmail ; Private key: $privateKey ; Send via: Off ; Send via: On ; SMTPEncryptionTLS ; SMTPAuthenticationPlain ; OAuthProviderGoogle ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"63\" name=\"Send Mail\">\n    <NoInteract state=\"True\"/>\n    <Attachment>\n    <UniversalPathList>$attachmentFilePathList</UniversalPathList>\n    </Attachment>\n    <To UseFoundSet=\"False\">\n      <Calculation><![CDATA[$to]]></Calculation>\n    </To>\n    <Cc UseFoundSet=\"False\">\n      <Calculation><![CDATA[$cc]]></Calculation>\n    </Cc>\n    <Bcc UseFoundSet=\"False\">\n      <Calculation><![CDATA[$bcc]]></Calculation>\n    </Bcc>\n    <Subject>\n      <Calculation><![CDATA[$subject]]></Calculation>\n    </Subject>\n    <Message>\n      <Calculation><![CDATA[$message]]></Calculation>\n    </Message>\n    <SMTPNameDescription>\n      <Calculation><![CDATA[$name]]></Calculation>\n    </SMTPNameDescription>\n    <SMTPEmailAddress>\n      <Calculation><![CDATA[$from]]></Calculation>\n    </SMTPEmailAddress>\n    <SMTPReplyAddress>\n      <Calculation><![CDATA[$replyTo]]></Calculation>\n    </SMTPReplyAddress>\n    <SMTPServer>\n      <Calculation><![CDATA[$smtp]]></Calculation>\n    </SMTPServer>\n    <SMTPPort>\n      <Calculation><![CDATA[587]]></Calculation>\n    </SMTPPort>\n    <SMTPUserName>\n      <Calculation><![CDATA[$username]]></Calculation>\n    </SMTPUserName>\n    <SMTPPassword>\n      <Calculation><![CDATA[$password]]></Calculation>\n    </SMTPPassword>\n    <OAuthNameDescription>\n      <Calculation><![CDATA[$name]]></Calculation>\n    </OAuthNameDescription>\n    <OAuthEmailAddress>\n      <Calculation><![CDATA[$from]]></Calculation>\n    </OAuthEmailAddress>\n    <OAuthReplyAddress>\n      <Calculation><![CDATA[$replyTo]]></Calculation>\n    </OAuthReplyAddress>\n    <OAuthUserID>\n      <Calculation><![CDATA[$adminUserEmail]]></Calculation>\n    </OAuthUserID>\n    <OAuthAccountEmail>\n      <Calculation><![CDATA[$serviceAccountEmail]]></Calculation>\n    </OAuthAccountEmail>\n    <OAuthPrivateKey>\n      <Calculation><![CDATA[$privateKey]]></Calculation>\n    </OAuthPrivateKey>\n    <MultipleEmails state=\"False\"/>\n    <SendViaSMTP state=\"False\"/>\n    <SendViaOAuthAuthentication state=\"True\"/>\n    <SMTPEncryptionType type=\"SMTPEncryptionTLS\"/>\n    <SMTPAuthenticationType type=\"SMTPAuthenticationPlain\"/>\n    <OAuthProvider type=\"OAuthProviderGoogle\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Set Session Identifier.xml": {
@@ -556,7 +556,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"146\" name=\"Set Web Viewer\">\n    <ObjectName>\n      <Calculation><![CDATA[$object]]></Calculation>\n    </ObjectName>\n    <Action value=\"GoToURL\"/>\n    <URL custom=\"True\">\n      <Calculation><![CDATA[$url]]></Calculation>\n    </URL>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Show Custom Dialog.xml": {
-  "hr": "Show Custom Dialog [ Title: \"Title\" ; Message: \"Message\" ; Height: 100 ; Width: 300 ; Distance from top: 200 ; Distance from left: 500 ; Buttons: commit=True, label=\"Default Button\" | commit=False, label=\"Button 2\" | commit=False, label=\"Button 4\" ; Input Fields: password=False, field=Admin::Industry, label=\"Label 1\" | password=False, field=$variable_input2, label=\"Label 2\" | password=True, field=$variable_input3, label=\"Label 3\" ]",
+  "hr": "Show Custom Dialog [ \"Title\" ; \"Message\" ; Height: 100 ; Width: 300 ; Top: 200 ; Left: 500 ; Buttons: commit=True, label=\"Default Button\" | commit=False, label=\"Button 2\" | commit=False, label=\"Button 4\" ; Input Fields: password=False, field=Admin::Industry, label=\"Label 1\" | password=False, field=$variable_input2, label=\"Label 2\" | password=True, field=$variable_input3, label=\"Label 3\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"87\" name=\"Show Custom Dialog\">\n    <Title>\n      <Calculation><![CDATA[\"Title\"]]></Calculation>\n    </Title>\n    <Message>\n      <Calculation><![CDATA[\"Message\"]]></Calculation>\n    </Message>\n    <Height>\n      <Calculation><![CDATA[100]]></Calculation>\n    </Height>\n    <Width>\n      <Calculation><![CDATA[300]]></Calculation>\n    </Width>\n    <DistanceFromTop>\n      <Calculation><![CDATA[200]]></Calculation>\n    </DistanceFromTop>\n    <DistanceFromLeft>\n      <Calculation><![CDATA[500]]></Calculation>\n    </DistanceFromLeft>\n    <Buttons>\n      <Button CommitState=\"True\">\n        <Calculation><![CDATA[\"Default Button\"]]></Calculation>\n      </Button>\n      <Button CommitState=\"False\">\n        <Calculation><![CDATA[\"Button 2\"]]></Calculation>\n      </Button>\n      <Button CommitState=\"False\">\n        <Calculation><![CDATA[\"Button 4\"]]></Calculation>\n      </Button>\n    </Buttons>\n    <InputFields>\n      <InputField UsePasswordCharacter=\"False\">\n        <Field table=\"Admin\" id=\"0\" name=\"Industry\"/>\n        <Label>\n          <Calculation><![CDATA[\"Label 1\"]]></Calculation>\n        </Label>\n      </InputField>\n      <InputField UsePasswordCharacter=\"False\">\n        <Field>$variable_input2</Field>\n        <Label>\n          <Calculation><![CDATA[\"Label 2\"]]></Calculation>\n        </Label>\n      </InputField>\n      <InputField UsePasswordCharacter=\"True\">\n        <Field>$variable_input3</Field>\n        <Label>\n          <Calculation><![CDATA[\"Label 3\"]]></Calculation>\n        </Label>\n      </InputField>\n    </InputFields>\n  </Step>\n</fmxmlsnippet>"
  },
  "miscellaneous/Speak.xml": {
@@ -572,23 +572,23 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"55\" name=\"Enter Browse Mode\">\n    <Pause state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Enter Find Mode.xml": {
-  "hr": "Enter Find Mode [ Pause: On ; Restore: On ; Find Requests: $query ]",
-  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"22\" name=\"Enter Find Mode\">\n    <Pause state=\"True\"/>\n    <Restore state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
+  "hr": "Enter Find Mode [ Restore ; Pause: On ; Find Requests: $query ]",
+  "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"22\" name=\"Enter Find Mode\">\n    <Restore state=\"True\"/>\n    <Pause state=\"True\"/>\n    <Query>\n      <RequestRow operation=\"Include\">\n        <Criteria>\n          <Field table=\"\" id=\"0\" name=\"\"/>\n          <Text>$query</Text>\n        </Criteria>\n      </RequestRow>\n    </Query>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Enter Preview Mode.xml": {
   "hr": "Enter Preview Mode [ Pause: Off ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"41\" name=\"Enter Preview Mode\">\n    <Pause state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Field.xml": {
-  "hr": "Go to Field [ Select/perform: On ]",
+  "hr": "Go to Field [ Select/perform ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"17\" name=\"Go to Field\">\n    <SelectAll state=\"True\"/>\n    <Field table=\"\" id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Layout.xml": {
-  "hr": "Go to Layout",
+  "hr": "Go to Layout [ <unknown> ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"6\" name=\"Go to Layout\">\n    <LayoutDestination value=\"SelectedLayout\"/>\n    <Layout id=\"0\" name=\"\"/>\n    <Animation value=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to List of Records.xml": {
-  "hr": "Go to List of Records [ List of record IDs: \"calc\" ; Using layout: CurrentLayout ; New window: Off ]",
+  "hr": "Go to List of Records [ List of record IDs: \"calc\" ; Using layout: <Current Layout> ; New window: Off ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"228\" name=\"Go to List of Records\">\n    <RowList>\n      <Calculation><![CDATA[\"calc\"]]></Calculation>\n    </RowList>\n    <LayoutDestination value=\"CurrentLayout\"/>\n    <Animation value=\"\"/>\n    <ShowInNewWindow state=\"False\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Next Field.xml": {
@@ -600,7 +600,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"145\" name=\"Go to Object\">\n    <Repetition>\n      <Calculation><![CDATA[1]]></Calculation>\n    </Repetition>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Portal Row.xml": {
-  "hr": "Go to Portal Row [ Select: Off ; ByCalculation ; With dialog: Off ; 1 ]",
+  "hr": "Go to Portal Row [ Select: Off ; By Calculation ; With dialog: Off ; 1 ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"99\" name=\"Go to Portal Row\">\n    <SelectAll state=\"False\"/>\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Exit state=\"True\"/>\n    <NoInteract state=\"True\"/>\n    <Calculation><![CDATA[1]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Previous Field.xml": {
@@ -608,11 +608,11 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"5\" name=\"Go to Previous Field\"/>\n</fmxmlsnippet>"
  },
  "navigation/Go to Record-Request-Page.xml": {
-  "hr": "Go to Record/Request/Page [ ByCalculation ; With dialog: Off ; \"\" ]",
+  "hr": "Go to Record/Request/Page [ By Calculation ; With dialog: Off ; \"\" ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"16\" name=\"Go to Record/Request/Page\">\n    <RowPageLocation value=\"ByCalculation\"/>\n    <Exit state=\"True\"/>\n    <NoInteract state=\"True\"/>\n    <Calculation><![CDATA[\"\"]]></Calculation>\n  </Step>\n</fmxmlsnippet>"
  },
  "navigation/Go to Related Record.xml": {
-  "hr": "Go to Related Record [ Show only related records: Off ; Match found set: Off ; New window: Off ; Restore: On ; Window style: Style=Document, Close=Yes, Minimize=Yes, Maximize=Yes, Resize=Yes, Styles=3606018 ]",
+  "hr": "Go to Related Record [ Show only related records ; Window style: Style=Document, Close=Yes, Minimize=Yes, Maximize=Yes, Resize=Yes, Styles=3606018 ; Using layout: <unknown> ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"74\" name=\"Go to Related Record\">\n    <Option state=\"False\"/>\n    <MatchAllRecords state=\"False\"/>\n    <ShowInNewWindow state=\"False\"/>\n    <Restore state=\"True\"/>\n    <LayoutDestination value=\"SelectedLayout\"/>\n    <NewWndStyles Style=\"Document\" Close=\"Yes\" Minimize=\"Yes\" Maximize=\"Yes\" Resize=\"Yes\" Styles=\"3606018\"/>\n    <Table id=\"0\" name=\"\"/>\n    <Layout id=\"0\" name=\"\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "open menu item/Open Edit Saved Finds.xml": {
@@ -680,7 +680,7 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"172\" name=\"Open Upload to Host\"/>\n</fmxmlsnippet>"
  },
  "pdf files/Append PDF.xml": {
-  "hr": "Append PDF [ Off ; $path ; From: File ]",
+  "hr": "Append PDF [ $path ; From: File ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"244\" name=\"Append PDF\">\n    <Option state=\"False\"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <AppendPDFFile>\n    <PDFSaveType>File</PDFSaveType>\n    </AppendPDFFile>\n  </Step>\n</fmxmlsnippet>"
  },
  "pdf files/Cancel PDF.xml": {
@@ -696,11 +696,11 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"243\" name=\"Create PDF\">\n    <Restore state=\"False\"/>\n    <CreatePDFFile>\n    <Document>\n      <Pages AllPages=\"True\">\n        <NumberFrom>\n          <Calculation><![CDATA[1]]></Calculation>\n        </NumberFrom>\n        <PageRange>\n          <From>\n            <Calculation><![CDATA[1]]></Calculation>\n          </From>\n          <To>\n            <Calculation><![CDATA[1]]></Calculation>\n          </To>\n        </PageRange>\n      </Pages>\n    </Document>\n    <Security allowScreenReader=\"True\" enableCopying=\"True\" controlEditing=\"AnyExceptExtractingPages\" controlPrinting=\"HighResolution\" requireOpenPassword=\"False\" requireControlEditPassword=\"False\"/>\n    <View magnification=\"100\" pageLayout=\"SinglePage\" show=\"PagesPanelAndPage\"/>\n    </CreatePDFFile>\n  </Step>\n</fmxmlsnippet>"
  },
  "pdf files/Open PDF.xml": {
-  "hr": "Open PDF [ Off ; $path ; From: File ]",
+  "hr": "Open PDF [ $path ; From: File ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"246\" name=\"Open PDF\">\n    <Option state=\"False\"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <OpenPDFFile>\n    <PDFSaveType>File</PDFSaveType>\n    </OpenPDFFile>\n  </Step>\n</fmxmlsnippet>"
  },
  "pdf files/Print PDF.xml": {
-  "hr": "Print PDF [ With dialog: Off ; Off ; Off ; Off ; $path ]",
+  "hr": "Print PDF [ With dialog: Off ; $path ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"242\" name=\"Print PDF\">\n    <NoInteract state=\"True\"/>\n    <Option state=\"False\"/>\n    <UsePrintOptionsFromEnabled state=\"False\"/>\n    <SavePrintOptionsToEnabled state=\"False\"/>\n    <Restore state=\"False\"/>\n    <UniversalPathList>$path</UniversalPathList>\n  </Step>\n</fmxmlsnippet>"
  },
  "records/Commit Records_Requests.xml": {
@@ -732,11 +732,11 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"8\" name=\"Duplicate Record/Request\"/>\n</fmxmlsnippet>"
  },
  "records/Export Records.xml": {
-  "hr": "Export Records [ With dialog: Off ; Create folders: On ; On ; Automatically open: On ; Create email: On ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=TABS ; $path ; Export options: FormatUsingCurrentLayout=False, CharacterSet=UTF-8 ; Export fields: ,  ; Summary fields: =True ]",
+  "hr": "Export Records [ With dialog: Off ; Create folders: On ; Automatically open: On ; Create email: On ; Profile: FieldDelimiter=\"\t\", IsPredefined=-1, FieldNameRow=-1, DataType=TABS ; $path ; Export options: FormatUsingCurrentLayout=False, CharacterSet=UTF-8 ; Export fields: ,  ; Summary fields: =True ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"36\" name=\"Export Records\">\n    <NoInteract state=\"True\"/>\n    <CreateDirectories state=\"True\"/>\n    <Restore state=\"True\"/>\n    <AutoOpen state=\"True\"/>\n    <CreateEmail state=\"True\"/>\n    <Profile FieldDelimiter=\"&#9;\" IsPredefined=\"-1\" FieldNameRow=\"-1\" DataType=\"TABS\"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <ExportOptions FormatUsingCurrentLayout=\"False\" CharacterSet=\"UTF-8\"/>\n    <ExportEntries>\n      <ExportEntry><Field table=\"\" id=\"0\" name=\"\"/></ExportEntry>\n      <ExportEntry><Field table=\"\" id=\"0\" name=\"\"/></ExportEntry>\n    </ExportEntries>\n    <SummaryFields>\n      <Field GroupByFieldIsSelected=\"True\" table=\"\" id=\"0\" name=\"\"/>\n    </SummaryFields>\n  </Step>\n</fmxmlsnippet>"
  },
  "records/Import Records.xml": {
-  "hr": "Import Records [ With dialog: Off ; On ; Verify SSL Certificates: Off ; File ; $path ; Import options: CharacterSet=UTF-8, PreserveContainer=False, MatchFieldNames=False, AutoEnter=True, SplitRepetitions=False, method=Add ; Import fields: =Import, =DoNotImport ]",
+  "hr": "Import Records [ With dialog: Off ; File ; $path ; Import options: CharacterSet=UTF-8, PreserveContainer=False, MatchFieldNames=False, AutoEnter=True, SplitRepetitions=False, method=Add ; Import fields: =Import, =DoNotImport ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"35\" name=\"Import Records\">\n    <NoInteract state=\"True\"/>\n    <Restore state=\"True\"/>\n    <VerifySSLCertificates state=\"False\"/>\n    <DataSourceType value=\"File\"/>\n    <UniversalPathList>$path</UniversalPathList>\n    <ImportOptions CharacterSet=\"UTF-8\" PreserveContainer=\"False\" MatchFieldNames=\"False\" AutoEnter=\"True\" SplitRepetitions=\"False\" method=\"Add\"/>\n    <Table id=\"\" name=\"\"/>\n    <TargetFields>\n      <Field FieldOptions=\"0\" map=\"Import\" table=\"\" id=\"0\" name=\"\"/>\n      <Field FieldOptions=\"0\" map=\"DoNotImport\" table=\"\" id=\"0\" name=\"\"/>\n    </TargetFields>\n  </Step>\n</fmxmlsnippet>"
  },
  "records/New Record_Request.xml": {
@@ -804,11 +804,11 @@
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"107\" name=\"Spelling Options\"/>\n</fmxmlsnippet>"
  },
  "windows/Adjust Window.xml": {
-  "hr": "Adjust Window [ ResizeToFit ]",
+  "hr": "Adjust Window [ Resize to Fit ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"31\" name=\"Adjust Window\">\n    <WindowState value=\"ResizeToFit\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "windows/Arrange All Windows.xml": {
-  "hr": "Arrange All Windows [ Cascade ]",
+  "hr": "Arrange All Windows [ Cascade Window ]",
   "xml": "<?xml version=\"1.0\"?>\n<fmxmlsnippet type=\"FMObjectList\">\n  <Step enable=\"True\" id=\"120\" name=\"Arrange All Windows\">\n    <WindowArrangement value=\"Cascade\"/>\n  </Step>\n</fmxmlsnippet>"
  },
  "windows/Close Window.xml": {

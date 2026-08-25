@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<Script>
+  <ObjectList>
+    <Step id="187" name="Configure Local Notification" enable="True">
+      <Options>1073758508</Options>
+      <ParameterValues membercount="6">
+        <Parameter type="action">
+          <List name="Queue" value="0" />
+        </Parameter>
+        <Parameter type="Name">
+          <Calculation datatype="1" position="2">
+            <Calculation>
+              <Text>$name</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Delay">
+          <Calculation datatype="2" position="3">
+            <Calculation>
+              <Text>$delay</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Title">
+          <Calculation datatype="1" position="4">
+            <Calculation>
+              <Text>$title</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="Body">
+          <Calculation datatype="1" position="5">
+            <Calculation>
+              <Text>$body</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+        <Parameter type="ShowInForeground">
+          <Calculation datatype="7" position="12">
+            <Calculation>
+              <Text>True</Text>
+            </Calculation>
+          </Calculation>
+        </Parameter>
+      </ParameterValues>
+    </Step>
+  </ObjectList>
+</Script>
