@@ -1,0 +1,690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)">
+<Text>PURPOSE: Test suite for ORD__AddArticle — 9 cases covering validation, orphan-guard, create mode, assign mode, case-insensitivity and trim. Creates tagged fixtures, cleans up after itself. Dev use only.</Text>
+</Step>
+<Step enable="False" id="61" name="Insert Text">
+<SelectAll state="False"/>
+<Text>PARAMS: none — run directly.&#xD;REPORTS: via Agentic-fm Debug → agent/debug/output.json&#xD;FIXTURES: one Primka + one bare StavkaPrimke, sifra "TEST-&lt;tag&gt;"; all deleted in teardown.&#xD;SAFE FOR: dev servers only.</Text>
+<Field>$README</Field>
+</Step>
+<Step enable="True" id="85" name="Allow User Abort">
+<Set state="False"/>
+</Step>
+<Step enable="True" id="86" name="Set Error Capture">
+<Set state="True"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Fixtures</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$runTag</Name>
+<Value><Calculation><![CDATA[Upper ( Right ( Filter ( Get ( UUID ) ; "0123456789ABCDEFabcdef" ) ; 8 ) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testSifra</Name>
+<Value><Calculation><![CDATA["TEST-" & $runTag]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$fxPrimka</Name>
+<Value><Calculation><![CDATA[UUIDv7]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$setupErr</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO \"Primke\" (\"PrimaryKey\", \"BrojFaktureDobavljaca\") VALUES (?, ?)" ;
+	"" ;
+	$fxPrimka ;
+	"TEST-" & $runTag
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$fxStavka</Name>
+<Value><Calculation><![CDATA[UUIDv7]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $setupErr )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$setupErr</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO \"StavkePrimke\" (\"PrimaryKey\", \"ForeignKeyPrimkaID\") VALUES (?, ?)" ;
+	"" ;
+	$fxStavka ;
+	$fxPrimka
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $setupErr )]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "label" ; "Test results: ORD__AddArticle — SETUP FAILED" ; JSONString ] ;
+	[ "vars" ; JSONSetElement ( "{}" ; [ "setupErr" ; $setupErr ; JSONString ] ; [ "runTag" ; $runTag ; JSONString ] ) ; JSONRaw ]
+)]]></Calculation>
+<Script id="749" name="Agentic-fm Debug"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "DELETE FROM \"StavkePrimke\" WHERE \"ForeignKeyPrimkaID\" = ?" ; "" ; $fxPrimka )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "DELETE FROM \"Primke\" WHERE \"PrimaryKey\" = ?" ; "" ; $fxPrimka )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "setupFailed" ; True ; JSONBoolean )]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test1 EmptyParam</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["1 empty param → MISSING_PARAM"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[""]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "status" ) = "fail"
+and JSONGetElement ( $actual ; "messages.error[0].code" ) = "MISSING_PARAM"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "status=fail, error[0].code=MISSING_PARAM" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test2 NoTarget</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["2 sifra only, no target → MISSING_PARAM"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; [ "sifra" ; $testSifra ; JSONString ] )]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "status" ) = "fail"
+and JSONGetElement ( $actual ; "messages.error[0].code" ) = "MISSING_PARAM"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "status=fail, error[0].code=MISSING_PARAM" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test3 BogusPrimka</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["3 bogus primkaID → NOT_FOUND_PRIMKA, no orphan artikal"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $testSifra ; JSONString ] ;
+	[ "primkaID" ; "TEST-BOGUS-" & $runTag ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "SELECT COUNT(*) FROM \"Artikli\" WHERE UPPER ( \"SifraArtikla\" ) = ?" ; "useSQLResult=cnt" ; $testSifra )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$orphanCount</Name>
+<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "cnt" ) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "cnt" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "status" ) = "fail"
+and JSONGetElement ( $actual ; "messages.error[0].code" ) = "NOT_FOUND_PRIMKA"
+and $orphanCount = 0]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "status=fail, NOT_FOUND_PRIMKA, orphanCount=0" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) & " | orphanCount=" & $orphanCount ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test4 BogusStavka</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["4 bogus stavkaID → NOT_FOUND_STAVKA, no orphan artikal"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $testSifra ; JSONString ] ;
+	[ "stavkaID" ; "TEST-BOGUS-" & $runTag ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "SELECT COUNT(*) FROM \"Artikli\" WHERE UPPER ( \"SifraArtikla\" ) = ?" ; "useSQLResult=cnt" ; $testSifra )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$orphanCount</Name>
+<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "cnt" ) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "cnt" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "status" ) = "fail"
+and JSONGetElement ( $actual ; "messages.error[0].code" ) = "NOT_FOUND_STAVKA"
+and $orphanCount = 0]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "status=fail, NOT_FOUND_STAVKA, orphanCount=0" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) & " | orphanCount=" & $orphanCount ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test5 CreateNewArtikal</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["5 create mode, new artikal, kolicina 5"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $testSifra ; JSONString ] ;
+	[ "primkaID" ; $fxPrimka ; JSONString ] ;
+	[ "kolicina" ; 5 ; JSONNumber ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$artikalID</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "data.artikalID" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$t5Stavka</Name>
+<Value><Calculation><![CDATA[JSONGetElement ( $actual ; "data.stavkaID" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT \"ForeignKeyPrimkaID\", \"ForeignKeyArtikalID\", \"Kolicina\" FROM \"StavkePrimke\" WHERE \"PrimaryKey\" = ?" ;
+	"useSQLResult=row" ;
+	$t5Stavka
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$rowOk</Name>
+<Value><Calculation><![CDATA[epSQLResultRowCount ( "row" ) = 1
+and epSQLResult ( 0 ; 0 ; "row" ) = $fxPrimka
+and epSQLResult ( 0 ; 1 ; "row" ) = $artikalID
+and GetAsNumber ( epSQLResult ( 0 ; 2 ; "row" ) ) = 5]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "row" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "SELECT \"SifraArtikla\" FROM \"Artikli\" WHERE \"PrimaryKey\" = ?" ; "useSQLResult=art" ; $artikalID )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$artOk</Name>
+<Value><Calculation><![CDATA[epSQLResultRowCount ( "art" ) = 1
+and epSQLResult ( 0 ; 0 ; "art" ) = $testSifra]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "art" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~created = JSONGetElement ( $actual ; "data.artikalCreated" ) ;
+		~stCreated = JSONGetElement ( $actual ; "data.stavkaCreated" )
+	] ;
+	JSONGetElement ( $actual ; "status" ) = "success"
+	and ( ~created = 1 or ~created = "true" )
+	and ( ~stCreated = 1 or ~stCreated = "true" )
+	and $rowOk
+	and $artOk
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "success, artikalCreated, stavkaCreated, row FKs + Kolicina=5, sifra stored uppercase" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) & " | rowOk=" & $rowOk & " artOk=" & $artOk ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test6 CaseInsensitive</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["6 lowercased sifra reuses artikal"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; Lower ( $testSifra ) ; JSONString ] ;
+	[ "primkaID" ; $fxPrimka ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~created = JSONGetElement ( $actual ; "data.artikalCreated" ) ;
+		~stCreated = JSONGetElement ( $actual ; "data.stavkaCreated" )
+	] ;
+	JSONGetElement ( $actual ; "status" ) = "success"
+	and ( ~created = 0 or ~created = "false" )
+	and ( ~stCreated = 1 or ~stCreated = "true" )
+	and JSONGetElement ( $actual ; "data.artikalID" ) = $artikalID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "success, artikalCreated=false, same artikalID, stavkaCreated=true" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test7 AssignMode</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["7 assign mode sets artikal on bare stavka"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $testSifra ; JSONString ] ;
+	[ "stavkaID" ; $fxStavka ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "SELECT \"ForeignKeyArtikalID\" FROM \"StavkePrimke\" WHERE \"PrimaryKey\" = ?" ; "useSQLResult=row" ; $fxStavka )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$rowOk</Name>
+<Value><Calculation><![CDATA[epSQLResultRowCount ( "row" ) = 1
+and epSQLResult ( 0 ; 0 ; "row" ) = $artikalID]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "row" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~stCreated = JSONGetElement ( $actual ; "data.stavkaCreated" )
+	] ;
+	JSONGetElement ( $actual ; "status" ) = "success"
+	and ( ~stCreated = 0 or ~stCreated = "false" )
+	and JSONGetElement ( $actual ; "data.stavkaID" ) = $fxStavka
+	and $rowOk
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "success, stavkaCreated=false, stavkaID=fixture, FK artikal set in row" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) & " | rowOk=" & $rowOk ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test8 TrimGuard</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["8 padded sifra trims to same artikal"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; "  " & Lower ( $testSifra ) & "  " ; JSONString ] ;
+	[ "primkaID" ; $fxPrimka ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~created = JSONGetElement ( $actual ; "data.artikalCreated" )
+	] ;
+	JSONGetElement ( $actual ; "status" ) = "success"
+	and ( ~created = 0 or ~created = "false" )
+	and JSONGetElement ( $actual ; "data.artikalID" ) = $artikalID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "success, artikalCreated=false, same artikalID (trim + upper applied)" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Test9 AssignWins</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testName</Name>
+<Value><Calculation><![CDATA["9 both targets given → assign wins"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $testSifra ; JSONString ] ;
+	[ "primkaID" ; $fxPrimka ; JSONString ] ;
+	[ "stavkaID" ; $fxStavka ; JSONString ]
+)]]></Calculation>
+<Script id="0" name="ORD__AddArticle"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$actual</Name>
+<Value><Calculation><![CDATA[Get ( ScriptResult )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$errData</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "lastError" ; Get ( LastError ) ; JSONNumber ] ;
+	[ "lastErrorDetail" ; Get ( LastErrorDetail ) ; JSONString ] ;
+	[ "lastErrorLocation" ; Get ( LastErrorLocation ) ; JSONString ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$pass</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~stCreated = JSONGetElement ( $actual ; "data.stavkaCreated" )
+	] ;
+	JSONGetElement ( $actual ; "status" ) = "success"
+	and ( ~stCreated = 0 or ~stCreated = "false" )
+	and JSONGetElement ( $actual ; "data.stavkaID" ) = $fxStavka
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$testCount</Name>
+<Value><Calculation><![CDATA[$testCount + 1]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$passCount</Name>
+<Value><Calculation><![CDATA[$passCount + If ( $pass ; 1 ; 0 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$results</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( $results ; "[" & $testCount - 1 & "]" ; JSONSetElement ( "{}" ;
+	[ "test" ; $testName ; JSONString ] ;
+	[ "pass" ; $pass ; JSONBoolean ] ;
+	[ "expected" ; "success, stavkaCreated=false, stavkaID=fixture (assign wins over primkaID)" ; JSONString ] ;
+	[ "actual" ; If ( IsEmpty ( $actual ) ; "(empty)" ; $actual ) ; JSONString ] ;
+	[ "errData" ; $errData ; JSONRaw ]
+) ; JSONRaw )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Teardown</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$cleanupStavke</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "DELETE FROM \"StavkePrimke\" WHERE \"ForeignKeyPrimkaID\" = ?" ; "" ; $fxPrimka )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$cleanupArtikli</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "DELETE FROM \"Artikli\" WHERE UPPER ( \"SifraArtikla\" ) = ?" ; "" ; $testSifra )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$cleanupPrimke</Name>
+<Value><Calculation><![CDATA[epSQLExecute ( "DELETE FROM \"Primke\" WHERE \"PrimaryKey\" = ?" ; "" ; $fxPrimka )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Report</Text>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "label" ; "Test results: ORD__AddArticle" ; JSONString ] ;
+	[ "vars" ; JSONSetElement ( "{}" ;
+		[ "testCount" ; $testCount ; JSONNumber ] ;
+		[ "passCount" ; $passCount ; JSONNumber ] ;
+		[ "allPassed" ; $testCount = $passCount ; JSONBoolean ] ;
+		[ "runTag" ; $runTag ; JSONString ] ;
+		[ "cleanup" ; "stavke=" & If ( IsEmpty ( $cleanupStavke ) ; "ok" ; $cleanupStavke ) & " artikli=" & If ( IsEmpty ( $cleanupArtikli ) ; "ok" ; $cleanupArtikli ) & " primke=" & If ( IsEmpty ( $cleanupPrimke ) ; "ok" ; $cleanupPrimke ) ; JSONString ] ;
+		[ "results" ; $results ; JSONRaw ]
+	) ; JSONRaw ]
+)]]></Calculation>
+<Script id="749" name="Agentic-fm Debug"/>
+</Step>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "testCount" ; $testCount ; JSONNumber ] ;
+	[ "passCount" ; $passCount ; JSONNumber ] ;
+	[ "allPassed" ; $testCount = $passCount ; JSONBoolean ]
+)]]></Calculation>
+</Step>
+</fmxmlsnippet>

@@ -1,1 +1,105 @@
-GetAsText (  )
+{
+  "label": "Test results: ORD workers (NewItem/SetLinePrices/DeleteOrderItem/FillReceiptTemplate)",
+  "lastError": 0,
+  "lastErrorLocation": "",
+  "timestamp": "7/20/2026 1:09:27 AM",
+  "vars": {
+    "allPassed": false,
+    "cleanup": "sol=ok stavke=ok primke=ok dobavljaci=ok",
+    "passCount": 17,
+    "results": [
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"MISSING_PARAM\",\"context\":{},\"field\":\"primkaID\",\"script\":\"ORD__NewItem\",\"text\":\"primkaID is required\",\"timestamp\":\"7/20/2026 1:09:17 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "NI-1 empty param → MISSING_PARAM"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"NOT_FOUND_PRIMKA\",\"context\":{\"primkaID\":\"TEST-BOGUS-2C6711CC\",\"traceID\":\"E40A0F30-16B3-451E-84DB-D084ED4BEF27\"},\"field\":\"primkaID\",\"script\":\"ORD__NewItem\",\"text\":\"Primka not found: TEST-BOGUS-2C6711CC\",\"timestamp\":\"7/20/2026 1:09:17 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "NI-2 bogus primkaID → NOT_FOUND_PRIMKA"
+      },
+      {
+        "actual": "{\"data\":{\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\"},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowOk=1",
+        "pass": true,
+        "test": "NI-3 valid create → success + row exists"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"INVALID_PARAM\",\"context\":{},\"field\":\"mode\",\"script\":\"ORD__SetLinePrices\",\"text\":\"mode must be nabavna or prodajna, got: bogus\",\"timestamp\":\"7/20/2026 1:09:18 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "SP-1 invalid mode → INVALID_PARAM"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"NO_QUANTITY\",\"context\":{\"amount\":100,\"mode\":\"nabavna\",\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"traceID\":\"97D7E6DD-C58A-44AE-9895-8AED96BBD01F\"},\"field\":\"amount\",\"script\":\"ORD__SetLinePrices\",\"text\":\"Cannot derive unit price from total — Kolicina is  on stavka 3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"timestamp\":\"7/20/2026 1:09:18 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "SP-2 total with Kolicina 0 → NO_QUANTITY"
+      },
+      {
+        "actual": "{\"data\":{\"kolicina\":4,\"mode\":\"nabavna\",\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"total\":100,\"unitPrice\":25},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowOk=1",
+        "pass": true,
+        "test": "SP-3 total 100 over Kolicina 4 → unit 25"
+      },
+      {
+        "actual": "{\"data\":{\"kolicina\":4,\"mode\":\"prodajna\",\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"total\":46.8,\"unitPrice\":11.7},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowOk=1",
+        "pass": true,
+        "test": "SP-4 unit 10 + VAT → prodajna 11.7"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"NOT_FOUND_STAVKA\",\"context\":{\"amount\":10,\"mode\":\"nabavna\",\"stavkaID\":\"TEST-BOGUS-2C6711CC\",\"traceID\":\"676057E4-3DF6-415E-B448-F24269939132\"},\"field\":\"stavkaID\",\"script\":\"ORD__SetLinePrices\",\"text\":\"StavkaPrimke not found: TEST-BOGUS-2C6711CC\",\"timestamp\":\"7/20/2026 1:09:20 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "SP-5 bogus stavkaID → NOT_FOUND_STAVKA"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"MISSING_PARAM\",\"context\":{},\"field\":\"stavkaID\",\"script\":\"ORD__DeleteOrderItem\",\"text\":\"stavkaID is required\",\"timestamp\":\"7/20/2026 1:09:20 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "DEL-1 empty param → MISSING_PARAM"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"NOT_FOUND_STAVKA\",\"context\":{\"stavkaID\":\"TEST-BOGUS-2C6711CC\",\"traceID\":\"5458D67C-3FAA-40A8-89E4-3B7347ADEF3F\"},\"field\":\"stavkaID\",\"script\":\"ORD__DeleteOrderItem\",\"text\":\"StavkaPrimke not found: TEST-BOGUS-2C6711CC\",\"timestamp\":\"7/20/2026 1:09:21 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "DEL-2 bogus stavkaID → NOT_FOUND_STAVKA"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"LINE_IN_USE\",\"context\":{\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"traceID\":\"5845E6AF-5A12-44AF-99AE-ED22A78784E5\"},\"field\":\"stavkaID\",\"script\":\"ORD__DeleteOrderItem\",\"text\":\"Line is transferred to ServiceOrderLines (1 reference(s))\",\"timestamp\":\"7/20/2026 1:09:21 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "DEL-3 SOL reference → LINE_IN_USE"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"PRIMKA_LOCKED\",\"context\":{\"stavkaID\":\"3a228ed0-f432-7373-a1b5-b450f417a9ee\",\"traceID\":\"F8A98F85-0DDD-491B-AB81-CB7409E4769A\"},\"field\":\"stavkaID\",\"script\":\"ORD__DeleteOrderItem\",\"text\":\"Parent primka is locked: 3a228ed0-edfd-716d-bb6a-539d99a906ff\",\"timestamp\":\"7/20/2026 1:09:22 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "DEL-4 locked primka → PRIMKA_LOCKED"
+      },
+      {
+        "actual": "{\"data\":{\"deleted\":true,\"primkaID\":\"3a228ed0-edfd-716d-bb6a-539d99a906ff\"},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowGone=1",
+        "pass": true,
+        "test": "DEL-5 clean line → deleted"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"MISSING_PARAM\",\"context\":{},\"field\":\"primkaID\",\"script\":\"ORD__FillReceiptTemplate\",\"text\":\"primkaID is required\",\"timestamp\":\"7/20/2026 1:09:24 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "RT-1 empty param → MISSING_PARAM"
+      },
+      {
+        "actual": "{\"data\":{},\"messages\":{\"error\":[{\"code\":\"NOT_FOUND_PRIMKA\",\"context\":{\"primkaID\":\"TEST-BOGUS-2C6711CC\",\"traceID\":\"524F26E2-E91D-4133-BCF2-EEA7C27E3259\"},\"field\":\"primkaID\",\"script\":\"ORD__FillReceiptTemplate\",\"text\":\"Primka not found: TEST-BOGUS-2C6711CC\",\"timestamp\":\"7/20/2026 1:09:24 AM\"}],\"info\":[],\"warning\":[]},\"status\":\"fail\"}",
+        "pass": true,
+        "test": "RT-2 bogus primkaID → NOT_FOUND_PRIMKA"
+      },
+      {
+        "actual": "{\"data\":{\"filled\":true,\"supplier\":\"Inter Cars TEST-2C6711CC\",\"template\":\"BASSK1226000\"},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowOk=1",
+        "pass": true,
+        "test": "RT-3 Inter Cars supplier → BASSK1226000"
+      },
+      {
+        "actual": "{\"data\":{\"filled\":false,\"supplier\":\"Inter Cars TEST-2C6711CC\",\"template\":\"\"},\"messages\":{\"error\":[],\"info\":[],\"warning\":[{\"code\":\"ALREADY_SET\",\"context\":{\"primkaID\":\"3a228ed0-edfd-716d-bb6a-539d99a906ff\",\"traceID\":\"255BE51A-4545-49BC-B6CC-BD0588929967\"},\"field\":\"primkaID\",\"script\":\"ORD__FillReceiptTemplate\",\"text\":\"BrojFaktureDobavljaca already has a value — not overwritten\",\"timestamp\":\"7/20/2026 1:09:25 AM\"}]},\"status\":\"partial_success\"}",
+        "pass": false,
+        "test": "RT-4 second call → ALREADY_SET, not overwritten"
+      },
+      {
+        "actual": "{\"data\":{\"filled\":false,\"supplier\":\"TEST-NoTemplate-2C6711CC\",\"template\":\"\"},\"messages\":{\"error\":[],\"info\":[],\"warning\":[]},\"status\":\"success\"} | rowStillEmpty=1",
+        "pass": true,
+        "test": "RT-5 unknown supplier → filled=false, no template"
+      }
+    ],
+    "runTag": "2C6711CC",
+    "testCount": 18
+  }
+}

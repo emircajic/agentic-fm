@@ -1,76 +1,75 @@
+<?xml version="1.0"?>
 <fmxmlsnippet type="FMObjectList">
-
-	<Step enable="True" id="89" name="# (comment)">
-		<Text>PURPOSE: Receive selected SO from picker, close card, store PK+number in shared state, trigger domain callback.
-Called by web viewer when user clicks a service order card.</Text>
-	</Step>
-	<Step enable="False" id="61" name="Insert Text">
-		<SelectAll state="False"/>
-		<Text>PARAMS: JSON object
-  pk     (text, required) — PrimaryKey of the chosen ServiceOrder
-  number (text, required) — ServiceOrderNumber for display in success dialog</Text>
-		<Field>$README</Field>
-	</Step>
-
-	<Step enable="True" id="85" name="Allow User Abort">
-		<Set state="False"/>
-	</Step>
-	<Step enable="True" id="86" name="Set Error Capture">
-		<Set state="True"/>
-	</Step>
-
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$p</Name>
-		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$selectedSOPK</Name>
-		<Value><Calculation><![CDATA[JSONGetElement ( $p ; "pk" )]]></Calculation></Value>
-	</Step>
-	<Step enable="True" id="141" name="Set Variable">
-		<Name>$selectedSONumber</Name>
-		<Value><Calculation><![CDATA[JSONGetElement ( $p ; "number" )]]></Calculation></Value>
-	</Step>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Close picker card — returns script to parent window context</Text>
-	</Step>
-	<Step enable="True" id="121" name="Close Window">
-		<LimitToWindowsOfCurrentFile state="True"/>
-		<Window value="Current"/>
-	</Step>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Select caller window, then store PK+number in shared state</Text>
-	</Step>
-	<Step enable="True" id="123" name="Select Window">
-		<LimitToWindowsOfCurrentFile state="True"/>
-		<Window value="ByName"/>
-		<Name>
-			<Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "currentWindow" )]]></Calculation>
-		</Name>
-	</Step>
-
-	<Step enable="True" id="76" name="Set Field">
-		<Calculation><![CDATA[JSONSetElement ( Globals::ServiceOrderSelector ;
-	["selectedServiceOrder"       ; $selectedSOPK     ; JSONString] ;
-	["selectedServiceOrderNumber" ; $selectedSONumber  ; JSONString]
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Header-path relay for the SO picker web viewer — receives the selected service order, closes the card, and hands off to ORD__OrdersDispatcher (transferToSOConfirm). Static call — the Globals::ServiceOrderSelector callbackScript dispatch is retired (Stage-3 ORD rewire).</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMS: JSON object&#xD;  pk     (text, required) — PrimaryKey of the chosen ServiceOrder&#xD;  number (text, required) — ServiceOrderNumber for the success dialog&#xD;&#xD;CALLED BY: the picker WV HTML embedded in SO__OpenSOPicker (815) — header path only (line path calls SO__TransferStavka directly).&#xD;&#xD;RETURNS: the dispatcher's Response_Finalize envelope.&#xD;&#xD;HISTORY: until 2026-07 this script stored the selection in Globals::ServiceOrderSelector and dispatched by name to its callbackScript key (CopyToOrder). The only header-path consumer is now the ORD transferToSO flow, so the dynamic dispatch and the shared-state blob are gone — the call is static and traceable. Closing the card returns focus to the caller window (IncomingOrders / IncomingOrders_phone), so the dispatcher reads the primka from the current record.</Text>
+    <Field>$README</Field>
+  </Step>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$p</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $p ; "pk" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selectedSOPK</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( $p ; "number" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selectedSONumber</Name>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Close picker card — focus returns to the caller window and its current primka record</Text>
+  </Step>
+  <Step enable="True" id="121" name="Close Window">
+    <LimitToWindowsOfCurrentFile state="True"/>
+    <Window value="Current"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $selectedSOPK )]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>No selection — nothing to do.</Text>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[""]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Static hand-off to the ORD dispatcher confirm phase</Text>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "action" ; "transferToSOConfirm" ; JSONString ] ;
+	[ "serviceOrderID" ; $selectedSOPK ; JSONString ] ;
+	[ "soNumber" ; $selectedSONumber ; JSONString ]
 )]]></Calculation>
-		<Field table="Globals" id="0" name="ServiceOrderSelector"/>
-	</Step>
-
-	<Step enable="False" id="89" name="# (comment)">
-		<Text>MARK: Dispatch to domain script CONFIRM phase</Text>
-	</Step>
-	<Step enable="True" id="1" name="Perform Script">
-		<Calculated>
-			<Calculation><![CDATA[JSONGetElement ( Globals::ServiceOrderSelector ; "callbackScript" )]]></Calculation>
-		</Calculated>
-		<Calculation><![CDATA["confirm"]]></Calculation>
-	</Step>
-
-	<Step enable="True" id="103" name="Exit Script">
-		<Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
-	</Step>
-
+    <Script id="0" name="ORD__OrdersDispatcher"/>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+  </Step>
 </fmxmlsnippet>

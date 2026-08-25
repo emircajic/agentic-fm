@@ -11,7 +11,7 @@ so FM still owns the scope. No native search button is needed.
 
 Every native button is a single step: `Perform Script [ WV__KanbanControl ; Parameter: <JSON> ]`.
 
-## FM ⇄ JS contract (v2 — kanban redesign)
+## FM ⇄ JS contract (v3 — per-column lazy loading)
 
 **FM → JS** — the push script calls `receiveFromFileMaker(payload)` in the viewer:
 
@@ -29,26 +29,40 @@ Every native button is a single step: `Perform Script [ WV__KanbanControl ; Para
     "periodMode": "day|week|month", "anchorDate": "YYYY-MM-DD",
     "from": "...", "to": "...", "label": "6. Juni 2026",
     "statuses": [], "query": "",
-    "page": { "offset": 0, "limit": 100, "total": 137, "hasMore": true }
+    "total": 137, "pageStep": 10,
+    "columns": {
+      "U toku":  { "loaded": 20, "available": 23 },
+      "Završen": { "loaded": 20, "available": 39 }
+    }
   }
 }
 ```
 
-Retrieval is one epSQL SELECT with `LEFT OUTER JOIN Vehicles v` / `LEFT OUTER JOIN Clients c`
-(headless — no layout hops). `rush` maps to the HITNO flag, `price` (OrderTotalLive) shows on
-the card footer when > 0. The search filters stored fields only: order number, description,
-plate, manufacturer, model, and client first/last/company name (case-insensitive `LIKE`).
+**Each status column paginates independently.** Instead of one global page, every column
+loads `initialSize` (20) cards up front and reveals `pageStep` (10) more each time the user
+scrolls that column to the bottom (the viewer fires `loadMore` — see below). `meta.columns`
+carries each column's `loaded` / `available` counts, which the viewer shows as a `loaded / available`
+pill in the column header and a "load more" sentinel row. `orders` is the concatenation of every
+column's currently-loaded slice.
+
+Retrieval is **one `GROUP BY Status` count query** (every column's `available` in a single call)
+plus **one `FETCH FIRST {loaded} ROWS ONLY` SELECT per non-empty column**, each with
+`LEFT OUTER JOIN Vehicles v` / `LEFT OUTER JOIN Clients c` (headless — no layout hops).
+`rush` maps to the HITNO flag, `price` (OrderTotalLive) shows on the card footer when > 0. The
+search filters stored fields only: order number, description, plate, manufacturer, model, and
+client first/last/company name (case-insensitive `LIKE`).
 
 **JS → FM** — the viewer calls three scripts:
 
 | Script | Parameter | Fired by |
 |--------|-----------|----------|
 | `WV__KanbanControl` | `{"action":"setQuery","value":"..."}` | search box (debounced 300 ms) |
+| `WV__KanbanControl` | `{"action":"loadMore","value":"<status>"}` | scrolling a column to its bottom (per-column lazy load) |
 | `WV__UpdateSOStatus` | `{"id":"...","status":"..."}` | card drag-drop |
 | `Navigation_` | `orders\|<PrimaryKey>` | card click — FM-native navigation opens the order detail (no in-viewer drawer) |
 
 Each column header also shows the **sum of its orders' prices** — computed in the
-viewer from the pushed page, no extra FM call.
+viewer from the loaded cards, no extra FM call.
 
 ## Deploy order
 
@@ -60,7 +74,8 @@ viewer from the pushed page, no extra FM call.
    then install `dist/index.html` into the viewer the usual way.
 5. Initialize scope on layout entry: an **OnLayoutEnter** script trigger (or a step in
    the script that opens this layout) that runs `WV__PushServiceOrdersKanban`. With an empty
-   `$$KANBAN_SCOPE` it defaults to **day / today / all statuses / no search / page 1 / 100 per page**.
+   `$$KANBAN_SCOPE` it defaults to **day / today / all statuses / no search / 20 cards per
+   column, +10 per scroll**.
 
 ## Buttons and their parameters
 
@@ -97,22 +112,21 @@ Toggling is additive (multi-select). With a filter active the board keeps **all 
 as drop targets — non-matching columns just show no cards (dimmed in the viewer), so you can
 still drag a card into any column to change its status.
 
-### Pagination
-| Button   | Parameter |
-|----------|-----------|
-| ◀ str    | `{"action":"page","value":"prev"}` |
-| str ▶    | `{"action":"page","value":"next"}` |
-
-The push clamps the offset to a valid page, so "next" past the end is a no-op.
+### Pagination (no native buttons)
+There are **no page buttons** — each column lazy-loads on scroll. When the user scrolls a
+column near its bottom the viewer fires `{"action":"loadMore","value":"<status>"}`, which grows
+that one column's `loaded` count by `pageStep` (10) and re-pushes. Any *scope* change
+(period, navigation, status filter, search) resets every column back to its first page (20).
 
 ### Search (no native button)
 Handled by the viewer's own search box via `{"action":"setQuery","value":"<text>"}`.
-An empty value clears the search. Any change resets to page 1.
+An empty value clears the search. Any change resets every column to its first page.
 
 ## Showing the active scope on the FM controls (optional)
 
-The web viewer already renders a read-only header (period label, active-status chips, and a
-`X–Y od N` page indicator) from the pushed `meta`. If you also want the **native** buttons to
+The web viewer already renders a read-only header (period label, active-status chips, a board
+total `N naloga`, and a per-column `loaded / available` count) from the pushed `meta`. If you
+also want the **native** buttons to
 reflect state (e.g. highlight the active period, show which statuses are on), drive their
 conditional formatting from `$$KANBAN_SCOPE`, e.g.:
 

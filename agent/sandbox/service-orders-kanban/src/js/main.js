@@ -39,6 +39,8 @@ let currentMeta   = null;    // scope/pagination pushed by FileMaker (read-only 
 let draggedId     = null;
 let toastTimer    = null;
 let searchTimer   = null;    // debounce for the JS→FM setQuery round-trip
+let loadingCols   = new Set(); // columns with an in-flight loadMore (guards duplicate scroll fires)
+let prevScopeSig  = null;      // detects scope changes so we only keep scroll pos on loadMore/drag re-renders
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -134,15 +136,11 @@ function renderStrip(meta) {
     `<span class="strip-chip" style="--st:${statusColor(s)}">${esc(s)}</span>`
   ).join('');
 
-  const page = meta.page || {};
-  const total = Number(page.total) || 0;
-  const limit = Number(page.limit) || 0;
-  const offset = Number(page.offset) || 0;
-  let pageStr = '';
-  if (total > 0 && limit > 0) {
-    pageStr = total > limit ? `${offset + 1}–${Math.min(offset + limit, total)} od ${total}` : `${total}`;
-  }
-  document.getElementById('strip-page').textContent = pageStr;
+  // Board total across all columns (per-column paging lives in each column head).
+  const cols = meta.columns || {};
+  const totalAvail = Object.values(cols).reduce((n, c) => n + (Number(c.available) || 0), 0);
+  document.getElementById('strip-page').textContent =
+    totalAvail > 0 ? `${totalAvail} ${totalAvail === 1 ? 'nalog' : 'naloga'}` : '';
 
   // reflect FM-owned query state, but never clobber what the user is typing
   const input = document.getElementById('search-input');
@@ -155,9 +153,40 @@ function renderStrip(meta) {
 function renderBoard() {
   const byStatus = groupByStatus(currentOrders);
   const activeStatuses = (currentMeta && Array.isArray(currentMeta.statuses)) ? currentMeta.statuses : [];
-  document.getElementById('board').innerHTML =
-    STATUS_LIST.map(s => columnHTML(s, byStatus[s] || [], activeStatuses)).join('');
+  const cols = (currentMeta && currentMeta.columns) || {};
+  const board = document.getElementById('board');
+
+  // A scope change (period/nav/filter/query) resets every column to its first
+  // page and should snap back to the top. Only a same-scope re-render (loadMore
+  // or a drag-drop status move) preserves each column's scroll position — else
+  // restoring an old bottom-of-column offset onto a freshly-shortened column
+  // would re-trigger loadMore in a loop.
+  const sig = currentMeta
+    ? JSON.stringify([currentMeta.periodMode, currentMeta.anchorDate, currentMeta.statuses, currentMeta.query])
+    : '';
+  const sameScope = sig === prevScopeSig;
+  prevScopeSig = sig;
+
+  const scrollPos = {};
+  if (sameScope) {
+    board.querySelectorAll('.col-body').forEach(b => {
+      const st = b.closest('[data-drop-zone]')?.dataset.dropZone;
+      if (st) scrollPos[st] = b.scrollTop;
+    });
+  }
+
+  board.innerHTML =
+    STATUS_LIST.map(s => columnHTML(s, byStatus[s] || [], activeStatuses, cols[s])).join('');
+
+  if (sameScope) {
+    board.querySelectorAll('.col-body').forEach(b => {
+      const st = b.closest('[data-drop-zone]')?.dataset.dropZone;
+      if (st && scrollPos[st] != null) b.scrollTop = scrollPos[st];
+    });
+  }
+
   attachBoardHandlers();
+  loadingCols.clear();       // fresh data arrived — any pending loadMore is satisfied
 }
 
 function groupByStatus(orders) {
@@ -169,20 +198,31 @@ function groupByStatus(orders) {
 
 function statusColor(s) { return (STATUS_META[s] || STATUS_META._default).color; }
 
-function columnHTML(status, orders, activeStatuses) {
+function columnHTML(status, orders, activeStatuses, colMeta) {
   const dimmed = activeStatuses.length && !activeStatuses.includes(status) ? ' dimmed' : '';
   const sum = orders.reduce((acc, o) => acc + (o.price || 0), 0);
+
+  // Per-column paging counts (fall back to what's rendered if meta is absent).
+  const available = colMeta ? Number(colMeta.available) || 0 : orders.length;
+  const loaded    = colMeta ? Number(colMeta.loaded)    || 0 : orders.length;
+  const hasMore   = available > loaded;
+  const countLabel = hasMore ? `${loaded} / ${available}` : `${available}`;
+
+  const moreRow = hasMore
+    ? `<div class="col-more" data-more="${esc(status)}"><span>Još ${available - loaded} naloga · skrolaj za još</span></div>`
+    : '';
+
   return `
     <section class="col${dimmed}" data-drop-zone="${esc(status)}" style="--st:${statusColor(status)}">
       <div class="col-head">
         <span class="col-dot"></span>
         <span class="col-title">${esc(status)}</span>
         <span class="col-sum">${sum > 0 ? `${fmtKM(sum)} KM` : ''}</span>
-        <span class="col-count">${orders.length}</span>
+        <span class="col-count${hasMore ? ' has-more' : ''}">${countLabel}</span>
       </div>
       <div class="col-body">
         ${orders.length
-          ? orders.map(cardHTML).join('')
+          ? orders.map(cardHTML).join('') + moreRow
           : `<div class="col-empty"><span class="ce-icon">${icon('inbox', 26, 1.5)}</span><span>Nema naloga</span></div>`}
       </div>
     </section>
@@ -289,6 +329,31 @@ function attachBoardHandlers() {
     zone.addEventListener('dragleave', onDragLeave);
     zone.addEventListener('drop', onDrop);
   });
+
+  // Per-column infinite scroll: near the bottom → ask FM for one more page.
+  document.querySelectorAll('.col-body').forEach(body => {
+    body.addEventListener('scroll', onColScroll, { passive: true });
+  });
+}
+
+function onColScroll(e) {
+  const body = e.currentTarget;
+  const status = body.closest('[data-drop-zone]')?.dataset.dropZone;
+  if (!status || loadingCols.has(status)) return;
+
+  const col = currentMeta && currentMeta.columns && currentMeta.columns[status];
+  if (!col || col.loaded >= col.available) return;   // nothing more to load
+
+  if (body.scrollHeight - body.scrollTop - body.clientHeight < 140) {
+    loadingCols.add(status);
+    const more = body.querySelector('.col-more span');
+    if (more) more.textContent = 'Učitavanje…';
+    loadMore(status);
+  }
+}
+
+function loadMore(status) {
+  callFM('WV__KanbanControl', JSON.stringify({ action: 'loadMore', value: status }));
 }
 
 function onDragStart(e) {

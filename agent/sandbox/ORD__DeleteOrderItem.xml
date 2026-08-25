@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)">
+<Text>PURPOSE: Delete one StavkaPrimke line after referential guards. Pure SQL — no layout hops, no found-set damage.</Text>
+</Step>
+<Step enable="False" id="61" name="Insert Text">
+<SelectAll state="False"/>
+<Text>PARAMS: stavkaID (text, required)&#xD;&#xD;RETURNS: data.deleted (bool), data.primkaID (text — parent, for dispatcher navigation/refresh)&#xD;&#xD;GUARDS: refuses when the line is referenced by ServiceOrderLines (LINE_IN_USE), StavkePovrata (LINE_HAS_RETURNS), InvoiceLines (LINE_INVOICED), KretanjeRobe via KR__KretanjeRobe TO (LINE_POSTED), or when the parent Primka is locked (PRIMKA_LOCKED). All violated guards are reported at once.&#xD;&#xD;REPLACES: ORD__DeleteOrderItem (646). The confirm dialog and navigation stay dispatcher-side.</Text>
+<Field>$README</Field>
+</Step>
+<Step enable="False" id="141" name="Set Variable">
+<Name>$example_call</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ; [ "stavkaID" ; StavkePrimke::PrimaryKey ; JSONString ] )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="85" name="Allow User Abort">
+<Set state="False"/>
+</Step>
+<Step enable="True" id="86" name="Set Error Capture">
+<Set state="True"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "stavkaID" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_DELETE_ITEM_START" ; "Delete request for stavka " & $stavkaID ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Validate</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "stavkaID is required" ; "stavkaID" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selSt</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT sp.\"ForeignKeyPrimkaID\", p.\"Locked\" FROM \"StavkePrimke\" sp LEFT JOIN \"Primke\" p ON sp.\"ForeignKeyPrimkaID\" = p.\"PrimaryKey\" WHERE sp.\"PrimaryKey\" = ?" ;
+	"useSQLResult=st" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selSt ) or epSQLResultRowCount ( "st" ) = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND_STAVKA" ; "StavkaPrimke not found: " & $stavkaID ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$primkaID</Name>
+<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "st" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 1 ; "st" ) ) = 1]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "PRIMKA_LOCKED" ; "Parent primka is locked: " & $primkaID ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "st" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[Response_HasErrors ( $response )]]></Calculation>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: ReferentialGuards</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selG</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT(*) FROM \"ServiceOrderLines\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=g1" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $selG ) and GetAsNumber ( epSQLResult ( 0 ; 0 ; "g1" ) ) > 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "LINE_IN_USE" ; "Line is transferred to ServiceOrderLines (" & epSQLResult ( 0 ; 0 ; "g1" ) & " reference(s))" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selG )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "ServiceOrderLines guard failed: " & $selG ; "" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "g1" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selG</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT(*) FROM \"StavkePovrata\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=g2" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $selG ) and GetAsNumber ( epSQLResult ( 0 ; 0 ; "g2" ) ) > 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "LINE_HAS_RETURNS" ; "Line has supplier returns (" & epSQLResult ( 0 ; 0 ; "g2" ) & " reference(s))" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selG )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "StavkePovrata guard failed: " & $selG ; "" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "g2" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selG</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT(*) FROM \"InvoiceLines\" WHERE \"ForeignKeyStavkaUlazneFakture\" = ?" ;
+	"useSQLResult=g3" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $selG ) and GetAsNumber ( epSQLResult ( 0 ; 0 ; "g3" ) ) > 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "LINE_INVOICED" ; "Line is referenced by InvoiceLines (" & epSQLResult ( 0 ; 0 ; "g3" ) & " reference(s))" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selG )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "InvoiceLines guard failed: " & $selG ; "" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "g3" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selG</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT COUNT(*) FROM \"KR__KretanjeRobe\" WHERE \"ForeignKeyStavkaUlazaID\" = ? OR ( \"DokumentTip\" = 'StavkePrimke' AND \"ForeignKeyDokumentStavkaID\" = ? )" ;
+	"useSQLResult=g4" ;
+	$stavkaID ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $selG ) and GetAsNumber ( epSQLResult ( 0 ; 0 ; "g4" ) ) > 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "LINE_POSTED" ; "Line has stock movements in KretanjeRobe (" & epSQLResult ( 0 ; 0 ; "g4" ) & " reference(s))" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selG )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "KretanjeRobe guard failed: " & $selG ; "" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "g4" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[Response_HasErrors ( $response )]]></Calculation>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Delete</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$del</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"DELETE FROM \"StavkePrimke\" WHERE \"PrimaryKey\" = ?" ;
+	"" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $del )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "DELETE_FAILED" ; "Failed to delete stavka " & $stavkaID & " (" & $del & ")" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "deleted" ; True ; JSONBoolean ] ;
+	[ "primkaID" ; $primkaID ; JSONString ]
+) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_DELETE_ITEM_DONE" ; "Deleted stavka " & $stavkaID & " from primka " & $primkaID ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+</fmxmlsnippet>

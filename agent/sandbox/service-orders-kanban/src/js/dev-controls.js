@@ -66,11 +66,8 @@ function render(panel) {
           <div class="flex flex-wrap gap-1">${statusBtns}</div>
         </div>
         <div>
-          <div class="text-gray-400 mb-1">Stranica</div>
-          <div class="flex gap-1">
-            ${btn('page', 'prev', '◀ str')}
-            ${btn('page', 'next', 'str ▶')}
-          </div>
+          <div class="text-gray-400 mb-1">Učitavanje</div>
+          <div class="text-gray-500 text-[10px]">Kolone se lazy-loaduju skrolanjem (20 + 10).</div>
         </div>
         <pre class="bg-gray-800 rounded p-2 text-[10px] leading-tight overflow-x-auto">${esc(JSON.stringify(scope))}</pre>
       </div>

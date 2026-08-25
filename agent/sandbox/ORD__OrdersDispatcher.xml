@@ -1,0 +1,1695 @@
+<?xml version="1.0"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>PURPOSE: Action-routed UI switchboard for the repointed IncomingOrders layouts (193/220/221, anchors ORD__ORDERS / ORD__OrderLines). Every button and trigger binds here with an "action" param. Owns ONLY front-end concerns — dialogs, popovers, navigation, portal refresh, found sets. All data work delegates to headless workers.</Text>
+  </Step>
+  <Step enable="False" id="61" name="Insert Text">
+    <SelectAll state="False"/>
+    <Text>PARAMS (JSON): action (required) + per-action keys.&#xD;  trigger=1 on every trigger binding — exits with True instead of the envelope so OnObjectSave/Validate/Keystroke events are never cancelled by a JSON result.&#xD;  skipDialog=1 suppresses all dialogs (harness / headless runs).&#xD;  Record-bound verbs accept explicit IDs and fall back to the current record / portal row.&#xD;&#xD;VERBS:&#xD;  init            — OnLayoutEnter 193/220: phone layouts show toolbars (fold of ORD__phoneLayoutEnter 647)&#xD;  load            — Show All Records + Go to Record [Last] (found-set refresh; matches Init_IncomingOrders 627)&#xD;  scan            — fold of Scan Button 585: DocumentScan present -&gt; New Record; delegates to Scan Ulazna Faktura (584)&#xD;  addArticle      — sifra (param | Globals::SifraProizvoda | barcode when scan=1) -&gt; ORD__AddArticle (960); create mode: primkaID (default current record), assign mode: stavkaID; kolicina optional&#xD;  newItem         — ORD__NewItem (962) on primkaID (default current); from IncomingOrders_phone navigates to the new line (StavkePrimke_phone + Go to Record)&#xD;  deleteItem      — confirm dialog, then ORD__DeleteOrderItem (963) on stavkaID (default portal row); guard violations shown in one dialog&#xD;  priceNabavnaStart / priceProdajnaStart — popover open: $$nabavnaPokazi/$$prodajnaPokazi, seed *Total_Global from *Total_Calculation, Go to Field (fold of 615/617)&#xD;  priceNabavnaEnd / priceProdajnaEnd — ORD__SetLinePrices (964, basis=total) from amount (default *Total_Global); stavkaID default $$*Pokazi then portal row; empty amount = cancel, no write (fold of 616/618). Double-fire safe (Save+Validate bindings).&#xD;  addVAT          — keystroke fold of ORD__AddVATtoPrice (926): Ctrl-Shift-Plus multiplies the active price field by 117/100 in the UI layer (programmatic path: 964 addVAT param)&#xD;  receiptTemplate — ORD__FillReceiptTemplate (965) on primkaID (default current); bind to supplier popup OnObjectExit on 193&#xD;  goToSupplier    — Navigation_ "suppliers|&lt;supplierID&gt;" (default current record FK; replaces ORD__GoToSupplier 619)&#xD;  transferToSO    — availability check via epSQL, clears Globals::ServiceOrderSelector (legacy picker state dropped), opens SO picker (SO__OpenSOPicker 815); the picker header path returns via SO__PickerConfirm (813) -&gt; transferToSOConfirm&#xD;  transferToSOConfirm — INTERNAL, called by SO__PickerConfirm (813): rebuilds available stavkePKs for the current primka, delegates SO__AttachPrimke (809), success dialog + optional Navigation_ "orders|&lt;serviceOrderID&gt;" (replaces CopyToOrder 620 confirm)&#xD;&#xD;DROPPED VERBS (Stage-3 decisions):&#xD;  syncLedger — retired KR workflow; the S__UFLine__SyncSnapshotsToLedger (659) OnObjectSave triggers on 193 are removed, not rebound.&#xD;  partPickerInit / selectForReturn / setSpecificPart — host layout StavkePrimkePicker (201) was deleted; scripts 662/543/609 are orphaned and go to Stage-5 retirement.&#xD;&#xD;RETURNS: Response_Finalize envelope (worker envelopes absorbed); trigger=1 returns True.&#xD;&#xD;CONTEXT: layouts anchored on ORD__ORDERS (193/220/251) or ORD__OrderLines (194/221). Headless runs must pass explicit IDs.&#xD;&#xD;Example button binding&#xD;Perform Script [ Specified: From list ; "ORD__OrdersDispatcher" ; Parameter: JSONSetElement ( "{}" ; "action" ; "scan" ; JSONString ) ]</Text>
+    <Field>$README</Field>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="85" name="Allow User Abort">
+    <Set state="False"/>
+  </Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "action|trigger|skipDialog|scan|sifra|primkaID|stavkaID|serviceOrderID|soNumber|supplierID|amount|kolicina" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Log.add ( "info" ; "DISPATCH" ; "ORD__OrdersDispatcher: " & $action ; Get ( ScriptParameter ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Switch</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $action )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "action is required" ; "action" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "init"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Phone layouts want the toolbar visible (fold of ORD__phoneLayoutEnter 647). Desktop: nothing to do.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[PatternCount ( Get ( LayoutName ) ; "_phone" ) > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="29" name="Show/Hide Toolbars">
+    <IncludeEditRecordToolbar state="False"/>
+    <Lock state="False"/>
+    <ShowHide value="Show"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "load"]]></Calculation>
+  </Step>
+  <Step enable="True" id="23" name="Show All Records"/>
+  <Step enable="True" id="16" name="Go to Record/Request/Page">
+    <RowPageLocation value="Last"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "scan"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Fold of Scan Button (585): a primka that already has a scan gets a fresh record first.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( ORD__ORDERS::DocumentScan )]]></Calculation>
+  </Step>
+  <Step enable="True" id="7" name="New Record/Request"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Script id="584" name="Scan Ulazna Faktura"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "addArticle"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Sifra sources by priority: explicit param, phone barcode capture (scan=1), desktop entry field.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[GetAsBoolean ( $scan )]]></Calculation>
+  </Step>
+  <Step enable="True" id="161" name="Insert from Device">
+    <InsertFrom value="Barcode"/>
+    <Field table="Globals" id="32" name="BarcodeImage"/>
+    <DeviceOptions>
+      <ScanFrom type="Camera"/>
+      <Camera choice="Back"/>
+      <Resolution choice="Medium"/>
+      <LightMode choice="Auto"/>
+      <Barcodes types="4194303"/>
+    </DeviceOptions>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetContainerAttribute ( Globals::BarcodeImage ; "barcodeText" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$sifra</Name>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="Globals" id="32" name="BarcodeImage"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[IsEmpty ( $sifra )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Globals::SifraProizvoda]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$sifra</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="Globals" id="31" name="SifraProizvoda"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $sifra )]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Legacy 531 exited silently on an empty entry — keep that UX, but leave a trace in the envelope.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "EMPTY_INPUT" ; "Nema šifre za unos — sken/polje prazno." ; "sifra" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $stavkaID ) and IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$primkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "sifra" ; $sifra ; JSONString ] ;
+	[ "primkaID" ; $primkaID ; JSONString ] ;
+	[ "stavkaID" ; $stavkaID ; JSONString ] ;
+	[ "kolicina" ; $kolicina ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="960" name="ORD__AddArticle"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="180" name="Refresh Portal">
+    <ObjectName>
+      <Calculation><![CDATA["PortalStavkeOtpremnice"]]></Calculation>
+    </ObjectName>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "newItem"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$primkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "primkaID" ; $primkaID ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="962" name="ORD__NewItem"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Phone navigation stays dispatcher-side (fold of ORD__NewItem_phone 645): land on the new line.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not Response_HasErrors ( $response ) and Get ( LayoutName ) = "IncomingOrders_phone"]]></Calculation>
+  </Step>
+  <Step enable="True" id="6" name="Go to Layout">
+    <LayoutDestination value="SelectedLayout"/>
+    <Layout id="221" name="StavkePrimke_phone"/>
+    <Animation value="SlideinfromRight"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONGetElement ( Response_GetData ( $r ) ; "stavkaID" )]]></Calculation>
+    <Script id="934" name="Go to Record"/>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="180" name="Refresh Portal">
+    <ObjectName>
+      <Calculation><![CDATA["PortalStavkeOtpremnice"]]></Calculation>
+    </ObjectName>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "deleteItem"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__OrderLines::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$stavkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "stavkaID is required (no portal row in context)" ; "stavkaID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[True]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$proceed</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Potvrda"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Obrisati ovu stavku primke?"]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["Obriši"]]></Calculation>
+      </Button>
+      <Button CommitState="False">
+        <Calculation><![CDATA["Odustani"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( LastMessageChoice ) = 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$proceed</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$proceed]]></Calculation>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaID" ; $stavkaID ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="963" name="ORD__DeleteOrderItem"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Response_HasErrors ( $response ) and not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Brisanje nije moguće"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[Let ( [
+	~errs = JSONGetElement ( $r ; "messages.error" ) ;
+	~n = ValueCount ( JSONListKeys ( ~errs ; "" ) )
+] ;
+	While ( [ ~i = 0 ; ~out = "" ] ; ~i < ~n ; [ ~out = List ( ~out ; JSONGetElement ( ~errs ; "[" & ~i & "].text" ) ) ; ~i = ~i + 1 ] ; ~out )
+)]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="80" name="Refresh Window">
+    <Option state="True"/>
+    <FlushSQLData state="False"/>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "CANCELLED" ; "Korisnik je odustao od brisanja." ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "priceNabavnaStart"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__OrderLines::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$nabavnaPokazi</Name>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[ORD__OrderLines::NabavnaTotal_Calculation]]></Calculation>
+    <Field table="ORD__OrderLines" id="19" name="NabavnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="17" name="Go to Field">
+    <SelectAll state="False"/>
+    <Field table="ORD__OrderLines" id="19" name="NabavnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "priceNabavnaEnd"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $$nabavnaPokazi ) ; $$nabavnaPokazi ; ORD__OrderLines::PrimaryKey )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$stavkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $amount )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__OrderLines::NabavnaTotal_Global]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$amount</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $amount ) or IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Empty input = cancel, no write. Also makes the double Save+Validate trigger fire idempotent.</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "EMPTY_INPUT" ; "Bez iznosa/stavke — cijena nije mijenjana." ; "amount" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaID" ; $stavkaID ; JSONString ] ;
+	[ "mode" ; "nabavna" ; JSONString ] ;
+	[ "amount" ; GetAsNumber ( $amount ) ; JSONNumber ] ;
+	[ "basis" ; "total" ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="964" name="ORD__SetLinePrices"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$nabavnaPokazi</Name>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="ORD__OrderLines" id="19" name="NabavnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="167" name="Refresh Object">
+    <ObjectName>
+      <Calculation><![CDATA["NabavnaEnter"]]></Calculation>
+    </ObjectName>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+  </Step>
+  <Step enable="True" id="80" name="Refresh Window">
+    <Option state="True"/>
+    <FlushSQLData state="False"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "priceProdajnaStart"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__OrderLines::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$prodajnaPokazi</Name>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[ORD__OrderLines::ProdajnaTotal_Calculation]]></Calculation>
+    <Field table="ORD__OrderLines" id="18" name="ProdajnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="17" name="Go to Field">
+    <SelectAll state="False"/>
+    <Field table="ORD__OrderLines" id="18" name="ProdajnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "priceProdajnaEnd"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $$prodajnaPokazi ) ; $$prodajnaPokazi ; ORD__OrderLines::PrimaryKey )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$stavkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $amount )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__OrderLines::ProdajnaTotal_Global]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$amount</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $amount ) or IsEmpty ( $stavkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "EMPTY_INPUT" ; "Bez iznosa/stavke — cijena nije mijenjana." ; "amount" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaID" ; $stavkaID ; JSONString ] ;
+	[ "mode" ; "prodajna" ; JSONString ] ;
+	[ "amount" ; GetAsNumber ( $amount ) ; JSONNumber ] ;
+	[ "basis" ; "total" ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="964" name="ORD__SetLinePrices"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$$prodajnaPokazi</Name>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="ORD__OrderLines" id="18" name="ProdajnaTotal_Global"/>
+  </Step>
+  <Step enable="True" id="167" name="Refresh Object">
+    <ObjectName>
+      <Calculation><![CDATA["ProdajnaEnter"]]></Calculation>
+    </ObjectName>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+  </Step>
+  <Step enable="True" id="80" name="Refresh Window">
+    <Option state="True"/>
+    <FlushSQLData state="False"/>
+  </Step>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "addVAT"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Keystroke fold of ORD__AddVATtoPrice (926): UI-layer multiply keeps the user's in-progress edit intact (an epSQL UPDATE would collide with the open record).</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( TriggerKeystroke )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$keystroke</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( TriggerModifierKeys )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$modifier</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$keystroke = Code ( "+" ) and $modifier = 5]]></Calculation>
+  </Step>
+  <Step enable="True" id="147" name="Set Field By Name">
+    <Result>
+      <Calculation><![CDATA[GetAsNumber ( Get ( ActiveFieldContents ) ) * ( 117 / 100 )]]></Calculation>
+    </Result>
+    <TargetName>
+      <Calculation><![CDATA[Get ( ActiveFieldTableName ) & "::" & Get ( ActiveFieldName )]]></Calculation>
+    </TargetName>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddWarning ( "NO_KEYSTROKE" ; "addVAT bez odgovarajuće kombinacije tipki — ništa nije mijenjano." ; "" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "receiptTemplate"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$primkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "primkaID is required (no record in context)" ; "primkaID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Commit first — bound to the supplier popup OnObjectExit, so the just-picked FK must be on disk before the worker SELECTs it.</Text>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "primkaID" ; $primkaID ; JSONString ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="965" name="ORD__FillReceiptTemplate"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( Response_GetData ( $r ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="80" name="Refresh Window">
+    <Option state="True"/>
+    <FlushSQLData state="False"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "goToSupplier"]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $supplierID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::ForeignKeyDobavljacID]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$supplierID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $supplierID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_SUPPLIER" ; "Primka nema odabranog dobavljača." ; "supplierID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Greška"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Primka nema odabranog dobavljača."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["suppliers|" & $supplierID]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "transferToSO"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Prepare phase (replaces CopyToOrder 620 "prepare"): availability check headlessly via epSQL, then open the SO picker. No Globals::ServiceOrderSelector registration — the header path returns statically via SO__PickerConfirm → transferToSOConfirm.</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$primkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "primkaID is required (no record in context)" ; "primkaID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Availability sweep — Kolicina minus SOL transfers minus returns, per line</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT \"PrimaryKey\", \"ForeignKeyArtikalID\", \"Kolicina\" FROM \"StavkePrimke\" WHERE \"ForeignKeyPrimkaID\" = ?" ;
+	"useSQLResult=dispLines" ;
+	$primkaID
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selLines</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $selLines )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "Load lines failed: " & $selLines ; "" ; JSONSetElement ( "{}" ; "primkaID" ; $primkaID ; JSONString ) ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "dispLines" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$lineCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$pkList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$fkFlagList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$qtyList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $lineCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $pkList ; epSQLResult ( $i ; 0 ; "dispLines" ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$pkList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $fkFlagList ; If ( IsEmpty ( epSQLResult ( $i ; 1 ; "dispLines" ) ) ; "0" ; "1" ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$fkFlagList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $qtyList ; If ( IsEmpty ( epSQLResult ( $i ; 2 ; "dispLines" ) ) ; "0" ; GetAsNumber ( epSQLResult ( $i ; 2 ; "dispLines" ) ) ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$qtyList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispLines" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$availCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i > ValueCount ( $pkList )]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[GetValue ( $fkFlagList ; $i ) = "1"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(\"Qty\") FROM \"ServiceOrderLines\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=dispT" ;
+	GetValue ( $pkList ; $i )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selT</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $selT ) or epSQLResultRowCount ( "dispT" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "dispT" ) )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$transferred</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispT" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(\"Kolicina\") FROM \"StavkePovrata\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=dispR" ;
+	GetValue ( $pkList ; $i )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selR</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $selR ) or epSQLResultRowCount ( "dispR" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "dispR" ) )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$returned</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispR" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[GetAsNumber ( GetValue ( $qtyList ; $i ) ) - $transferred - $returned > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$availCount + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$availCount</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$availCount = 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "NO_AVAILABLE_LINES" ; "Nema stavki s dostupnom količinom na ovoj primci." ; "" ; JSONSetElement ( "{}" ; "primkaID" ; $primkaID ; JSONString ) ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Nema dostupnih stavki"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Nema stavki s dostupnom količinom na ovoj primci."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Clear the legacy picker state — an empty selector guarantees the picker opens in header mode.</Text>
+  </Step>
+  <Step enable="True" id="76" name="Set Field">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Field table="Globals" id="22" name="ServiceOrderSelector"/>
+  </Step>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[""]]></Calculation>
+    <Script id="815" name="SO__OpenSOPicker"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="125" name="Else If">
+    <Calculation><![CDATA[$action = "transferToSOConfirm"]]></Calculation>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Confirm phase (replaces CopyToOrder 620 "confirm"): rebuild the available-line list fresh, then bulk-attach via SO__AttachPrimke (809).</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $serviceOrderID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "serviceOrderID is required" ; "serviceOrderID" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $primkaID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ORD__ORDERS::PrimaryKey]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$primkaID</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Availability sweep (fresh at confirm time — no state carried from prepare)</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT \"PrimaryKey\", \"ForeignKeyArtikalID\", \"Kolicina\" FROM \"StavkePrimke\" WHERE \"ForeignKeyPrimkaID\" = ?" ;
+	"useSQLResult=dispLines" ;
+	$primkaID
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selLines</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $selLines )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "SQL_ERROR" ; "Load lines failed: " & $selLines ; "" ; JSONSetElement ( "{}" ; "primkaID" ; $primkaID ; JSONString ) ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "dispLines" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$lineCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$pkList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$fkFlagList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[""]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$qtyList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i ≥ $lineCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $pkList ; epSQLResult ( $i ; 0 ; "dispLines" ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$pkList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $fkFlagList ; If ( IsEmpty ( epSQLResult ( $i ; 1 ; "dispLines" ) ) ; "0" ; "1" ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$fkFlagList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( $qtyList ; If ( IsEmpty ( epSQLResult ( $i ; 2 ; "dispLines" ) ) ; "0" ; GetAsNumber ( epSQLResult ( $i ; 2 ; "dispLines" ) ) ) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$qtyList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispLines" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$stavkePKs</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$availCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$i > ValueCount ( $pkList )]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[GetValue ( $fkFlagList ; $i ) = "1"]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(\"Qty\") FROM \"ServiceOrderLines\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=dispT" ;
+	GetValue ( $pkList ; $i )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selT</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $selT ) or epSQLResultRowCount ( "dispT" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "dispT" ) )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$transferred</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispT" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT SUM(\"Kolicina\") FROM \"StavkePovrata\" WHERE \"ForeignKeyStavkaPrimkeID\" = ?" ;
+	"useSQLResult=dispR" ;
+	GetValue ( $pkList ; $i )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$selR</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[If ( not IsEmpty ( $selR ) or epSQLResultRowCount ( "dispR" ) = 0 ;
+	0 ;
+	GetAsNumber ( epSQLResult ( 0 ; 0 ; "dispR" ) )
+)]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$returned</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "dispR" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[GetAsNumber ( GetValue ( $qtyList ; $i ) ) - $transferred - $returned > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $stavkePKs ; "[" & $availCount & "]" ; GetValue ( $pkList ; $i ) ; JSONString )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$stavkePKs</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$availCount + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$availCount</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$i + 1]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$i</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$availCount = 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "NO_AVAILABLE_LINES" ; "Nema stavki s dostupnom količinom na ovoj primci." ; "" ; JSONSetElement ( "{}" ; "primkaID" ; $primkaID ; JSONString ) ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Nema dostupnih stavki"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Nema stavki s dostupnom količinom na ovoj primci."]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="75" name="Commit Records/Requests">
+    <NoInteract state="True"/>
+    <Option state="False"/>
+    <ESSForceCommit state="False"/>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "serviceOrderID" ; $serviceOrderID ; JSONString ] ;
+	[ "stavkePKs" ; $stavkePKs ; JSONArray ] ;
+	[ "traceID" ; $traceID ; JSONString ]
+)]]></Calculation>
+    <Script id="809" name="SO__AttachPrimke"/>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Get ( ScriptResult )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_Absorb ( $r )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONGetElement ( Response_GetData ( $r ) ; "createdCount" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$createdCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "createdCount" ; GetAsNumber ( $createdCount ) ; JSONNumber ] ;
+	[ "serviceOrderID" ; $serviceOrderID ; JSONString ]
+) )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="80" name="Refresh Window">
+    <Option state="True"/>
+    <FlushSQLData state="False"/>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not Response_HasErrors ( $response )]]></Calculation>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Uspjeh"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA["Kopirano " & $createdCount & " stavki u servisni nalog " & $soNumber & ".¶Želite li prikazati nalog?"]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["Da"]]></Calculation>
+      </Button>
+      <Button CommitState="False">
+        <Calculation><![CDATA["Ne"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[Get ( LastMessageChoice ) = 1]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA["orders|" & $serviceOrderID]]></Calculation>
+    <Script id="450" name="Navigation_"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not GetAsBoolean ( $skipDialog )]]></Calculation>
+  </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title>
+      <Calculation><![CDATA["Greška"]]></Calculation>
+    </Title>
+    <Message>
+      <Calculation><![CDATA[JSONGetElement ( $r ; "messages.error[0].text" )]]></Calculation>
+    </Message>
+    <Buttons>
+      <Button CommitState="True">
+        <Calculation><![CDATA["OK"]]></Calculation>
+      </Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="69" name="Else"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Response_AddError ( "UNKNOWN_ACTION" ; "Unknown action: " & $action ; "action" ; "{}" ; "" )]]></Calculation>
+    </Value>
+    <Repetition>
+      <Calculation><![CDATA[1]]></Calculation>
+    </Repetition>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Tail</Text>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$isRoot]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+    <Script id="780" name="UTIL__FlushLog"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)">
+    <Text>Trigger bindings pass trigger=1 — a JSON result would read as False and cancel OnObjectSave/Validate/Keystroke events.</Text>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[If ( GetAsBoolean ( $trigger ) ; True ; Response_Finalize )]]></Calculation>
+  </Step>
+</fmxmlsnippet>

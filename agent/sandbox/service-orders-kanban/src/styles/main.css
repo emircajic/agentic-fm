@@ -26,7 +26,7 @@
   --topbar:      #0e0f10;
   --chip-bg:     #eef0f3;
 
-  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-display: 'Arial Narrow', sans-serif;
   --font-body:    'PT Sans', 'Arial', sans-serif;
   --font-mono:    'Roboto Mono', 'Courier New', monospace;
 }
@@ -52,7 +52,7 @@ body {
    ============================================================ */
 .strip {
   flex: none; display: flex; align-items: stretch; gap: 0;
-  background: #fff; border-bottom: 1px solid var(--panel-line);
+  background: #e7e7e7; border-bottom: 1px solid var(--panel-line);
   padding: 0 22px; height: 76px; overflow: hidden;
 }
 .stat {
@@ -113,7 +113,7 @@ body {
 }
 .col {
   width: 280px; flex: none; display: flex; flex-direction: column;
-  background: #fff; border: none; border-right: 1px solid var(--panel-line);
+  background: #f2f2f2; border: none; border-right: 1px solid var(--panel-line);
   border-radius: 0; overflow: hidden; padding: 0 8px;
   transition: background .15s;
 }
@@ -139,7 +139,10 @@ body {
   background: #fff; color: var(--st); border: 1.5px solid var(--st);
   font-family: var(--font-body); font-weight: 800;
   font-size: 12px; display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap;
 }
+/* loaded/available pill — tabular figures + mono so "20 / 34" stays legible */
+.col-count.has-more { font-family: var(--font-mono); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .col-body {
   flex: 1; overflow-y: auto; padding: 4px 10px 12px; display: flex; flex-direction: column; gap: 9px;
   scrollbar-width: thin; scrollbar-color: #c7cace transparent;
@@ -154,10 +157,18 @@ body {
 .col-empty span { font-size: 12px; font-style: italic; letter-spacing: .02em; }
 .col-empty.dragging-here { color: var(--st); }
 
+/* "load more" sentinel pinned at the bottom of a partially-loaded column */
+.col-more {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  padding: 10px 8px 4px; text-align: center;
+  color: var(--ink-4); font-size: 11px; font-style: italic; letter-spacing: .02em;
+}
+
 /* ============================================================
    CARD (servisna kartica)
    ============================================================ */
 .card {
+  flex: none;
   background: #fff; border: 1px solid var(--card-line); border-top: 3px solid var(--st);
   border-radius: 6px; overflow: hidden; cursor: grab; position: relative;
   box-shadow: 0 1px 2px rgba(16,20,24,.05);

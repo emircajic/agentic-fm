@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)">
+<Text>PURPOSE: Set the nabavna or prodajna price on a StavkaPrimke line from a total or unit value, optionally adding VAT. Pure SQL — replaces the four popover price scripts.</Text>
+</Step>
+<Step enable="False" id="61" name="Insert Text">
+<SelectAll state="False"/>
+<Text>PARAMS: stavkaID (text, required)&#xD;  mode (text, required — "nabavna" | "prodajna")&#xD;  amount (number, required)&#xD;  basis (text, optional — "total" (default; legacy popover semantics: amount is the full line total, divided by Kolicina) | "unit")&#xD;  addVAT (bool, optional — multiply amount by 1.17 before applying; replaces ORD__AddVATtoPrice 926)&#xD;&#xD;RETURNS: data.stavkaID, data.mode, data.unitPrice, data.total, data.kolicina&#xD;&#xD;REPLACES: ORD__UnesiPunuNabavnuCijenu_Start/End (615/616), ORD__UnesiPunuProdajnuCijenu_Start/End (617/618), ORD__AddVATtoPrice (926). The popover UI (globals, Go to Field, Refresh Object) stays dispatcher-side — the dispatcher collects the amount and calls this once.&#xD;&#xD;NOTES: VAT rate 1.17 is hoisted to $vatRate — move to Settings when a VAT setting exists. Params were renamed from value/valueType after a 2026-07-20 test run showed $value arriving empty when both keys were present; the params fallback reads below make the worker immune to variable-unpacking quirks.</Text>
+<Field>$README</Field>
+</Step>
+<Step enable="False" id="141" name="Set Variable">
+<Name>$example_totalWithVAT</Name>
+<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "stavkaID" ; StavkePrimke::PrimaryKey ; JSONString ] ;
+	[ "mode" ; "nabavna" ; JSONString ] ;
+	[ "amount" ; 117 ; JSONNumber ] ;
+	[ "addVAT" ; True ; JSONBoolean ]
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="True" id="85" name="Allow User Abort">
+<Set state="False"/>
+</Step>
+<Step enable="True" id="86" name="Set Error Capture">
+<Set state="True"/>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "stavkaID|mode|amount|basis|addVAT" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)">
+<Text>Fallback reads from $params — observed 2026-07-20: unpacked $-vars can arrive empty; $params always has the full JSON.</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$amount</Name>
+<Value><Calculation><![CDATA[If ( IsEmpty ( $amount ) ; JSONGetElement ( $params ; "amount" ) ; $amount )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$addVAT</Name>
+<Value><Calculation><![CDATA[If ( IsEmpty ( $addVAT ) ; JSONGetElement ( $params ; "addVAT" ) ; $addVAT )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$basis</Name>
+<Value><Calculation><![CDATA[Let ( [
+		~b = If ( IsEmpty ( $basis ) ; JSONGetElement ( $params ; "basis" ) ; $basis )
+	] ;
+	If ( IsEmpty ( ~b ) ; "total" ; ~b )
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$vatRate</Name>
+<Value><Calculation><![CDATA[117 / 100]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_SET_PRICES_START" ; "Set " & $mode & " price on stavka " & $stavkaID & " from " & $basis & " " & $amount ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Validate</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $stavkaID )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "stavkaID is required" ; "stavkaID" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$mode ≠ "nabavna" and $mode ≠ "prodajna"]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "INVALID_PARAM" ; "mode must be nabavna or prodajna, got: " & $mode ; "mode" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $amount )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "amount is required" ; "amount" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$basis ≠ "total" and $basis ≠ "unit"]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "INVALID_PARAM" ; "basis must be total or unit, got: " & $basis ; "basis" ; "{}" ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[Response_HasErrors ( $response )]]></Calculation>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: LoadLine</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$selSt</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT \"Kolicina\" FROM \"StavkePrimke\" WHERE \"PrimaryKey\" = ?" ;
+	"useSQLResult=st" ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $selSt ) or epSQLResultRowCount ( "st" ) = 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "st" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "NOT_FOUND_STAVKA" ; "StavkaPrimke not found: " & $stavkaID ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$kolicina</Name>
+<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "st" ) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[epSQLResultDelete ( "st" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: ComputeUnitPrice</Text>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$effValue</Name>
+<Value><Calculation><![CDATA[GetAsNumber ( $amount ) * If ( $addVAT = 1 or $addVAT = "true" ; $vatRate ; 1 )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$basis = "total" and $kolicina ≤ 0]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "NO_QUANTITY" ; "Cannot derive unit price from total — Kolicina is " & $kolicina & " on stavka " & $stavkaID ; "amount" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$unitPrice</Name>
+<Value><Calculation><![CDATA[If ( $basis = "unit" ; $effValue ; $effValue / $kolicina )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="89" name="# (comment)"/>
+<Step enable="False" id="89" name="# (comment)">
+<Text>MARK: Update</Text>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$mode = "nabavna"]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$upd</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"StavkePrimke\" SET \"NabavnaCijenaStavke\" = ? WHERE \"PrimaryKey\" = ?" ;
+	"" ;
+	$unitPrice ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$upd</Name>
+<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE \"StavkePrimke\" SET \"ProdajnaCijena\" = ? WHERE \"PrimaryKey\" = ?" ;
+	"" ;
+	$unitPrice ;
+	$stavkaID
+)]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $upd )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAILED" ; "Failed to set " & $mode & " price on stavka " & $stavkaID & " (" & $upd & ")" ; "stavkaID" ; $params ; "" )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="69" name="Else"/>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "stavkaID" ; $stavkaID ; JSONString ] ;
+	[ "mode" ; $mode ; JSONString ] ;
+	[ "unitPrice" ; $unitPrice ; JSONNumber ] ;
+	[ "total" ; $unitPrice * $kolicina ; JSONNumber ] ;
+	[ "kolicina" ; $kolicina ; JSONNumber ]
+) )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Name>$void</Name>
+<Value><Calculation><![CDATA[Log.add ( "info" ; "ORD_SET_PRICES_DONE" ; "Set " & $mode & " unit price " & $unitPrice & " on stavka " & $stavkaID ; $params )]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$isRoot]]></Calculation>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+<Script id="780" name="UTIL__FlushLog"/>
+</Step>
+<Step enable="True" id="70" name="End If"/>
+<Step enable="True" id="103" name="Exit Script">
+<Calculation><![CDATA[Response_Finalize]]></Calculation>
+</Step>
+</fmxmlsnippet>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="89" name="# (comment)">
-    <Text>PURPOSE: Query ServiceOrders for the current scope ($$KANBAN_SCOPE) and push a paginated JSON page + meta to the kanban web viewer wv_ServiceOrdersKanban.</Text>
+    <Text>PURPOSE: Query ServiceOrders for the current scope ($$KANBAN_SCOPE) and push a per-column paginated JSON payload + meta to the kanban web viewer wv_ServiceOrdersKanban.</Text>
   </Step>
   <Step enable="False" id="61" name="Insert Text">
     <SelectAll state="False"/>
-    <Text>SCOPE: $$KANBAN_SCOPE = {"periodMode":"day|week|month","anchorDate":"YYYY-MM-DD","statuses":[...],"query":"...","offset":N,"limit":N}.&#xD;Empty/missing keys fall back to day / today / [] / "" / 0 / 100.&#xD;&#xD;PAYLOAD (v2 contract): { orders: [ { id, number, status, customer, phone, plate, make, model, year, service, note, date, timeStart, timeEnd, rush, price } ], meta: { periodMode, anchorDate, from, to, label, statuses, query, page: { offset, limit, total, hasMore } } }&#xD;&#xD;Statuses 'U toku', 'Obračunat' and 'Fakturisan' are pinned — always on the board regardless of the date window. The search query filters everything, pinned rows included.</Text>
+    <Text>SCOPE: $$KANBAN_SCOPE = {"periodMode":"day|week|month","anchorDate":"YYYY-MM-DD","statuses":[...],"query":"...","initialSize":N,"pageStep":N,"loaded":{status:N,...}}.&#xD;Empty/missing keys fall back to day / today / [] / "" / 20 / 10 / {}. "loaded" maps a status to how many cards that column currently reveals (absent = initialSize).&#xD;&#xD;PAYLOAD (v3 contract): { orders: [ { id, number, status, customer, phone, plate, make, model, year, service, note, date, timeStart, timeEnd, rush, price } ], meta: { periodMode, anchorDate, from, to, label, statuses, query, total, pageStep, columns: { status: { loaded, available } } } }&#xD;&#xD;Statuses 'U toku', 'Obračunat' and 'Fakturisan' are pinned — always on the board regardless of the date window. The search query filters everything, pinned rows included. Each status column is paginated independently: one GROUP BY count query + one FETCH FIRST {loaded} SELECT per non-empty column.</Text>
     <Field>$README</Field>
   </Step>
   <Step enable="True" id="85" name="Allow User Abort">
@@ -58,15 +58,21 @@
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[Let ( ~l = GetAsNumber ( JSONGetElement ( $scope ; "limit" ) ) ; If ( ~l > 0 ; ~l ; 100 ) )]]></Calculation>
+      <Calculation><![CDATA[Let ( ~n = GetAsNumber ( JSONGetElement ( $scope ; "initialSize" ) ) ; If ( ~n > 0 ; ~n ; 20 ) )]]></Calculation>
     </Value>
-    <Name>$limit</Name>
+    <Name>$initialSize</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[Let ( ~o = GetAsNumber ( JSONGetElement ( $scope ; "offset" ) ) ; If ( ~o > 0 ; ~o ; 0 ) )]]></Calculation>
+      <Calculation><![CDATA[Let ( ~n = GetAsNumber ( JSONGetElement ( $scope ; "pageStep" ) ) ; If ( ~n > 0 ; ~n ; 10 ) )]]></Calculation>
     </Value>
-    <Name>$offset</Name>
+    <Name>$pageStep</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( ~l = JSONGetElement ( $scope ; "loaded" ) ; If ( Left ( ~l ; 1 ) = "{" ; ~l ; "{}" ) )]]></Calculation>
+    </Value>
+    <Name>$loaded</Name>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="False" id="89" name="# (comment)">
@@ -237,11 +243,11 @@ $searchClause]]></Calculation>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Total count + clamp offset to a valid page, then persist normalized scope</Text>
+    <Text>MARK: Per-column counts — one GROUP BY gives every column's available total</Text>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[epSQLExecute ( "SELECT COUNT(*)" & $sqlFrom & $where ; "useSQLResult=rs_kanban" )]]></Calculation>
+      <Calculation><![CDATA[epSQLExecute ( "SELECT so.Status, COUNT(*)" & $sqlFrom & $where & " GROUP BY so.Status" ; "useSQLResult=rs_counts" )]]></Calculation>
     </Value>
     <Name>$sqlErr</Name>
   </Step>
@@ -254,76 +260,21 @@ $searchClause]]></Calculation>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 0 ; "rs_kanban" ) )]]></Calculation>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_counts" )]]></Calculation>
+    </Value>
+    <Name>$countRows</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["{}"]]></Calculation>
+    </Value>
+    <Name>$counts</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
     </Value>
     <Name>$total</Name>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA[epSQLResultDelete ( "rs_kanban" )]]></Calculation>
-    </Value>
-    <Name>$void</Name>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA[If ( $offset ≥ $total ; Max ( 0 ; Int ( Max ( 0 ; $total - 1 ) / $limit ) * $limit ) ; $offset )]]></Calculation>
-    </Value>
-    <Name>$offset</Name>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "periodMode" ; $periodMode ; JSONString ] ;
-	[ "anchorDate" ; $anchorStr ; JSONString ] ;
-	[ "statuses" ; $statuses ; JSONArray ] ;
-	[ "query" ; $query ; JSONString ] ;
-	[ "offset" ; $offset ; JSONNumber ] ;
-	[ "limit" ; $limit ; JSONNumber ]
-)]]></Calculation>
-    </Value>
-    <Name>$$KANBAN_SCOPE</Name>
-  </Step>
-  <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Paginated SELECT — orders + joined vehicle/client detail (v2 card contract)</Text>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA[epSQLExecute (
-	"SELECT so.PrimaryKey, so.ServiceOrderNumber, so.Status, so.ClientName_Calculation, c.Phone," &
-	" v.PlateNumber, v.Manufacturer, v.Model, v.YearManufactured," &
-	" so.Description, so.Remarks, so.JobDate, so.JobTime, so.JobTimeEnd," &
-	" so.RushOrder_Flag, so.OrderTotalLive_Calculation" &
-	$sqlFrom & $where &
-	" ORDER BY so.JobDate, so.JobTime" &
-	" OFFSET " & $offset & " ROWS FETCH FIRST " & $limit & " ROWS ONLY" ;
-	"useSQLResult=rs_kanban"
-)]]></Calculation>
-    </Value>
-    <Name>$sqlErr</Name>
-  </Step>
-  <Step enable="True" id="68" name="If">
-    <Calculation><![CDATA[not IsEmpty ( $sqlErr )]]></Calculation>
-  </Step>
-  <Step enable="True" id="103" name="Exit Script">
-    <Calculation><![CDATA[JSONSetElement ( "{}" ; [ "error" ; $sqlErr ; JSONString ] ; [ "step" ; "select" ; JSONString ] )]]></Calculation>
-  </Step>
-  <Step enable="True" id="70" name="End If"/>
-  <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="False" id="89" name="# (comment)">
-    <Text>MARK: Build orders JSON from the result set</Text>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA[epSQLResultRowCount ( "rs_kanban" )]]></Calculation>
-    </Value>
-    <Name>$rowCount</Name>
-  </Step>
-  <Step enable="True" id="141" name="Set Variable">
-    <Value>
-      <Calculation><![CDATA["[]"]]></Calculation>
-    </Value>
-    <Name>$orders</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
@@ -335,36 +286,31 @@ $searchClause]]></Calculation>
     <FlushType value="Always"/>
   </Step>
   <Step enable="True" id="72" name="Exit Loop If">
-    <Calculation><![CDATA[$i ≥ $rowCount]]></Calculation>
+    <Calculation><![CDATA[$i ≥ $countRows]]></Calculation>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[JSONSetElement ( "{}" ;
-	[ "id" ; epSQLResult ( $i ; 0 ; "rs_kanban" ) ; JSONString ] ;
-	[ "number" ; epSQLResult ( $i ; 1 ; "rs_kanban" ) ; JSONString ] ;
-	[ "status" ; epSQLResult ( $i ; 2 ; "rs_kanban" ) ; JSONString ] ;
-	[ "customer" ; epSQLResult ( $i ; 3 ; "rs_kanban" ) ; JSONString ] ;
-	[ "phone" ; epSQLResult ( $i ; 4 ; "rs_kanban" ) ; JSONString ] ;
-	[ "plate" ; epSQLResult ( $i ; 5 ; "rs_kanban" ) ; JSONString ] ;
-	[ "make" ; epSQLResult ( $i ; 6 ; "rs_kanban" ) ; JSONString ] ;
-	[ "model" ; epSQLResult ( $i ; 7 ; "rs_kanban" ) ; JSONString ] ;
-	[ "year" ; GetAsNumber ( epSQLResult ( $i ; 8 ; "rs_kanban" ) ) ; JSONNumber ] ;
-	[ "service" ; epSQLResult ( $i ; 9 ; "rs_kanban" ) ; JSONString ] ;
-	[ "note" ; epSQLResult ( $i ; 10 ; "rs_kanban" ) ; JSONString ] ;
-	[ "date" ; epSQLResult ( $i ; 11 ; "rs_kanban" ) ; JSONString ] ;
-	[ "timeStart" ; epSQLResult ( $i ; 12 ; "rs_kanban" ) ; JSONString ] ;
-	[ "timeEnd" ; epSQLResult ( $i ; 13 ; "rs_kanban" ) ; JSONString ] ;
-	[ "rush" ; GetAsNumber ( epSQLResult ( $i ; 14 ; "rs_kanban" ) ) ; JSONNumber ] ;
-	[ "price" ; GetAsNumber ( epSQLResult ( $i ; 15 ; "rs_kanban" ) ) ; JSONNumber ]
-)]]></Calculation>
+      <Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs_counts" )]]></Calculation>
     </Value>
-    <Name>$order</Name>
+    <Name>$cStatus</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
-      <Calculation><![CDATA[JSONSetElement ( $orders ; "[" & $i & "]" ; $order ; JSONObject )]]></Calculation>
+      <Calculation><![CDATA[GetAsNumber ( epSQLResult ( $i ; 1 ; "rs_counts" ) )]]></Calculation>
     </Value>
-    <Name>$orders</Name>
+    <Name>$cNum</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $counts ; $cStatus ; $cNum ; JSONNumber )]]></Calculation>
+    </Value>
+    <Name>$counts</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$total + $cNum]]></Calculation>
+    </Value>
+    <Name>$total</Name>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
@@ -375,10 +321,204 @@ $searchClause]]></Calculation>
   <Step enable="True" id="73" name="End Loop"/>
   <Step enable="True" id="141" name="Set Variable">
     <Value>
+      <Calculation><![CDATA[epSQLResultDelete ( "rs_counts" )]]></Calculation>
+    </Value>
+    <Name>$void</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Persist normalized scope (per-column loaded map; no global offset)</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "periodMode" ; $periodMode ; JSONString ] ;
+	[ "anchorDate" ; $anchorStr ; JSONString ] ;
+	[ "statuses" ; $statuses ; JSONArray ] ;
+	[ "query" ; $query ; JSONString ] ;
+	[ "initialSize" ; $initialSize ; JSONNumber ] ;
+	[ "pageStep" ; $pageStep ; JSONNumber ] ;
+	[ "loaded" ; $loaded ; JSONObject ]
+)]]></Calculation>
+    </Value>
+    <Name>$$KANBAN_SCOPE</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="89" name="# (comment)">
+    <Text>MARK: Per-column paginated SELECT — one FETCH FIRST {loaded} query per non-empty status column (v3 card contract)</Text>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[List ( "U toku" ; "Otvoren" ; "Zakazan" ; "Završen" ; "Obračunat" ; "Fakturisan" ; "Naplaćen" ; "Otkazan" )]]></Calculation>
+    </Value>
+    <Name>$statusList</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[ValueCount ( $statusList )]]></Calculation>
+    </Value>
+    <Name>$statusN</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["[]"]]></Calculation>
+    </Value>
+    <Name>$orders</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA["{}"]]></Calculation>
+    </Value>
+    <Name>$columns</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$oIdx</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$s</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$s ≥ $statusN]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetValue ( $statusList ; $s + 1 )]]></Calculation>
+    </Value>
+    <Name>$curStatus</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $counts ; $curStatus ) )]]></Calculation>
+    </Value>
+    <Name>$avail</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$avail > 0]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[Let ( ~c = GetAsNumber ( JSONGetElement ( $loaded ; $curStatus ) ) ; If ( ~c > 0 ; ~c ; $initialSize ) )]]></Calculation>
+    </Value>
+    <Name>$target</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLExecute (
+	"SELECT so.PrimaryKey, so.ServiceOrderNumber, so.Status, so.ClientName_Calculation, c.Phone," &
+	" v.PlateNumber, v.Manufacturer, v.Model, v.YearManufactured," &
+	" so.Description, so.Remarks, so.JobDate, so.JobTime, so.JobTimeEnd," &
+	" so.RushOrder_Flag, so.OrderTotalLive_Calculation" &
+	$sqlFrom & $where &
+	" AND so.Status = " & epSQLQuote ( $curStatus ) &
+	" ORDER BY so.JobDate, so.JobTime" &
+	" OFFSET 0 ROWS FETCH FIRST " & $target & " ROWS ONLY" ;
+	"useSQLResult=rs_kanban"
+)]]></Calculation>
+    </Value>
+    <Name>$sqlErr</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[not IsEmpty ( $sqlErr )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[JSONSetElement ( "{}" ; [ "error" ; $sqlErr ; JSONString ] ; [ "step" ; "select" ; JSONString ] ; [ "status" ; $curStatus ; JSONString ] )]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[epSQLResultRowCount ( "rs_kanban" )]]></Calculation>
+    </Value>
+    <Name>$rowCount</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[0]]></Calculation>
+    </Value>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="71" name="Loop">
+    <FlushType value="Always"/>
+  </Step>
+  <Step enable="True" id="72" name="Exit Loop If">
+    <Calculation><![CDATA[$r ≥ $rowCount]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "id" ; epSQLResult ( $r ; 0 ; "rs_kanban" ) ; JSONString ] ;
+	[ "number" ; epSQLResult ( $r ; 1 ; "rs_kanban" ) ; JSONString ] ;
+	[ "status" ; epSQLResult ( $r ; 2 ; "rs_kanban" ) ; JSONString ] ;
+	[ "customer" ; epSQLResult ( $r ; 3 ; "rs_kanban" ) ; JSONString ] ;
+	[ "phone" ; epSQLResult ( $r ; 4 ; "rs_kanban" ) ; JSONString ] ;
+	[ "plate" ; epSQLResult ( $r ; 5 ; "rs_kanban" ) ; JSONString ] ;
+	[ "make" ; epSQLResult ( $r ; 6 ; "rs_kanban" ) ; JSONString ] ;
+	[ "model" ; epSQLResult ( $r ; 7 ; "rs_kanban" ) ; JSONString ] ;
+	[ "year" ; GetAsNumber ( epSQLResult ( $r ; 8 ; "rs_kanban" ) ) ; JSONNumber ] ;
+	[ "service" ; epSQLResult ( $r ; 9 ; "rs_kanban" ) ; JSONString ] ;
+	[ "note" ; epSQLResult ( $r ; 10 ; "rs_kanban" ) ; JSONString ] ;
+	[ "date" ; epSQLResult ( $r ; 11 ; "rs_kanban" ) ; JSONString ] ;
+	[ "timeStart" ; epSQLResult ( $r ; 12 ; "rs_kanban" ) ; JSONString ] ;
+	[ "timeEnd" ; epSQLResult ( $r ; 13 ; "rs_kanban" ) ; JSONString ] ;
+	[ "rush" ; GetAsNumber ( epSQLResult ( $r ; 14 ; "rs_kanban" ) ) ; JSONNumber ] ;
+	[ "price" ; GetAsNumber ( epSQLResult ( $r ; 15 ; "rs_kanban" ) ) ; JSONNumber ]
+)]]></Calculation>
+    </Value>
+    <Name>$order</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $orders ; "[" & $oIdx & "]" ; $order ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$orders</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$oIdx + 1]]></Calculation>
+    </Value>
+    <Name>$oIdx</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$r + 1]]></Calculation>
+    </Value>
+    <Name>$r</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
       <Calculation><![CDATA[epSQLResultDelete ( "rs_kanban" )]]></Calculation>
     </Value>
     <Name>$void</Name>
   </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( "{}" ; [ "loaded" ; $rowCount ; JSONNumber ] ; [ "available" ; $avail ; JSONNumber ] )]]></Calculation>
+    </Value>
+    <Name>$colObj</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[JSONSetElement ( $columns ; $curStatus ; $colObj ; JSONObject )]]></Calculation>
+    </Value>
+    <Name>$columns</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value>
+      <Calculation><![CDATA[$s + 1]]></Calculation>
+    </Value>
+    <Name>$s</Name>
+  </Step>
+  <Step enable="True" id="73" name="End Loop"/>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="False" id="89" name="# (comment)">
     <Text>MARK: Build payload (orders + meta) and push to the web viewer</Text>
@@ -393,12 +533,9 @@ $searchClause]]></Calculation>
 	[ "label" ; $label ; JSONString ] ;
 	[ "statuses" ; $statuses ; JSONArray ] ;
 	[ "query" ; $query ; JSONString ] ;
-	[ "page" ; JSONSetElement ( "{}" ;
-		[ "offset" ; $offset ; JSONNumber ] ;
-		[ "limit" ; $limit ; JSONNumber ] ;
-		[ "total" ; $total ; JSONNumber ] ;
-		[ "hasMore" ; $offset + $limit < $total ; JSONBoolean ]
-	) ; JSONObject ]
+	[ "total" ; $total ; JSONNumber ] ;
+	[ "pageStep" ; $pageStep ; JSONNumber ] ;
+	[ "columns" ; $columns ; JSONObject ]
 )]]></Calculation>
     </Value>
     <Name>$meta</Name>

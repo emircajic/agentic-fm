@@ -308,6 +308,32 @@ User Interface/
 
 Avoid using FileMaker reserved words as field, variable, table, or script names. Common ones to avoid:
 
-`Status`, `Error`, `Name`, `Date`, `Time`, `Count`, `List`, `Max`, `Min`, `Sum`, `Average`
+`Status`, `Error`, `Name`, `Date`, `Time`, `Count`, `List`, `Max`, `Min`, `Sum`, `Average`, `Value`
 
 Disambiguate with context: `invoiceDate`, `customerName`, `lineItemCount`
+
+> **`value` as a script parameter name** — avoid as a precaution. A 2026-07-20 test
+> failure initially attributed to `$value` not unpacking turned out to be a blanked
+> decimal literal (see below), but `value` remains a poor, collision-prone name.
+> Use `amount`, `newValue`, or another specific name instead.
+
+## Decimal Literals in Pasted Calculations
+
+**Never use decimal literals (`1.17`, `11.7`) in generated fmxmlsnippet calculations.**
+On files/systems using a comma decimal separator, a dot-decimal literal fails to parse
+at paste time and FileMaker silently blanks the entire calculation — the step pastes
+with an empty calc and no error. Confirmed in practice 2026-07-20: `Set Variable
+[ $vatRate ; 1.17 ]` pasted as an empty calc, so every price computed as 0.
+
+Use integer fractions instead — they are locale-proof:
+
+```
+# Wrong — silently blanked on comma-decimal systems
+Set Variable [ $vatRate ; 1.17 ]
+
+# Correct — locale-proof
+Set Variable [ $vatRate ; 117 / 100 ]
+```
+
+Note: `xml_parsed/` exports normalize numbers to dot-decimal regardless of file locale,
+so a dot in exported XML does NOT prove the file accepts dots on paste.
