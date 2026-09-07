@@ -1,0 +1,504 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Reverse a posted Nivelacija. Restores every batch to the price it held immediately before this document, deletes the price events this document emitted, and reopens it.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON):
+  nivelacijaId   required. Must be Knjižena.
+
+RETURNS data: brojNivelacije, brojStavki (batches restored).
+
+ERRORS:
+  NIV_NOT_POSTED   not posted, or does not exist
+  NIV_SUPERSEDED   a later nivelacija has since repriced one of these batches
+
+WHY SUPERSESSION IS A HARD STOP AND NOT A WARNING:
+  CijeneStavki is append-only and its whole value is that "the price on date D" is answerable by
+  one ordered walk. Deleting an event from the middle of a batch's history leaves the later events
+  claiming a stara cijena that no event ever set — the log still returns an answer, it is just
+  quietly wrong, and every as-of report built on it is wrong with it. So: unpost the later document
+  first, or do not unpost at all. Reversing in order is the only safe order.
+
+WHAT IT RESTORES: ProdajnaCijena and PDVPostotak_Trenutni are taken from the batch's immediately
+  PRECEDING event, not from the line's stara* columns. Those columns are a record of what the
+  document did; the event log is the record of what was true. If they ever disagree the log wins.
+
+NabavnaCijenaEfektivna is deliberately not restored — a nivelacija never changes cost, so there is
+  nothing on that side to undo.
+
+Artikli::ProdajnaCijena_Standardna is likewise not rolled back. It is a list price, not stock
+  valuation, it may have been set by hand since, and guessing would do more damage than leaving it.
+  A warning says so when the document had that flag set.</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "nivelacijaId" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "NIV__Unpost" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="75" name="Commit Records/Requests">
+		<NoInteract state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT Nivelacija.Status, Nivelacija.DatumNivelacije, Nivelacija.BrojNivelacije," &
+	"  Nivelacija.AzurirajStandardnuCijenu" &
+	" FROM Nivelacija WHERE Nivelacija.PrimaryKey = ?" ;
+	"useSQLResult=rs_hdr" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err ) or epSQLResultRowCount ( "rs_hdr" ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIV_NOT_POSTED" ; If ( IsEmpty ( $err ) ; "Nivelacija ne postoji." ; $err ) ; "nivelacijaId" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$status</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$docDate</Name>
+		<Value><Calculation><![CDATA[GetAsDate ( epSQLResult ( 0 ; 1 ; "rs_hdr" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$broj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$azuriraj</Name>
+		<Value><Calculation><![CDATA[GetAsNumber ( epSQLResult ( 0 ; 3 ; "rs_hdr" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$status ≠ "Knjižena"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIV_NOT_POSTED" ; "Nivelacija " & $broj & " nije knjižena (status: " & $status & ")." ; "Status" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Every event this document emitted, and therefore every batch it touched. Reading from the event log rather than the lines means an unpost restores exactly what the post wrote, even if a line was edited afterwards. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT CijeneStavki.ForeignKeyStavkaPrimkeID" &
+	" FROM CijeneStavki WHERE CijeneStavki.IzvorID = ? AND CijeneStavki.IzvorTip = ?" ;
+	"useSQLResult=rs_own" ;
+	$nivelacijaId ;
+	"Nivelacija"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "rs_own" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$batchSet</Name>
+		<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$n</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_own" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i ≥ $n]]></Calculation>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$batchSet</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $batchSet ; epSQLResult ( $i ; 0 ; "rs_own" ) ; 1 ; JSONNumber )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_own" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$n = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIV_NO_EVENTS" ; "Nivelacija " & $broj & " nema cjenovnih događaja — ništa za vratiti." ; "CijeneStavki" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── One query covers both remaining needs: supersession and the preceding state. Every event on these batches, ordered, excluding this document's own. Rows above this document's sort key are conflicts; the last row below it is what to restore. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT CijeneStavki.ForeignKeyStavkaPrimkeID, CijeneStavki.VaziOd," &
+	"  CijeneStavki.TipPrioritet, CijeneStavki.IzvorBroj," &
+	"  CijeneStavki.Cijena, CijeneStavki.PDVPostotak" &
+	" FROM CijeneStavki" &
+	" WHERE CijeneStavki.IzvorID <> ?" &
+	" ORDER BY CijeneStavki.ForeignKeyStavkaPrimkeID, CijeneStavki.VaziOd," &
+	"   CijeneStavki.TipPrioritet, CijeneStavki.IzvorBroj" ;
+	"useSQLResult=rs_all" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "rs_all" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$prev</Name>
+		<Value><Calculation><![CDATA["{}"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$superseded</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$n</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_all" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i ≥ $n]]></Calculation>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$batchId</Name>
+			<Value><Calculation><![CDATA[epSQLResult ( $i ; 0 ; "rs_all" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $batchSet ; $batchId ) ) = 1]]></Calculation>
+		</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$isAfter</Name>
+				<Value><Calculation><![CDATA[Let ( [
+		~vazi = GetAsDate ( epSQLResult ( $i ; 1 ; "rs_all" ) ) ;
+		~tip = GetAsNumber ( epSQLResult ( $i ; 2 ; "rs_all" ) ) ;
+		~izvor = epSQLResult ( $i ; 3 ; "rs_all" )
+	];
+
+	~vazi > $docDate or ( ~vazi = $docDate and ~tip = 2 and ~izvor > $broj )
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[$isAfter]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$superseded</Name>
+					<Value><Calculation><![CDATA[List ( $superseded ; epSQLResult ( $i ; 3 ; "rs_all" ) & " / " & $batchId )]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="69" name="Else"/>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$prev</Name>
+					<Value><Calculation><![CDATA[JSONSetElement ( $prev ; $batchId ;
+	JSONSetElement ( "{}" ;
+		[ "cijena" ; GetAsNumber ( epSQLResult ( $i ; 4 ; "rs_all" ) ) ; JSONNumber ] ;
+		[ "pdv" ; GetAsNumber ( epSQLResult ( $i ; 5 ; "rs_all" ) ) ; JSONNumber ]
+	) ;
+	JSONObject
+)]]></Calculation></Value>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_all" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $superseded )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIV_SUPERSEDED" ;
+	ValueCount ( $superseded ) & " serija je nakon " & $broj & " ponovo nivelisana — storniraj prvo noviju nivelaciju." ;
+	"CijeneStavki" ;
+	JSONSetElement ( "{}" ; "kasnije" ; Substitute ( $superseded ; Char ( 13 ) ; " | " ) ; JSONString ) ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Restore. A batch with no preceding event cannot happen in practice — every batch is priced in by its kalkulacija before it can be nivelated — but if it ever did, silently writing zero would be far worse than skipping and saying so. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$keys</Name>
+		<Value><Calculation><![CDATA[JSONListKeys ( $batchSet ; "" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$restored</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$orphans</Name>
+		<Value><Calculation><![CDATA[""]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i > ValueCount ( $keys )]]></Calculation>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$batchId</Name>
+			<Value><Calculation><![CDATA[GetValue ( $keys ; $i )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$p</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( $prev ; $batchId )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( $p ) or $p = "null"]]></Calculation>
+		</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$orphans</Name>
+				<Value><Calculation><![CDATA[List ( $orphans ; $batchId )]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="69" name="Else"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$err</Name>
+				<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE StavkePrimke SET ProdajnaCijena = ?, PDVPostotak_Trenutni = ?" &
+	" WHERE PrimaryKey = ?" ;
+	"" ;
+	GetAsNumber ( JSONGetElement ( $p ; "cijena" ) ) ;
+	GetAsNumber ( JSONGetElement ( $p ; "pdv" ) ) ;
+	$batchId
+)]]></Calculation></Value>
+			</Step>
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$void</Name>
+					<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAIL" ; $err ; "StavkePrimke" ; JSONSetElement ( "{}" ; "batchId" ; $batchId ; JSONString ) ; "" )]]></Calculation></Value>
+				</Step>
+				<Step enable="True" id="103" name="Exit Script">
+					<Calculation><![CDATA[Response_Finalize]]></Calculation>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$restored</Name>
+				<Value><Calculation><![CDATA[$restored + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Only now delete the events. Doing it earlier would destroy the information the restore depends on if any UPDATE above had failed. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"DELETE FROM CijeneStavki WHERE IzvorID = ? AND IzvorTip = ?" ;
+	"" ;
+	$nivelacijaId ;
+	"Nivelacija"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "DELETE_FAIL" ; $err ; "CijeneStavki" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"UPDATE Nivelacija SET Status = ?, DatumKnjizenja = ? WHERE PrimaryKey = ?" ;
+	"" ;
+	"Otvorena" ;
+	"" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "UPDATE_FAIL" ; $err ; "Nivelacija" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $orphans )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddWarning ( "NO_PRIOR_EVENT" ; ValueCount ( $orphans ) & " serija nema raniji cjenovni događaj — cijena nije vraćena." ; "CijeneStavki" ; JSONSetElement ( "{}" ; "serije" ; Substitute ( $orphans ; Char ( 13 ) ; " | " ) ; JSONString ) ; "" )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$azuriraj]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddWarning ( "STANDARDNA_NOT_REVERTED" ; "Artikli::ProdajnaCijena_Standardna nije vraćena — provjeri ručno." ; "Artikli" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "nivelacijaId" ; $nivelacijaId ; JSONString ] ;
+	[ "brojNivelacije" ; $broj ; JSONString ] ;
+	[ "vraceno" ; $restored ; JSONNumber ]
+) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "NIVELACIJA_UNPOSTED" ; $broj & ": " & $restored & " serija vraćeno." ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="780" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

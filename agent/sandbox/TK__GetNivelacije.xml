@@ -1,0 +1,261 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Ledger rows for posted Nivelacije in the period. Sibling of TK__GetZaduzenje / TK__GetRazduzenje — same {status, rows, errors} contract, same row shape.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>Expects JSON: { "companyID": &lt;text&gt;, "datumOd": &lt;date&gt;, "datumDo": &lt;date&gt; }
+Returns JSON: { "status": "success|fail", "rows": [], "errors": [] }
+
+ONE DOCUMENT, EITHER COLUMN. A nivelacija raises or lowers the retail value of goods already
+charged into the book, so it is neither purely a zaduzenje nor purely a razduzenje — the sign of
+UkupnoRazlika decides which column it lands in. That is why it is its own worker rather than a
+branch inside TK__GetZaduzenje.
+
+GROSS, NEVER NET. The ledger is kept at maloprodajna vrijednost, so the figure is UkupnoRazlika —
+the VAT-inclusive difference. UkupnoRazlikaRUC is the net movement and belongs on the printed
+nivelacija form, never here. The two differ on every document and are never derived from each
+other.
+
+ZERO-EFFECT DOCUMENTS EMIT NOTHING. A hold-the-price nivelacija (NacinIzmjene "ZadrziMPC") moves
+no retail value at all: it reclassifies VAT out of the margin and leaves maloprodajna vrijednost
+untouched. N-001-26 is exactly that — 67 lines, UkupnoRazlika 0,00. Emitting a 0,00 / 0,00 row for
+it would renumber every subsequent RedniBroj in an already-filed period while changing no saldo,
+which is a worse outcome than the row's absence. The document still exists, is numbered, and is
+filed on its own; it simply has nothing to say to the trgovacka knjiga.
+
+SORT ORDER 2 — after kalkulacije (1), before sales (3). Goods must be charged into the book before
+they can be repriced, and repriced before the day's takings discharge them.
+
+SQL rather than a find: there is no layout on the Nivelacija table, and this needs none.</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$param</Name>
+		<Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyID</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "companyID" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datumOd</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "datumOd" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datumDo</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $param ; "datumDo" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$errors</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rows</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$exit</Name>
+		<Value><Calculation><![CDATA[False]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Validation mirrors the sibling workers exactly, so a caller gets the same failure shape whichever leg rejects. ──</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $companyID )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$errors</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje companyID" ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$exit</Name>
+			<Value><Calculation><![CDATA[True]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $datumOd )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$errors</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje datumOd" ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$exit</Name>
+			<Value><Calculation><![CDATA[True]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $datumDo )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$errors</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "Nedostaje datumDo" ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$exit</Name>
+			<Value><Calculation><![CDATA[True]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not $exit and GetAsDate ( $datumOd ) > GetAsDate ( $datumDo )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$errors</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "datumOd ne može biti veći od datumDo" ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$exit</Name>
+			<Value><Calculation><![CDATA[True]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$exit]]></Calculation>
+	</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Dates go in as ? parameters carrying native FM date values. A quoted date STRING in FM SQL compares lexicographically and gives wrong answers without ever erroring. Tab and carriage return as separators are safe here because every selected column is a key, a document number, a date or a number — none can contain either character. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$result</Name>
+		<Value><Calculation><![CDATA[ExecuteSQL (
+	"SELECT PrimaryKey, BrojNivelacije, DatumNivelacije, UkupnoRazlika
+	 FROM Nivelacija
+	 WHERE ForeignKeyCompanyID = ?
+	   AND Status = 'Knjižena'
+	   AND DatumNivelacije >= ?
+	   AND DatumNivelacije <= ?
+	 ORDER BY DatumNivelacije, BrojNivelacije" ;
+	Char ( 9 ) ;
+	Char ( 13 ) ;
+	$companyID ;
+	GetAsDate ( $datumOd ) ;
+	GetAsDate ( $datumDo )
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$result = "?"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$errors</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $errors ; "[+]" ; "SQL greška pri čitanju nivelacija" ; JSONString )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "fail" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[1]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$n</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $result ) ; 0 ; ValueCount ( $result ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i > $n]]></Calculation>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$cols</Name>
+			<Value><Calculation><![CDATA[Substitute ( GetValue ( $result ; $i ) ; Char ( 9 ) ; Char ( 13 ) )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$razlika</Name>
+			<Value><Calculation><![CDATA[GetAsNumber ( GetValue ( $cols ; 4 ) )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── A zero-effect document is skipped here rather than in the WHERE clause. FileMaker SQL predicates on absent or zero values have a habit of failing open into silent row loss, and a filter that quietly dropped a real nivelacija would be far worse than one extra iteration. ──</Text>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$razlika ≠ 0]]></Calculation>
+		</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$datum</Name>
+				<Value><Calculation><![CDATA[GetAsDate ( GetValue ( $cols ; 3 ) )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$row</Name>
+				<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "datum" ; $datum ; JSONString ] ;
+	[ "opis" ; "Nivelacija cijena " & GetValue ( $cols ; 2 ) ; JSONString ] ;
+	[ "brojDokumenta" ; GetValue ( $cols ; 2 ) ; JSONString ] ;
+	[ "zaduzenje" ; If ( $razlika > 0 ; $razlika ; 0 ) ; JSONNumber ] ;
+	[ "razduzenje" ; If ( $razlika < 0 ; Abs ( $razlika ) ; 0 ) ; JSONNumber ] ;
+	[ "tip" ; "Nivelacija" ; JSONString ] ;
+	[ "sortDatum" ; date.format ( $datum ; "yyyy-mm-dd" ) ; JSONString ] ;
+	[ "sortOrder" ; 2 ; JSONNumber ] ;
+	[ "documentID" ; GetValue ( $cols ; 1 ) ; JSONString ]
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$rows</Name>
+				<Value><Calculation><![CDATA[JSONSetElement ( $rows ; "[+]" ; $row ; JSONObject )]]></Calculation></Value>
+			</Step>
+
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "status" ; "success" ; JSONString ] ;
+	[ "rows" ; $rows ; JSONArray ] ;
+	[ "errors" ; $errors ; JSONArray ]
+)]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

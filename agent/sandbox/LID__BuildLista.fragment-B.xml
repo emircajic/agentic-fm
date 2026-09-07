@@ -1,0 +1,53 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── RUC and PDV as of the invoice date, not as of the kalkulacija. Both derive from the same two numbers: the gross shelf price in force that day and the rate contained in it. Cost is deliberately the loop's own $costUnit rather than the event's — a nivelacija never changes cost, the two always agree, and using one source keeps prodajnaVrijednost = nabavna + ruc exact by construction. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$costUnit</Name>
+		<Value><Calculation><![CDATA[$nabCijena - $nabCijena / 100 * $rabatPct + $zavTroskovi]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$lineAsOf</Name>
+		<Value><Calculation><![CDATA[JSONGetElement ( $asof ; epSQLResult ( $i ; 12 ; "rs_lid" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── No as-of event can only mean the batch was never kalkulisana, which the inner join on KMP__Stavke already excludes. Falling back to the stored kalkulacija amounts rather than to zero means a surprise here degrades to the old behaviour instead of silently reporting no margin. ──</Text>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $lineAsOf ) or $lineAsOf = "null"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$accRUC</Name>
+			<Value><Calculation><![CDATA[$accRUC + GetAsNumber ( epSQLResult ( $i ; 10 ; "rs_lid" ) ) * $faktor]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$accPDV</Name>
+			<Value><Calculation><![CDATA[$accPDV + GetAsNumber ( epSQLResult ( $i ; 11 ; "rs_lid" ) ) * $faktor]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="69" name="Else"/>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$netoUnit</Name>
+			<Value><Calculation><![CDATA[Let ( [
+		~gross = GetAsNumber ( JSONGetElement ( $lineAsOf ; "c" ) ) ;
+		~pct = GetAsNumber ( JSONGetElement ( $lineAsOf ; "p" ) )
+	];
+
+	~gross / ( 1 + ~pct / 100 )
+)]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$accRUC</Name>
+			<Value><Calculation><![CDATA[$accRUC + ( $netoUnit - $costUnit ) * $qty]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$accPDV</Name>
+			<Value><Calculation><![CDATA[$accPDV + ( GetAsNumber ( JSONGetElement ( $lineAsOf ; "c" ) ) - $netoUnit ) * $qty]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+</fmxmlsnippet>

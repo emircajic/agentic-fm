@@ -1,0 +1,451 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Build the print payload for a Nivelacija and hand it to the document service for rendering. Read-only against FileMaker — it changes nothing, so it is safe to run against a posted document as many times as you like.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON):
+  nivelacijaId   required.
+  operation      "payload"      build and return the payload, make no HTTP call. Default.
+                 "generate-pdf" build it, POST it, return the service response.
+  endpoint       optional override. Default "/api/nivelacija-pdf".
+
+RETURNS data:
+  payload        the full envelope (always)
+  apiResponse    the service's raw JSON (generate-pdf only)
+
+WHY "payload" IS THE DEFAULT:
+  The document service does not have this endpoint yet. Running with the default gives you the
+  exact JSON it will receive, to hand to whoever builds it, without needing the service to exist.
+  Switch to generate-pdf once the endpoint answers.
+
+THE PRINTED COLUMNS ARE NET, AND THAT IS THE POINT:
+  staraCijena / novaCijena / ranijaVrijednost / novaVrijednost / efekat are all VAT-EXCLUSIVE,
+  because that is what shows the real movement. Under a hold-the-price nivelacija the gross figures
+  are identical on both sides and every efekat would print as zero; net, the same document shows
+  the whole VAT being absorbed out of the margin.
+
+  Because a nivelacija never touches cost, the net value difference IS the razlika-u-cijeni
+  movement — efekat and razlikaRUC are the same number, and both are in the payload under both
+  names so the template can use whichever reads better.
+
+  The gross figures ride along under the *Bruto suffix. The trgovacka knjiga takes efekatBruto,
+  never efekat. They are different numbers with different consumers; never derive one from the
+  other at render time.
+
+NUMBERS ARE RAW: every amount is a JSON number, unformatted and unrounded beyond what was stored.
+  Locale formatting — comma decimal separator, dot thousands, three decimals on prices — belongs to
+  the template, not here.
+
+STORING THE PDF: this script does not write Nivelacija::PDFFile. Set Field on a container needs
+  record context and no layout exists for this table yet. Once one does, storing is one step on the
+  returned pdfBase64 — see KMP__Print (819) for the shape.</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "nivelacijaId|operation|endpoint" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "NIV__Print" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$operation</Name>
+		<Value><Calculation><![CDATA[If ( $operation = "generate-pdf" ; "generate-pdf" ; "payload" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $nivelacijaId )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "nivelacijaId je obavezan." ; "nivelacijaId" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Header. The seven stored totals are read as written at posting time and never recomputed here — a filed document must print the same numbers every time it is printed. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT Nivelacija.BrojNivelacije, Nivelacija.DatumNivelacije, Nivelacija.Status," &
+	"  Nivelacija.DatumKnjizenja, Nivelacija.NacinIzmjene, Nivelacija.Napomena," &
+	"  Nivelacija.ForeignKeyCompanyID," &
+	"  Nivelacija.UkupnoStaraVrijednost, Nivelacija.UkupnoNovaVrijednost, Nivelacija.UkupnoRazlika," &
+	"  Nivelacija.UkupnoStaraVrijednostBezPDV, Nivelacija.UkupnoNovaVrijednostBezPDV," &
+	"  Nivelacija.UkupnoRazlikaRUC, Nivelacija.UkupnoRazlikaPDV" &
+	" FROM Nivelacija WHERE Nivelacija.PrimaryKey = ?" ;
+	"useSQLResult=rs_hdr" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err ) or epSQLResultRowCount ( "rs_hdr" ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIVELACIJA_NOT_FOUND" ; If ( IsEmpty ( $err ) ; "Nivelacija ne postoji." ; $err ) ; "nivelacijaId" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$broj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datum</Name>
+		<Value><Calculation><![CDATA[GetAsDate ( epSQLResult ( 0 ; 1 ; "rs_hdr" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$doc</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "tip" ; "Nivelacija" ; JSONString ] ;
+	[ "naslov" ; "Nivelacija cijena" ; JSONString ] ;
+	[ "broj" ; $broj ; JSONString ] ;
+	[ "datum" ; Year ( $datum ) & "-" & Right ( "0" & Month ( $datum ) ; 2 ) & "-" & Right ( "0" & Day ( $datum ) ; 2 ) ; JSONString ] ;
+	[ "datumPrikaz" ; Right ( "0" & Day ( $datum ) ; 2 ) & "." & Right ( "0" & Month ( $datum ) ; 2 ) & "." & Year ( $datum ) ; JSONString ] ;
+	[ "status" ; epSQLResult ( 0 ; 2 ; "rs_hdr" ) ; JSONString ] ;
+	[ "datumKnjizenja" ; epSQLResult ( 0 ; 3 ; "rs_hdr" ) ; JSONString ] ;
+	[ "nacinIzmjene" ; epSQLResult ( 0 ; 4 ; "rs_hdr" ) ; JSONString ] ;
+	[ "napomena" ; epSQLResult ( 0 ; 5 ; "rs_hdr" ) ; JSONString ] ;
+	[ "datumIspisa" ; Right ( "0" & Day ( Get ( CurrentDate ) ) ; 2 ) & "." & Right ( "0" & Month ( Get ( CurrentDate ) ) ; 2 ) & "." & Year ( Get ( CurrentDate ) ) ; JSONString ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyId</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 6 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rekap</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "ranijaVrijednost" ; GetAsNumber ( epSQLResult ( 0 ; 10 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "novaVrijednost" ; GetAsNumber ( epSQLResult ( 0 ; 11 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "efekat" ; GetAsNumber ( epSQLResult ( 0 ; 12 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "ranijaVrijednostBruto" ; GetAsNumber ( epSQLResult ( 0 ; 7 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "novaVrijednostBruto" ; GetAsNumber ( epSQLResult ( 0 ; 8 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "efekatBruto" ; GetAsNumber ( epSQLResult ( 0 ; 9 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "razlikaRUC" ; GetAsNumber ( epSQLResult ( 0 ; 12 ; "rs_hdr" ) ) ; JSONNumber ] ;
+	[ "razlikaPDV" ; GetAsNumber ( epSQLResult ( 0 ; 13 ; "rs_hdr" ) ) ; JSONNumber ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Company block for the letterhead. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT Company.CompanyName, Company.Address, Company.City, Company.PostalCode," &
+	"  Company.JIB, Company.PDVBroj, Company.Phone, Company.Email" &
+	" FROM Company WHERE Company.PrimaryKey = ?" ;
+	"useSQLResult=rs_co" ;
+	$companyId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$company</Name>
+		<Value><Calculation><![CDATA[If ( not IsEmpty ( $err ) or epSQLResultRowCount ( "rs_co" ) = 0 ;
+	"{}" ;
+	JSONSetElement ( "{}" ;
+		[ "naziv" ; epSQLResult ( 0 ; 0 ; "rs_co" ) ; JSONString ] ;
+		[ "adresa" ; epSQLResult ( 0 ; 1 ; "rs_co" ) ; JSONString ] ;
+		[ "grad" ; epSQLResult ( 0 ; 2 ; "rs_co" ) ; JSONString ] ;
+		[ "postanskiBroj" ; epSQLResult ( 0 ; 3 ; "rs_co" ) ; JSONString ] ;
+		[ "jib" ; epSQLResult ( 0 ; 4 ; "rs_co" ) ; JSONString ] ;
+		[ "pdvBroj" ; epSQLResult ( 0 ; 5 ; "rs_co" ) ; JSONString ] ;
+		[ "telefon" ; epSQLResult ( 0 ; 6 ; "rs_co" ) ; JSONString ] ;
+		[ "email" ; epSQLResult ( 0 ; 7 ; "rs_co" ) ; JSONString ]
+	)
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_co" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Lines, in document order. Both quantity columns on the specimen form are the same number here: this system prices per batch, so a line has one old price and one new price and never needs the split-row padding the specimen uses. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT StavkeNivelacije.RedniBroj, StavkeNivelacije.Sifra, StavkeNivelacije.Naziv," &
+	"  StavkeNivelacije.JM, StavkeNivelacije.KolicinaNaStanju," &
+	"  StavkeNivelacije.StaraMPCijenaBezPDV, StavkeNivelacije.StaraVrijednostBezPDV," &
+	"  StavkeNivelacije.NovaMPCijenaBezPDV, StavkeNivelacije.NovaVrijednostBezPDV," &
+	"  StavkeNivelacije.RazlikaRUC," &
+	"  StavkeNivelacije.StaraMPCijena, StavkeNivelacije.StaraVrijednost," &
+	"  StavkeNivelacije.NovaMPCijena, StavkeNivelacije.NovaVrijednost," &
+	"  StavkeNivelacije.RazlikaVrijednost, StavkeNivelacije.RazlikaPDV," &
+	"  StavkeNivelacije.StariPDVPostotak, StavkeNivelacije.NoviPDVPostotak," &
+	"  StavkeNivelacije.NabavnaCijenaEfektivna, StavkeNivelacije.StariRUCIznos," &
+	"  StavkeNivelacije.NoviRUCIznos, StavkeNivelacije.ForeignKeyStavkaPrimkeID," &
+	"  StavkeNivelacije.NacinIzmjene" &
+	" FROM StavkeNivelacije" &
+	" WHERE StavkeNivelacije.ForeignKeyNivelacijaID = ?" &
+	" ORDER BY StavkeNivelacije.RedniBroj" ;
+	"useSQLResult=rs_lines" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "rs_lines" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$stavke</Name>
+		<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$n</Name>
+		<Value><Calculation><![CDATA[epSQLResultRowCount ( "rs_lines" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i ≥ $n]]></Calculation>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$stavke</Name>
+			<Value><Calculation><![CDATA[JSONSetElement ( $stavke ; "[" & $i & "]" ;
+	JSONSetElement ( "{}" ;
+		[ "redniBroj" ; GetAsNumber ( epSQLResult ( $i ; 0 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "sifra" ; epSQLResult ( $i ; 1 ; "rs_lines" ) ; JSONString ] ;
+		[ "naziv" ; epSQLResult ( $i ; 2 ; "rs_lines" ) ; JSONString ] ;
+		[ "jm" ; epSQLResult ( $i ; 3 ; "rs_lines" ) ; JSONString ] ;
+		[ "kolicina" ; GetAsNumber ( epSQLResult ( $i ; 4 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "staraCijena" ; GetAsNumber ( epSQLResult ( $i ; 5 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "ranijaVrijednost" ; GetAsNumber ( epSQLResult ( $i ; 6 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "novaCijena" ; GetAsNumber ( epSQLResult ( $i ; 7 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "novaVrijednost" ; GetAsNumber ( epSQLResult ( $i ; 8 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "efekat" ; GetAsNumber ( epSQLResult ( $i ; 9 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "staraCijenaBruto" ; GetAsNumber ( epSQLResult ( $i ; 10 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "ranijaVrijednostBruto" ; GetAsNumber ( epSQLResult ( $i ; 11 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "novaCijenaBruto" ; GetAsNumber ( epSQLResult ( $i ; 12 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "novaVrijednostBruto" ; GetAsNumber ( epSQLResult ( $i ; 13 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "efekatBruto" ; GetAsNumber ( epSQLResult ( $i ; 14 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "razlikaPDV" ; GetAsNumber ( epSQLResult ( $i ; 15 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "stariPDVPostotak" ; GetAsNumber ( epSQLResult ( $i ; 16 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "noviPDVPostotak" ; GetAsNumber ( epSQLResult ( $i ; 17 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "nabavnaCijena" ; GetAsNumber ( epSQLResult ( $i ; 18 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "stariRUC" ; GetAsNumber ( epSQLResult ( $i ; 19 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "noviRUC" ; GetAsNumber ( epSQLResult ( $i ; 20 ; "rs_lines" ) ) ; JSONNumber ] ;
+		[ "batchId" ; epSQLResult ( $i ; 21 ; "rs_lines" ) ; JSONString ] ;
+		[ "nacinIzmjene" ; epSQLResult ( $i ; 22 ; "rs_lines" ) ; JSONString ]
+	) ;
+	JSONObject
+)]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_lines" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$rekap</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( $rekap ; "brojStavki" ; $n ; JSONNumber )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$payload</Name>
+		<Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
+	[ "verzija" ; 1 ; JSONNumber ] ;
+	[ "document" ; $doc ; JSONObject ] ;
+	[ "company" ; $company ; JSONObject ] ;
+	[ "stavke" ; $stavke ; JSONArray ] ;
+	[ "rekapitulacija" ; $rekap ; JSONObject ]
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$operation = "payload"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ; "payload" ; $payload ; JSONObject ) )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Log.add ( "info" ; "PAYLOAD_BUILT" ; $broj & ": " & $n & " stavki" ; "{}" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[$isRoot]]></Calculation>
+		</Step>
+			<Step enable="True" id="1" name="Perform Script">
+				<Script id="780" name="UTIL__FlushLog"/>
+				<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+			</Step>
+		<Step enable="True" id="70" name="End If"/>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── POST to the document service. Same host, key derivation and cURL shape as INV__CallFiscalAPI (880) — one service, one auth scheme. The key is SHA256 of the shared secret and this machine's PersistentID, so under PSoS it is the SERVER's id; confirm the service accepts it before relying on a headless path. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$url</Name>
+		<Value><Calculation><![CDATA["http://192.168.0.150:54321" & If ( IsEmpty ( $endpoint ) ; "/api/nivelacija-pdf" ; $endpoint )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$apiKey</Name>
+		<Value><Calculation><![CDATA[Lower ( Signature ( "dodajsolidaneboli" & Get ( PersistentID ) ; "SHA256" ; "Hex" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$curl</Name>
+		<Value><Calculation><![CDATA["-X POST" &
+	" --max-time 60" &
+	" -H " & Quote ( "Content-Type: application/json; charset=utf-8" ) &
+	" -H " & Quote ( "X-API-Key: " & $apiKey ) &
+	" --data-binary @$payload --silent --show-error"]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="160" name="Insert from URL">
+		<NoInteract state="True"/>
+		<DontEncodeURL state="False"/>
+		<SelectAll state="True"/>
+		<VerifySSLCertificates state="False"/>
+		<CURLOptions>
+			<Calculation><![CDATA[$curl]]></Calculation>
+		</CURLOptions>
+		<Calculation><![CDATA[$url]]></Calculation>
+		<Text/>
+		<Field>$apiResponse</Field>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$fmErr</Name>
+		<Value><Calculation><![CDATA[Get ( LastError )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$fmErr ≠ 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "CONNECTION_ERROR" ; "Ne mogu se povezati na servis za dokumente (FM greška " & $fmErr & ")." ; "url" ; JSONSetElement ( "{}" ; "url" ; $url ; JSONString ) ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( JSONGetElement ( $apiResponse ; "status" ) )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "INVALID_RESPONSE" ; "Neispravan odgovor servisa za dokumente." ; "" ; JSONSetElement ( "{}" ; "raw" ; Left ( $apiResponse ; 2000 ) ; JSONString ) ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[JSONGetElement ( $apiResponse ; "status" ) ≠ "success"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SERVICE_ERROR" ; JSONGetElement ( $apiResponse ; "error" ) ; "" ; JSONSetElement ( "{}" ; "raw" ; Left ( $apiResponse ; 2000 ) ; JSONString ) ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "payload" ; $payload ; JSONObject ] ;
+	[ "apiResponse" ; $apiResponse ; JSONObject ]
+) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "PDF_GENERATED" ; $broj & ": " & $n & " stavki" ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="780" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

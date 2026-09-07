@@ -1,0 +1,214 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Create an open Nivelacija header and allocate its document number. Creates no lines — NIV__GenerateStavke does that.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON):
+  datumNivelacije   ISO "YYYY-MM-DD". Effective date. Defaults to today.
+  nacinIzmjene      ZadrziMPC | ZadrziNeto | NovaMPC. Default ZadrziMPC.
+  napomena          optional free text.
+  azurirajStandardnu 1 = on posting, also write Artikli::ProdajnaCijena_Standardna. Default 0.
+
+RETURNS data:
+  nivelacijaId, brojNivelacije, datumNivelacije
+
+NUMBERING: N-NNN-YY, zero padded to three digits, allocated as max+1 within the document's own
+  year. Lexical MAX is safe here because the serial is fixed width and the year suffix is constant
+  within the scan. Gaps from deleted documents are not reused, which is what an auditor expects.
+
+WHY THE ANCHOR LIVES ON THE HEADER: NacinIzmjene decides which of neto / bruto is held constant
+  when the VAT rate changes, and every line inherits it unless it carries its own override. See
+  NIV__Post for the arithmetic.
+
+WHY epSQL AND NOT A LAYOUT: nothing here needs record context, so the script stays runnable from
+  any layout. PrimaryKey is supplied explicitly, which is belt-and-braces rather than necessary:
+  measured 2026-09-07, epSQL INSERT DOES fire auto-enter, so CreationTimestamp / CreatedBy /
+  ModificationTimestamp / ModifiedBy populate on their own and the TSID auto-enter would have
+  supplied a key too. Supplying it keeps the id known to the script without a read-back.</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "datumNivelacije|nacinIzmjene|napomena|azurirajStandardnu" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "NIV__Create" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$datum</Name>
+		<Value><Calculation><![CDATA[Let ( [
+		~iso = GetValue ( Substitute ( $datumNivelacije ; "T" ; Char ( 13 ) ) ; 1 )
+	];
+
+	If ( Length ( ~iso ) < 10 ;
+		Get ( CurrentDate ) ;
+		Date (
+			GetAsNumber ( Middle ( ~iso ; 6 ; 2 ) ) ;
+			GetAsNumber ( Right ( ~iso ; 2 ) ) ;
+			GetAsNumber ( Left ( ~iso ; 4 ) )
+		)
+	)
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nacin</Name>
+		<Value><Calculation><![CDATA[Case (
+	$nacinIzmjene = "ZadrziNeto" ; "ZadrziNeto" ;
+	$nacinIzmjene = "NovaMPC" ; "NovaMPC" ;
+	"ZadrziMPC"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$companyId</Name>
+		<Value><Calculation><![CDATA[getCompanyID ( "DOO" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $companyId )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "COMPANY_NOT_FOUND" ; "Ne mogu pronaći firmu tipa DOO." ; "companyId" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Allocate the number: highest existing serial within this document's year, plus one. Two FQL traps are avoided here, both of which produced a DUPLICATE N-001-26 on 2026-09-07 before this was fixed. First, a LIKE pattern bound through a ? placeholder does not expand its wildcards — the pattern must be inlined with epSQLQuote. Second, MAX() over a text column is not reliable in this dialect; ORDER BY DESC and taking the first row is. The serial is fixed width and the year suffix is constant within the scan, so a lexical sort is a numeric sort here. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$yy</Name>
+		<Value><Calculation><![CDATA[Right ( "0" & ( Year ( $datum ) - 2000 ) ; 2 )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT Nivelacija.BrojNivelacije" &
+	" FROM Nivelacija" &
+	" WHERE Nivelacija.BrojNivelacije LIKE " & epSQLQuote ( "N-%-" & $yy ) &
+	" ORDER BY Nivelacija.BrojNivelacije DESC" ;
+	"useSQLResult=rs_max"
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "SQL_FAIL" ; $err ; "rs_max" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$broj</Name>
+		<Value><Calculation><![CDATA[Let ( [
+		~rows = epSQLResultRowCount ( "rs_max" ) ;
+		~last = If ( ~rows = 0 ; "" ; epSQLResult ( 0 ; 0 ; "rs_max" ) ) ;
+		~serial = If ( Length ( ~last ) < 9 ; 0 ; GetAsNumber ( Middle ( ~last ; 3 ; 3 ) ) )
+	];
+
+	"N-" & Right ( "00" & ( ~serial + 1 ) ; 3 ) & "-" & $yy
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_max" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nivelacijaId</Name>
+		<Value><Calculation><![CDATA[TSID]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO Nivelacija" &
+	" ( PrimaryKey, BrojNivelacije, DatumNivelacije, Status, NacinIzmjene, Napomena," &
+	"   ForeignKeyCompanyID, AzurirajStandardnuCijenu )" &
+	" VALUES ( ?, ?, " & epSQLQuoteDate ( $datum ) & ", ?, ?, ?, ?, ? )" ;
+	"" ;
+	$nivelacijaId ;
+	$broj ;
+	"Otvorena" ;
+	$nacin ;
+	$napomena ;
+	$companyId ;
+	If ( $azurirajStandardnu ; 1 ; 0 )
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "INSERT_FAIL" ; $err ; "Nivelacija" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "nivelacijaId" ; $nivelacijaId ; JSONString ] ;
+	[ "brojNivelacije" ; $broj ; JSONString ] ;
+	[ "nacinIzmjene" ; $nacin ; JSONString ] ;
+	[ "datumNivelacije" ; Year ( $datum ) & "-" & Right ( "0" & Month ( $datum ) ; 2 ) & "-" & Right ( "0" & Day ( $datum ) ; 2 ) ; JSONString ]
+) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "NIVELACIJA_CREATED" ; $broj ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="780" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

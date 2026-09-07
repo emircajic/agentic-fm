@@ -1,0 +1,412 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>PURPOSE: Write the draft lines of an open Nivelacija from a set of chosen batches. Replaces any existing lines. Touches no price and no stock — nothing here leaves the document.</Text>
+	</Step>
+
+	<Step enable="False" id="61" name="Insert Text">
+		<SelectAll state="False"/>
+		<Text>PARAMS (JSON):
+  nivelacijaId      required. Must be Otvorena.
+  noviPDVPostotak   document-level new VAT rate. Defaults to getCompanyVATRate ( "DOO" ).
+  stavke            required. Array of candidate rows as returned by NIV__GetCandidates, each
+                    optionally carrying novaMPCijena (required only under NovaMPC) and its own
+                    nacinIzmjene override.
+
+RETURNS data: brojStavki, plus the seven document totals.
+
+TRUST BOUNDARY — READ THIS BEFORE CHANGING ANYTHING HERE:
+  This script takes the old-side figures from its parameter, i.e. from whatever the UI last read.
+  That is deliberate and it is safe ONLY because the lines it writes are a DRAFT. NIV__Post
+  re-resolves every old-side value from CijeneStavki and every quantity from the invoice ledger,
+  recomputes the whole line, and overwrites it before the document is posted. Nothing a browser
+  says ever reaches a posted document. If you ever make posting trust these values, you have moved
+  the authority into a stale browser tab.
+
+THE ANCHOR — three ways to hold the arithmetic still while the VAT rate moves:
+  ZadrziMPC   bruto is held. neto falls, RUC absorbs the whole VAT. Gross delta is zero, so the
+              ledger sees nothing and the entire movement is razlika u cijeni.
+  ZadrziNeto  neto is held. bruto rises by the VAT, RUC is preserved, customer pays.
+  NovaMPC     a new bruto is typed in and neto and RUC follow. Ordinary repricing.
+
+ROUNDING — VAT IS ALWAYS A SUBTRACTION, NEVER A MULTIPLICATION:
+  bruto is rounded to 2 first, neto is derived from it and rounded to 2, and PDV is then bruto
+  minus neto. Computed that way neto + PDV = bruto exactly, so the identity
+  RazlikaVrijednost = RazlikaRUC + RazlikaPDV closes by construction and can never fail on a
+  rounding artefact — only on a genuine error, which is what NIV__Post asserts on.
+
+  Every fraction is written as an integer ratio ( 1 + pct / 100 ). A dot decimal literal pastes as
+  an EMPTY calculation on this file's comma-decimal locale, silently yielding zero.</Text>
+		<Field>$README</Field>
+	</Step>
+
+	<Step enable="True" id="85" name="Allow User Abort">
+		<Set state="False"/>
+	</Step>
+
+	<Step enable="True" id="86" name="Set Error Capture">
+		<Set state="True"/>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Params.parse ( Get ( ScriptParameter ) ; "nivelacijaId|noviPDVPostotak|stavke" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_Init ( "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "SCRIPT_START" ; "NIV__GenerateStavke" ; $params )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[IsEmpty ( $nivelacijaId ) or JSONListKeys ( $stavke ; "" ) = "?"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "MISSING_PARAM" ; "nivelacijaId i stavke su obavezni." ; "stavke" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Load the header. The anchor and the open status both live there, and a posted document may not be regenerated. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"SELECT Nivelacija.Status, Nivelacija.NacinIzmjene, Nivelacija.BrojNivelacije" &
+	" FROM Nivelacija WHERE Nivelacija.PrimaryKey = ?" ;
+	"useSQLResult=rs_hdr" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err ) or epSQLResultRowCount ( "rs_hdr" ) = 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIVELACIJA_NOT_FOUND" ; If ( IsEmpty ( $err ) ; "Nivelacija ne postoji." ; $err ) ; "nivelacijaId" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$status</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 0 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nacinDok</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 1 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$broj</Name>
+		<Value><Calculation><![CDATA[epSQLResult ( 0 ; 2 ; "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[epSQLResultDelete ( "rs_hdr" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$status ≠ "Otvorena"]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "NIV_NOT_OPEN" ; "Nivelacija " & $broj & " nije otvorena (status: " & $status & ")." ; "Status" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$pdvDok</Name>
+		<Value><Calculation><![CDATA[If ( IsEmpty ( $noviPDVPostotak ) ; getCompanyVATRate ( "DOO" ) ; GetAsNumber ( $noviPDVPostotak ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── Regenerating replaces: delete the existing draft lines first so a second run cannot double the document. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$err</Name>
+		<Value><Calculation><![CDATA[epSQLExecute (
+	"DELETE FROM StavkeNivelacije WHERE ForeignKeyNivelacijaID = ?" ;
+	"" ;
+	$nivelacijaId
+)]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddError ( "DELETE_FAIL" ; $err ; "StavkeNivelacije" ; $params ; "" )]]></Calculation></Value>
+		</Step>
+		<Step enable="True" id="103" name="Exit Script">
+			<Calculation><![CDATA[Response_Finalize]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$n</Name>
+		<Value><Calculation><![CDATA[ValueCount ( JSONListKeys ( $stavke ; "" ) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$i</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$written</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$skipped</Name>
+		<Value><Calculation><![CDATA[0]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="71" name="Loop">
+		<FlushType value="Always"/>
+	</Step>
+		<Step enable="True" id="72" name="Exit Loop If">
+			<Calculation><![CDATA[$i ≥ $n]]></Calculation>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$row</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( $stavke ; "[" & $i & "]" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$batchId</Name>
+			<Value><Calculation><![CDATA[JSONGetElement ( $row ; "batchId" )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$kolicina</Name>
+			<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $row ; "kolicina" ) )]]></Calculation></Value>
+		</Step>
+
+		<Step enable="True" id="89" name="# (comment)">
+			<Text>── A batch with no stock on hand has nothing to revalue. Skipping is not an error; it is counted and reported so the operator can see the selection shrank. ──</Text>
+		</Step>
+
+		<Step enable="True" id="68" name="If">
+			<Calculation><![CDATA[IsEmpty ( $batchId ) or $kolicina ≤ 0]]></Calculation>
+		</Step>
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$skipped</Name>
+				<Value><Calculation><![CDATA[$skipped + 1]]></Calculation></Value>
+			</Step>
+		<Step enable="True" id="69" name="Else"/>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$staraBruto</Name>
+				<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $row ; "staraMPCijena" ) )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$stariPDV</Name>
+				<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $row ; "stariPDVPostotak" ) )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$nabavna</Name>
+				<Value><Calculation><![CDATA[GetAsNumber ( JSONGetElement ( $row ; "nabavnaCijenaEfektivna" ) )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$noviPDV</Name>
+				<Value><Calculation><![CDATA[If ( JSONGetElement ( $row ; "noviPDVPostotak" ) = "" ; $pdvDok ; GetAsNumber ( JSONGetElement ( $row ; "noviPDVPostotak" ) ) )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$nacin</Name>
+				<Value><Calculation><![CDATA[Case (
+	JSONGetElement ( $row ; "nacinIzmjene" ) = "ZadrziNeto" ; "ZadrziNeto" ;
+	JSONGetElement ( $row ; "nacinIzmjene" ) = "ZadrziMPC" ; "ZadrziMPC" ;
+	JSONGetElement ( $row ; "nacinIzmjene" ) = "NovaMPC" ; "NovaMPC" ;
+	$nacinDok
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$staraNetoJed</Name>
+				<Value><Calculation><![CDATA[Round ( $staraBruto / ( 1 + $stariPDV / 100 ) ; 4 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="89" name="# (comment)">
+				<Text>── The anchor decides which side is held. Under ZadrziNeto the old NET is carried across at the new rate; under ZadrziMPC the old BRUTO is; under NovaMPC the operator's price wins. ──</Text>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$novaBruto</Name>
+				<Value><Calculation><![CDATA[Case (
+	$nacin = "ZadrziNeto" ; Round ( $staraNetoJed * ( 1 + $noviPDV / 100 ) ; 4 ) ;
+	$nacin = "NovaMPC" ; GetAsNumber ( JSONGetElement ( $row ; "novaMPCijena" ) ) ;
+	$staraBruto
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$novaNetoJed</Name>
+				<Value><Calculation><![CDATA[Round ( $novaBruto / ( 1 + $noviPDV / 100 ) ; 4 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="89" name="# (comment)">
+				<Text>── Value level. Bruto is rounded first and neto derived from the rounded bruto, so the two columns on the printed form add up to the printed total. PDV is the difference, never a multiplication. ──</Text>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$staraVrij</Name>
+				<Value><Calculation><![CDATA[Round ( $kolicina * $staraBruto ; 2 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$staraVrijNeto</Name>
+				<Value><Calculation><![CDATA[Round ( $staraVrij / ( 1 + $stariPDV / 100 ) ; 2 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$novaVrij</Name>
+				<Value><Calculation><![CDATA[Round ( $kolicina * $novaBruto ; 2 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$novaVrijNeto</Name>
+				<Value><Calculation><![CDATA[Round ( $novaVrij / ( 1 + $noviPDV / 100 ) ; 2 )]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$stavkaId</Name>
+				<Value><Calculation><![CDATA[TSID]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$err</Name>
+				<Value><Calculation><![CDATA[epSQLExecute (
+	"INSERT INTO StavkeNivelacije" &
+	" ( PrimaryKey, ForeignKeyNivelacijaID, ForeignKeyStavkaPrimkeID, ForeignKeyArtikalID," &
+	"   ForeignKeyKalkulacijaID, RedniBroj, Sifra, Naziv, JM, KolicinaNaStanju," &
+	"   NabavnaCijenaEfektivna, NacinIzmjene," &
+	"   StaraMPCijena, StaraMPCijenaBezPDV, StariPDVPostotak, StariPDVIznos, StariRUCIznos," &
+	"   NovaMPCijena, NovaMPCijenaBezPDV, NoviPDVPostotak, NoviPDVIznos, NoviRUCIznos," &
+	"   StaraVrijednost, StaraVrijednostBezPDV, NovaVrijednost, NovaVrijednostBezPDV," &
+	"   RazlikaVrijednost, RazlikaRUC, RazlikaPDV )" &
+	" VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )" ;
+	"" ;
+	$stavkaId ;
+	$nivelacijaId ;
+	$batchId ;
+	JSONGetElement ( $row ; "artikalId" ) ;
+	JSONGetElement ( $row ; "kalkulacijaId" ) ;
+	$written + 1 ;
+	JSONGetElement ( $row ; "sifra" ) ;
+	JSONGetElement ( $row ; "naziv" ) ;
+	JSONGetElement ( $row ; "jm" ) ;
+	$kolicina ;
+	$nabavna ;
+	$nacin ;
+	$staraBruto ;
+	$staraNetoJed ;
+	$stariPDV ;
+	Round ( $staraBruto - $staraNetoJed ; 4 ) ;
+	Round ( $staraNetoJed - $nabavna ; 4 ) ;
+	$novaBruto ;
+	$novaNetoJed ;
+	$noviPDV ;
+	Round ( $novaBruto - $novaNetoJed ; 4 ) ;
+	Round ( $novaNetoJed - $nabavna ; 4 ) ;
+	$staraVrij ;
+	$staraVrijNeto ;
+	$novaVrij ;
+	$novaVrijNeto ;
+	Round ( $novaVrij - $staraVrij ; 2 ) ;
+	Round ( $novaVrijNeto - $staraVrijNeto ; 2 ) ;
+	Round ( ( $novaVrij - $novaVrijNeto ) - ( $staraVrij - $staraVrijNeto ) ; 2 )
+)]]></Calculation></Value>
+			</Step>
+
+			<Step enable="True" id="68" name="If">
+				<Calculation><![CDATA[not IsEmpty ( $err )]]></Calculation>
+			</Step>
+				<Step enable="True" id="141" name="Set Variable">
+					<Name>$void</Name>
+					<Value><Calculation><![CDATA[Response_AddError ( "INSERT_FAIL" ; $err ; "StavkeNivelacije" ; JSONSetElement ( "{}" ; "batchId" ; $batchId ; JSONString ) ; "" )]]></Calculation></Value>
+				</Step>
+				<Step enable="True" id="103" name="Exit Script">
+					<Calculation><![CDATA[Response_Finalize]]></Calculation>
+				</Step>
+			<Step enable="True" id="70" name="End If"/>
+
+			<Step enable="True" id="141" name="Set Variable">
+				<Name>$written</Name>
+				<Value><Calculation><![CDATA[$written + 1]]></Calculation></Value>
+			</Step>
+
+		<Step enable="True" id="70" name="End If"/>
+
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$i</Name>
+			<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="73" name="End Loop"/>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$skipped > 0]]></Calculation>
+	</Step>
+		<Step enable="True" id="141" name="Set Variable">
+			<Name>$void</Name>
+			<Value><Calculation><![CDATA[Response_AddWarning ( "SKIPPED_EMPTY" ; $skipped & " stavki preskočeno — nema stanja na zalihi." ; "stavke" ; "{}" ; "" )]]></Calculation></Value>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Response_SetData ( JSONSetElement ( "{}" ;
+	[ "nivelacijaId" ; $nivelacijaId ; JSONString ] ;
+	[ "brojNivelacije" ; $broj ; JSONString ] ;
+	[ "brojStavki" ; $written ; JSONNumber ] ;
+	[ "preskoceno" ; $skipped ; JSONNumber ]
+) )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$void</Name>
+		<Value><Calculation><![CDATA[Log.add ( "info" ; "STAVKE_WRITTEN" ; $written & " stavki na " & $broj ; "{}" )]]></Calculation></Value>
+	</Step>
+
+	<Step enable="True" id="68" name="If">
+		<Calculation><![CDATA[$isRoot]]></Calculation>
+	</Step>
+		<Step enable="True" id="1" name="Perform Script">
+			<Script id="780" name="UTIL__FlushLog"/>
+			<Calculation><![CDATA[JSONSetElement ( "{}" ; "traceID" ; $traceID ; JSONString )]]></Calculation>
+		</Step>
+	<Step enable="True" id="70" name="End If"/>
+
+	<Step enable="True" id="103" name="Exit Script">
+		<Calculation><![CDATA[Response_Finalize]]></Calculation>
+	</Step>
+
+</fmxmlsnippet>

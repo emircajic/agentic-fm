@@ -1,0 +1,29 @@
+<fmxmlsnippet type="FMObjectList">
+
+	<Step enable="True" id="89" name="# (comment)">
+		<Text>── 1b. NIVELACIJE before datumOd. Without this the opening balance is wrong from the first row: a nivelacija raises or lowers the retail value of stock already carried, so a period that opens after one must inherit its effect. Signed sum — a price reduction carries a negative UkupnoRazlika and correctly reduces the donos. Zero-effect (hold-the-price) documents contribute nothing and need no filtering. ──</Text>
+	</Step>
+
+	<Step enable="True" id="141" name="Set Variable">
+		<Name>$nivelacijeBefore</Name>
+		<Value><Calculation><![CDATA[Let ([
+	~suma = ExecuteSQL(
+	"SELECT SUM(UkupnoRazlika)
+	 FROM Nivelacija
+	 WHERE ForeignKeyCompanyID = ?
+	   AND Status = 'Knjižena'
+	   AND DatumNivelacije < ?";
+	"";
+	"";
+	$companyID;
+	GetAsDate ( $datumOd )
+)
+];
+	If ( not IsEmpty ( ~suma ) ;
+		GetAsNumber ( ~suma ) ;
+		0
+	)
+) ]]></Calculation></Value>
+	</Step>
+
+</fmxmlsnippet>
